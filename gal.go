@@ -208,9 +208,10 @@ func extractPart(expr string) (string, int) {
 	}
 
 	// read part
-	// if expr[from] == '"' {
-	// 	return readString(expr[from:])
-	// }
+	if expr[from] == '"' {
+		s := readString(expr[from:])
+		return s, len(s)
+	}
 
 	to := from
 	newFrom := from
@@ -230,13 +231,12 @@ func extractPart(expr string) (string, int) {
 }
 
 func readString(expr string) string {
-	s := "\""
-	to := 0
+	to := 1 // keep leading double-quotes
 	escapes := 0
 
 	for i, r := range expr[1:] {
 		to += 1
-		if expr[i-1] == '\\' {
+		if expr[i] == '\\' {
 			escapes += 1
 			continue
 		}
@@ -247,7 +247,7 @@ func readString(expr string) string {
 		escapes = 0
 	}
 
-	return s[:to]
+	return expr[:to]
 }
 
 func isValueBoundary(r rune) bool {

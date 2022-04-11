@@ -12,7 +12,7 @@ func TestEval(t *testing.T) {
 	Eval(xpn)
 }
 
-func Test_extractPart(t *testing.T) {
+func Test_extractPart1(t *testing.T) {
 	expr := `-3 + -4`
 
 	p, j := extractPart(expr)
@@ -25,6 +25,47 @@ func Test_extractPart(t *testing.T) {
 	p, j = extractPart(expr[i:])
 	if !cmp.Equal("+", p) {
 		t.Error(cmp.Diff("+", p))
+	}
+	i += j
+	assert.Equal(t, operatorType, partType(p))
+
+	p, j = extractPart(expr[i:])
+	if !cmp.Equal("-4", p) {
+		t.Error(cmp.Diff("-4", p))
+	}
+	i += j
+	assert.Equal(t, numericalType, partType(p))
+
+	assert.Equal(t, len(expr), i)
+}
+
+func Test_extractPart2(t *testing.T) {
+	expr := `"-3 + -4" + -3 --4`
+
+	p, j := extractPart(expr)
+	if !cmp.Equal(`"-3 + -4"`, p) {
+		t.Error(cmp.Diff(`"-3 + -4"`, p))
+	}
+	i := j
+	assert.Equal(t, stringType, partType(p))
+
+	p, j = extractPart(expr[i:])
+	if !cmp.Equal("+", p) {
+		t.Error(cmp.Diff("+", p))
+	}
+	i += j
+	assert.Equal(t, operatorType, partType(p))
+
+	p, j = extractPart(expr[i:])
+	if !cmp.Equal("-3", p) {
+		t.Error(cmp.Diff("-3", p))
+	}
+	i += j
+	assert.Equal(t, numericalType, partType(p))
+
+	p, j = extractPart(expr[i:])
+	if !cmp.Equal("-", p) {
+		t.Error(cmp.Diff("-", p))
 	}
 	i += j
 	assert.Equal(t, operatorType, partType(p))
