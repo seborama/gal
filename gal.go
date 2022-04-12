@@ -13,6 +13,8 @@ const (
 	numericalType
 	operatorType
 	stringType
+	variableType
+	functionType
 	blankType // TODO: remove
 )
 
@@ -193,41 +195,90 @@ func partType(expr string) exprType {
 	return unknownType
 }
 
-func extractPart(expr string) (string, int) {
+func parseParts(expr string) {
+	for idx := 0; idx < len(expr); {
+		part, pType, pos := extractPart(expr[idx:])
+		if part == "" {
+			break
+		}
+
+		if pos == 0 {
+			fmt.Println(part)
+			break
+		}
+
+		fmt.Printf("idx: %d >> type: %d >> part: '%s'\n", idx, pType, part)
+		idx += pos
+	}
+}
+
+func extractPart(expr string) (string, exprType, int) {
 	// left trim blanks
 	from := 0
 	for _, r := range expr {
-		if !isValueBoundary(r) {
+		if !isPartBoundary(r) {
 			break
 		}
 		from++
 	}
 
+	// blank: no part
 	if from == len(expr) {
-		return "", from
+		return "", blankType, from
 	}
 
-	// read part
+	// read part - "string"
 	if expr[from] == '"' {
 		s := readString(expr[from:])
-		return s, len(s)
+		return s, stringType, len(s)
 	}
 
-	to := from
-	newFrom := from
-	if expr[from] == '+' || expr[from] == '-' {
-		newFrom++
+	// read part - :variable:
+	if expr[from] == ':' {
+		s, l := readVariable(expr[from:])
+		return s, variableType, l
+	}
+
+	// read part - function(...)
+	// TODO: this is not complete: the (...) part of the function needs to be parsed and eval'ed
+	if (expr[from] >= 'a' && expr[from] <= 'z') || (expr[from] >= 'A' && expr[from] <= 'Z') {
+		s, l := readFunctionName(expr[from:])
+		return s, functionType, l
+	}
+
+	// read part - operator
+	// TODO: only single character operators are supported
+	if isOperator(string(expr[from])) {
+		if expr[from] == '+' || expr[from] == '-' {
+			s, l := squashPlusMinusChain(expr[from:])
+			return s, operatorType, l
+		}
+		return string(expr[from]), operatorType, 1
+	}
+
+	// read part - number
+	// TODO: complex numbers are not supported
+	to := 0
+	isFloat := false
+	for _, r := range expr[from:] {
 		to++
-	}
 
-	for _, r := range expr[newFrom:] {
-		if isValueBoundary(r) || isOperator(string(r)) {
+		if isPartBoundary(r) || isOperator(string(r)) {
 			break
 		}
-		to++
+
+		if r == '.' && !isFloat {
+			isFloat = true
+			continue
+		}
+		if r >= '0' && r <= '9' {
+			continue
+		}
+
+		return fmt.Sprintf("Syntax error: invalid character '%c' for number '%s'", r, expr[:to]), numericalType, 0
 	}
 
-	return expr[from:to], to
+	return expr[from:to], unknownType, to
 }
 
 func readString(expr string) string {
@@ -250,7 +301,73 @@ func readString(expr string) string {
 	return expr[:to]
 }
 
-func isValueBoundary(r rune) bool {
+func readVariable(expr string) (string, int) {
+	to := 1 // keep leading ':'
+
+	for _, r := range expr[1:] {
+		to += 1
+		if r == ':' {
+			break
+		}
+		if isPartBoundary(r) {
+			return fmt.Sprintf("Syntax error: invalid character '%c' for variable name '%s'", r, expr[:to]), 0
+		}
+	}
+
+	if expr[to-1] != ':' {
+		return fmt.Sprintf("Syntax error: missing ':' to end variable '%s'", expr[:to]), 0
+	}
+
+	return expr[:to], len(expr[:to])
+}
+
+// f() is a function f with no args.
+// f(x) is a function f with one arg 'x'.
+// f(x, y, ...) is a function f with multiple args 'x', 'y', ...
+// (...) is a standard associative grouping with parentheses. It is akin to an 'identity' function: `f(x) = x`.
+// () is probably invalid
+func readFunctionName(expr string) (string, int) {
+	to := 1 // we know the first character is a letter, and it is the first letter
+
+	for _, r := range expr[1:] {
+		if r == '(' {
+			return expr[:to], len(expr[:to])
+		}
+		if isPartBoundary(r) {
+			return fmt.Sprintf("Syntax error: invalid character '%c' for function name '%s'", r, expr[:to]), 0
+		}
+		to += 1
+	}
+
+	return fmt.Sprintf("Syntax error: missing '(' for function name '%s'", expr[:to]), 0
+}
+
+func squashPlusMinusChain(expr string) (string, int) {
+	to := 0
+	outcomeSign := 1
+
+	for _, r := range expr {
+		if isPartBoundary(r) {
+			break
+		}
+		if r != '+' && r != '-' {
+			break
+		}
+		if r == '-' {
+			outcomeSign = -outcomeSign
+		}
+		to += 1
+	}
+
+	sign := "-"
+	if outcomeSign == 1 {
+		sign = "+"
+	}
+
+	return sign, to
+}
+
+func isPartBoundary(r rune) bool {
 	return r == ' ' || r == '\t' || r == '\n' ||
 		r == '(' || r == ')'
 }
