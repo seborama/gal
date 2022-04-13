@@ -210,8 +210,15 @@ func parseParts(expr string) error {
 
 		fmt.Printf("idx: %d >> type: %d >> part: '%s'\n", idx, ptype, part)
 		if ptype == functionType {
-			// panic("not complete")
-			// parseParts(expr[idx:])
+			fname, l, _ := readFunctionName(part)
+			fmt.Printf("  >>> sub: fname: '%s'\n", fname)
+			suberr := parseParts(part[l+1 : len(part)-1]) // exclude leading '(' and trailing ')'
+			fmt.Printf("  <<< sub: fname: '%s' >> err: '%s'\n", fname, err)
+
+			// TODO: squash the leading and trailing '()'
+			if suberr != nil {
+				return suberr
+			}
 		}
 
 		idx += length
@@ -279,14 +286,14 @@ func extractPart(expr string) (string, exprType, int, error) {
 
 	// read part - number
 	// TODO: complex numbers are not supported
-	to := 0
+	to := pos
 	isFloat := false
 	for _, r := range expr[pos:] {
-		to++
-
 		if isBlankSpace(r) || isOperator(string(r)) {
 			break
 		}
+
+		to++
 
 		if r == '.' && !isFloat {
 			isFloat = true
