@@ -5,6 +5,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestEval(t *testing.T) {
@@ -12,65 +13,43 @@ func TestEval(t *testing.T) {
 	Eval(xpn)
 }
 
-func Test_extractPart1(t *testing.T) {
-	expr := `-3 + -4`
-
-	p, _, j := extractPart(expr)
-	if !cmp.Equal("-3", p) {
-		t.Error(cmp.Diff("-3", p))
-	}
-	i := j
-	assert.Equal(t, numericalType, partType(p))
-
-	p, _, j = extractPart(expr[i:])
-	if !cmp.Equal("+", p) {
-		t.Error(cmp.Diff("+", p))
-	}
-	i += j
-	assert.Equal(t, operatorType, partType(p))
-
-	p, _, j = extractPart(expr[i:])
-	if !cmp.Equal("-4", p) {
-		t.Error(cmp.Diff("-4", p))
-	}
-	i += j
-	assert.Equal(t, numericalType, partType(p))
-
-	assert.Equal(t, len(expr), i)
-}
-
-func Test_extractPart2(t *testing.T) {
+func Test_extractPart(t *testing.T) {
 	expr := `"-3 + -4" + -3 --4`
 
-	p, _, j := extractPart(expr)
+	p, _, j, err := extractPart(expr)
+	require.NoError(t, err)
 	if !cmp.Equal(`"-3 + -4"`, p) {
 		t.Error(cmp.Diff(`"-3 + -4"`, p))
 	}
 	i := j
 	assert.Equal(t, stringType, partType(p))
 
-	p, _, j = extractPart(expr[i:])
+	p, _, j, err = extractPart(expr[i:])
+	require.NoError(t, err)
 	if !cmp.Equal("+", p) {
 		t.Error(cmp.Diff("+", p))
 	}
 	i += j
 	assert.Equal(t, operatorType, partType(p))
 
-	p, _, j = extractPart(expr[i:])
+	p, _, j, err = extractPart(expr[i:])
+	require.NoError(t, err)
 	if !cmp.Equal("-3", p) {
 		t.Error(cmp.Diff("-3", p))
 	}
 	i += j
 	assert.Equal(t, numericalType, partType(p))
 
-	p, _, j = extractPart(expr[i:])
+	p, _, j, err = extractPart(expr[i:])
+	require.NoError(t, err)
 	if !cmp.Equal("-", p) {
 		t.Error(cmp.Diff("-", p))
 	}
 	i += j
 	assert.Equal(t, operatorType, partType(p))
 
-	p, _, j = extractPart(expr[i:])
+	p, _, j, err = extractPart(expr[i:])
+	require.NoError(t, err)
 	if !cmp.Equal("-4", p) {
 		t.Error(cmp.Diff("-4", p))
 	}
@@ -82,29 +61,36 @@ func Test_extractPart2(t *testing.T) {
 
 func TestParse(t *testing.T) {
 	expr := `"-3 + -4" + -3 --4 / ( 1 + 2+3+4)`
-	parseParts(expr)
+	err := parseParts(expr)
+	require.NoError(t, err)
 }
 
 func TestParse_Variable(t *testing.T) {
 	expr := `:var_not_ended`
-	parseParts(expr)
+	err := parseParts(expr)
+	require.Error(t, err)
 
 	expr = ":var with \nblanks:"
-	parseParts(expr)
+	err = parseParts(expr)
+	require.Error(t, err)
 
 	expr = `:var_ended:`
-	parseParts(expr)
+	err = parseParts(expr)
+	require.NoError(t, err)
 }
 
 func TestParse_FunctionName(t *testing.T) {
-	expr := `f(abc)`
-	parseParts(expr)
+	expr := `f(4+g(5 6 (3+4))+ 6) + k() + (l(9))`
+	err := parseParts(expr)
+	require.NoError(t, err)
 
-	expr = "f un c ti on   (" // Hmm, m'kay?
-	parseParts(expr)
+	expr = "f un c ti on   ("
+	err = parseParts(expr)
+	require.Error(t, err)
 
 	expr = `func(`
-	parseParts(expr)
+	err = parseParts(expr)
+	require.Error(t, err)
 }
 
 func TestParse_Operator(t *testing.T) {
