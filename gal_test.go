@@ -60,36 +60,46 @@ func Test_extractPart(t *testing.T) {
 }
 
 func TestParse(t *testing.T) {
-	expr := `"-3 + -4" + -3 --4 / ( 1 + 2+3+4)`
-	err := parseParts(expr)
+	// expr := `"-3 + -4" + -3 --4 / ( 1 + 2+3+4)`
+	// v, err := parseParts(expr)
+	// require.NoError(t, err)
+	// if !cmp.Equal(Undefined{}, v) {
+	// 	t.Error(cmp.Diff(Undefined{}, v))
+	// }
+
+	expr := `-3 --4 / ( 1 + 2+3+4)`
+	v, err := parseParts(expr)
 	require.NoError(t, err)
+	if !cmp.Equal(NewNumberFromFloat(-2.6), v) {
+		t.Error(cmp.Diff(Undefined{}, v))
+	}
 }
 
 func TestParse_Variable(t *testing.T) {
 	expr := `:var_not_ended`
-	err := parseParts(expr)
+	_, err := parseParts(expr)
 	require.Error(t, err)
 
 	expr = ":var with \nblanks:"
-	err = parseParts(expr)
+	_, err = parseParts(expr)
 	require.Error(t, err)
 
 	expr = `:var_ended:`
-	err = parseParts(expr)
+	_, err = parseParts(expr)
 	require.NoError(t, err)
 }
 
 func TestParse_FunctionName(t *testing.T) {
 	expr := `f(4+g(5 6 (3+4))+ 6) + k() + (l(9))`
-	err := parseParts(expr)
+	_, err := parseParts(expr)
 	require.NoError(t, err)
 
 	expr = "f un c ti on   ("
-	err = parseParts(expr)
+	_, err = parseParts(expr)
 	require.Error(t, err)
 
 	expr = `func(`
-	err = parseParts(expr)
+	_, err = parseParts(expr)
 	require.Error(t, err)
 }
 

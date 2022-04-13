@@ -43,17 +43,17 @@ type String struct {
 }
 
 func NewString(s string) String {
-	return String{
-		value: s,
-	}
+	return String{value: s}
+}
+
+func (s String) Equal(other String) bool {
+	return s.value == other.value
 }
 
 func (s String) Add(other Value) Value {
 	switch v := other.(type) {
 	case String:
-		return String{
-			value: s.value + v.value,
-		}
+		return String{value: s.value + v.value}
 	}
 
 	v, ok := other.(stringer)
@@ -61,9 +61,7 @@ func (s String) Add(other Value) Value {
 		return Undefined{}
 	}
 
-	return String{
-		value: s.value + v.String(),
-	}
+	return String{value: s.value + v.String()}
 }
 
 func (s String) String() string {
@@ -74,23 +72,35 @@ type Number struct {
 	value decimal.Decimal
 }
 
+func NewNumber(i int64) Number {
+	d := decimal.NewFromInt(i)
+
+	return Number{value: d}
+}
+
+func NewNumberFromFloat(f float64) Number {
+	d := decimal.NewFromFloat(f)
+
+	return Number{value: d}
+}
+
 func NewNumberFromString(s string) (Number, error) {
 	d, err := decimal.NewFromString(s)
 	if err != nil {
-		return Number{}, err
+		return Number{}, errors.WithStack(err)
 	}
 
-	return Number{
-		value: d,
-	}, nil
+	return Number{value: d}, nil
+}
+
+func (n Number) Equal(other Number) bool {
+	return n.value.Equal(other.value)
 }
 
 func (n Number) Add(other Value) Value {
 	switch v := other.(type) {
 	case Number:
-		return Number{
-			value: n.value.Add(v.value),
-		}
+		return Number{value: n.value.Add(v.value)}
 	}
 
 	v, ok := other.(numberer)
@@ -109,11 +119,15 @@ func (n Number) String() string {
 
 type Undefined struct{}
 
-func (u Undefined) Add(Value) Value {
+func (Undefined) Equal(other Undefined) bool {
+	return true
+}
+
+func (Undefined) Add(Value) Value {
 	return Undefined{}
 }
 
-func (u Undefined) String() string {
+func (Undefined) String() string {
 	return "undefined"
 }
 
@@ -196,12 +210,14 @@ func partType(expr string) exprType {
 	return unknownType
 }
 
-func parseParts(expr string) error {
+func parseParts(expr string) (Value, error) {
+	var v Value
+
 	for idx := 0; idx < len(expr); {
 		part, ptype, length, err := extractPart(expr[idx:])
 		if err != nil {
 			fmt.Println(err)
-			return err
+			return nil, err
 		}
 
 		if ptype == blankType {
@@ -209,22 +225,35 @@ func parseParts(expr string) error {
 		}
 
 		fmt.Printf("idx: %d >> type: %d >> part: '%s'\n", idx, ptype, part)
-		if ptype == functionType {
+		switch ptype {
+		case numericalType:
+			v, err = NewNumberFromString(part)
+			if err != nil {
+				return nil, err
+			}
+
+		case stringType:
+			v = NewString(part)
+
+		case operatorType:
+			// TODO: how to apply associativity (e.g. 1 + 2 * 3 = 7 and not 9)
+			panic("not implemented")
+
+		case functionType:
+			// TODO: squash the leading and trailing '()'
 			fname, l, _ := readFunctionName(part)
 			fmt.Printf("  >>> sub: fname: '%s'\n", fname)
-			suberr := parseParts(part[l+1 : len(part)-1]) // exclude leading '(' and trailing ')'
+			v, err = parseParts(part[l+1 : len(part)-1]) // exclude leading '(' and trailing ')'
 			fmt.Printf("  <<< sub: fname: '%s' >> err: '%s'\n", fname, err)
-
-			// TODO: squash the leading and trailing '()'
-			if suberr != nil {
-				return suberr
+			if err != nil {
+				return nil, err
 			}
 		}
 
 		idx += length
 	}
 
-	return nil
+	return v, nil
 }
 
 func extractPart(expr string) (string, exprType, int, error) {
@@ -286,27 +315,11 @@ func extractPart(expr string) (string, exprType, int, error) {
 
 	// read part - number
 	// TODO: complex numbers are not supported
-	to := pos
-	isFloat := false
-	for _, r := range expr[pos:] {
-		if isBlankSpace(r) || isOperator(string(r)) {
-			break
-		}
-
-		to++
-
-		if r == '.' && !isFloat {
-			isFloat = true
-			continue
-		}
-		if r >= '0' && r <= '9' {
-			continue
-		}
-
-		return "", unknownType, 0, errors.WithStack(newErrSyntaxError(fmt.Sprintf("invalid character '%c' for number '%s'\n", r, expr[:to])))
+	s, l, err := readNumber(expr[pos:])
+	if err != nil {
+		return "", unknownType, 0, err
 	}
-
-	return expr[pos:to], numericalType, pos + to, nil
+	return s, numericalType, pos + l, nil
 }
 
 func readString(expr string) (string, int, error) {
@@ -394,6 +407,31 @@ func readFunctionArguments(expr string) (string, int, error) {
 	}
 
 	return "", 0, errors.WithStack(newErrSyntaxError(fmt.Sprintf("missing ')' for function arguments '%s'", expr[:to])))
+}
+
+func readNumber(expr string) (string, int, error) {
+	to := 0
+	isFloat := false
+
+	for _, r := range expr {
+		if isBlankSpace(r) || isOperator(string(r)) {
+			break
+		}
+
+		to++
+
+		if r == '.' && !isFloat {
+			isFloat = true
+			continue
+		}
+		if r >= '0' && r <= '9' {
+			continue
+		}
+
+		return "", 0, errors.WithStack(newErrSyntaxError(fmt.Sprintf("invalid character '%c' for number '%s'\n", r, expr[:to])))
+	}
+
+	return expr[:to], to, nil
 }
 
 func squashPlusMinusChain(expr string) (string, int) {
