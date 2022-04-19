@@ -67,7 +67,14 @@ func TestParse(t *testing.T) {
 	// 	t.Error(cmp.Diff(Undefined{}, v))
 	// }
 
-	expr := `-3 --4 / ( 1 + 2+3+4)`
+	// expr := `-3 --4 / ( 1 + 2+3+4)`
+	// v, err := parseParts(expr)
+	// require.NoError(t, err)
+	// if !cmp.Equal(NewNumberFromFloat(-2.6), v) {
+	// 	t.Error(cmp.Diff(Undefined{}, v))
+	// }
+
+	expr := `-1 + 2 * 3 / 2 + 1` // == 3  // -1 + ( 2 * 3 ) / 2 + ( 1 )
 	v, err := parseParts(expr)
 	require.NoError(t, err)
 	if !cmp.Equal(NewNumberFromFloat(-2.6), v) {

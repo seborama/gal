@@ -34,8 +34,33 @@ type Value interface {
 
 type Operator string
 
+func (Operator) kind() entryKind {
+	return operatorEntryKind
+}
+
+func (o Operator) String() string {
+	return string(o)
+}
+
+type entryKind int
+
 const (
-	plus Operator = "+"
+	unknownEntryKind entryKind = iota
+	valueEntryKind
+	operatorEntryKind
+	treeEntryKind
+)
+
+type entry interface {
+	kind() entryKind
+}
+
+const (
+	plus      Operator = "+"
+	minus     Operator = "-"
+	times     Operator = "*"
+	dividedBy Operator = "/"
+	modulus   Operator = "%"
 )
 
 type String struct {
@@ -44,6 +69,10 @@ type String struct {
 
 func NewString(s string) String {
 	return String{value: s}
+}
+
+func (String) kind() entryKind {
+	return valueEntryKind
 }
 
 func (s String) Equal(other String) bool {
@@ -91,6 +120,10 @@ func NewNumberFromString(s string) (Number, error) {
 	}
 
 	return Number{value: d}, nil
+}
+
+func (Number) kind() entryKind {
+	return valueEntryKind
 }
 
 func (n Number) Equal(other Number) bool {
@@ -210,8 +243,14 @@ func partType(expr string) exprType {
 	return unknownType
 }
 
-func parseParts(expr string) (Value, error) {
-	var v Value
+type tree []entry
+
+func (tree) kind() entryKind {
+	return treeEntryKind
+}
+
+func parseParts(expr string) (tree, error) {
+	exprTree := tree{}
 
 	for idx := 0; idx < len(expr); {
 		part, ptype, length, err := extractPart(expr[idx:])
@@ -225,35 +264,52 @@ func parseParts(expr string) (Value, error) {
 		}
 
 		fmt.Printf("idx: %d >> type: %d >> part: '%s'\n", idx, ptype, part)
+
 		switch ptype {
 		case numericalType:
-			v, err = NewNumberFromString(part)
+			v, err := NewNumberFromString(part)
 			if err != nil {
 				return nil, err
 			}
+			exprTree = append(exprTree, v)
 
 		case stringType:
-			v = NewString(part)
+			v := NewString(part)
+			exprTree = append(exprTree, v)
 
 		case operatorType:
 			// TODO: how to apply associativity (e.g. 1 + 2 * 3 = 7 and not 9)
-			panic("not implemented")
+			switch part {
+			case plus.String():
+				exprTree = append(exprTree, plus)
+			case minus.String():
+				exprTree = append(exprTree, minus)
+			case times.String():
+				exprTree = append(exprTree, times)
+			case dividedBy.String():
+				exprTree = append(exprTree, dividedBy)
+			case modulus.String():
+				exprTree = append(exprTree, modulus)
+			default:
+				return nil, errors.WithStack(newErrUnknownOperator(part))
+			}
 
 		case functionType:
 			// TODO: squash the leading and trailing '()'
 			fname, l, _ := readFunctionName(part)
 			fmt.Printf("  >>> sub: fname: '%s'\n", fname)
-			v, err = parseParts(part[l+1 : len(part)-1]) // exclude leading '(' and trailing ')'
+			v, err := parseParts(part[l+1 : len(part)-1]) // exclude leading '(' and trailing ')'
 			fmt.Printf("  <<< sub: fname: '%s' >> err: '%s'\n", fname, err)
 			if err != nil {
 				return nil, err
 			}
+			exprTree = append(exprTree, v)
 		}
 
 		idx += length
 	}
 
-	return v, nil
+	return exprTree, nil
 }
 
 func extractPart(expr string) (string, exprType, int, error) {
