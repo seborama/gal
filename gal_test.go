@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -13,72 +12,62 @@ func TestEval(t *testing.T) {
 	Eval(xpn)
 }
 
-func Test_extractPart(t *testing.T) {
-	expr := `"-3 + -4" + -3 --4`
-
-	p, _, j, err := extractPart(expr)
+func Test_buildExprTree_PlusMinus_String(t *testing.T) {
+	expr := `"-3 + -4" + -3 --4 / ( 1 + 2+3+4) +log(10)`
+	tree, err := buildExprTree(expr)
 	require.NoError(t, err)
-	if !cmp.Equal(`"-3 + -4"`, p) {
-		t.Error(cmp.Diff(`"-3 + -4"`, p))
-	}
-	i := j
-	assert.Equal(t, stringType, partType(p))
 
-	p, _, j, err = extractPart(expr[i:])
-	require.NoError(t, err)
-	if !cmp.Equal("+", p) {
-		t.Error(cmp.Diff("+", p))
+	expectedTree := Tree{
+		NewString(`"-3 + -4"`),
+		plus,
+		minus,
+		NewNumber(3),
+		plus,
+		NewNumber(4),
+		dividedBy,
+		Tree{
+			NewNumber(1),
+			plus,
+			NewNumber(2),
+			plus,
+			NewNumber(3),
+			plus,
+			NewNumber(4),
+		},
+		plus,
+		NewFunction(
+			"log",
+			Tree{
+				NewNumber(10),
+			},
+		),
 	}
-	i += j
-	assert.Equal(t, operatorType, partType(p))
 
-	p, _, j, err = extractPart(expr[i:])
-	require.NoError(t, err)
-	if !cmp.Equal("-3", p) {
-		t.Error(cmp.Diff("-3", p))
+	if !cmp.Equal(expectedTree, tree) {
+		t.Error(cmp.Diff(expectedTree, tree))
 	}
-	i += j
-	assert.Equal(t, numericalType, partType(p))
-
-	p, _, j, err = extractPart(expr[i:])
-	require.NoError(t, err)
-	if !cmp.Equal("-", p) {
-		t.Error(cmp.Diff("-", p))
-	}
-	i += j
-	assert.Equal(t, operatorType, partType(p))
-
-	p, _, j, err = extractPart(expr[i:])
-	require.NoError(t, err)
-	if !cmp.Equal("-4", p) {
-		t.Error(cmp.Diff("-4", p))
-	}
-	i += j
-	assert.Equal(t, numericalType, partType(p))
-
-	assert.Equal(t, len(expr), i)
 }
 
-func TestParse(t *testing.T) {
-	// expr := `"-3 + -4" + -3 --4 / ( 1 + 2+3+4)`
-	// v, err := parseParts(expr)
-	// require.NoError(t, err)
-	// if !cmp.Equal(Undefined{}, v) {
-	// 	t.Error(cmp.Diff(Undefined{}, v))
-	// }
-
-	// expr := `-3 --4 / ( 1 + 2+3+4)`
-	// v, err := parseParts(expr)
-	// require.NoError(t, err)
-	// if !cmp.Equal(NewNumberFromFloat(-2.6), v) {
-	// 	t.Error(cmp.Diff(Undefined{}, v))
-	// }
-
-	expr := `-1 + 2 * 3 / 2 + 1` // == 3  // -1 + ( 2 * 3 ) / 2 + ( 1 )
-	v, err := parseParts(expr)
+func Test_buildExprTree_VariousOperators(t *testing.T) {
+	expr := `-1 + 2 * 3 / 2 + 1` // == 3  // -1 + ( 2 * 3 / 2 ) + 1
+	tree, err := buildExprTree(expr)
 	require.NoError(t, err)
-	if !cmp.Equal(NewNumberFromFloat(-2.6), v) {
-		t.Error(cmp.Diff(Undefined{}, v))
+
+	expectedTree := Tree{
+		minus, // TODO: this should either be preceded with '0' or removed in favour of next line changing to NewNumber(-1)
+		NewNumber(1),
+		plus,
+		NewNumber(2),
+		times,
+		NewNumber(3),
+		dividedBy,
+		NewNumber(2),
+		plus,
+		NewNumber(1),
+	}
+
+	if !cmp.Equal(expectedTree, tree) {
+		t.Error(cmp.Diff(expectedTree, tree))
 	}
 }
 

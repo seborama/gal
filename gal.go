@@ -42,6 +42,26 @@ func (o Operator) String() string {
 	return string(o)
 }
 
+type Function struct {
+	Name string
+	Tree Tree
+}
+
+func NewFunction(name string, tree Tree) *Function {
+	return &Function{
+		Name: name,
+		Tree: tree,
+	}
+}
+
+func (Function) kind() entryKind {
+	return functionEntryKind
+}
+
+func (f Function) String() string {
+	return string(f.Name)
+}
+
 type entryKind int
 
 const (
@@ -49,6 +69,7 @@ const (
 	valueEntryKind
 	operatorEntryKind
 	treeEntryKind
+	functionEntryKind
 )
 
 type entry interface {
@@ -164,93 +185,23 @@ func (Undefined) String() string {
 	return "undefined"
 }
 
-func Eval(expr string) Value {
-	v := eval(expr)
-	fmt.Printf("result value: '%+s'\n", v.String())
-	return v
-}
+type Tree []entry
 
-func eval(expr string) Value {
-	var v Value
-
-	length := len(expr)
-
-	for i := 0; i < length; i++ {
-		j := 0
-		if i == 0 { // Yuk: move that out of the loop and refactor
-			v, j = value(expr[i:])
-			i += j
-		}
-
-		var o Operator
-		o, j = operator(expr[i:])
-		i += j
-
-		v, j = operate(o, v, expr[i:])
-		i += j
-	}
-
-	return v
-}
-
-func value(expr string) (Value, int) {
-	// part := extractPart(expr)
-
-	// if part[0] == '"' {
-	// 	return NewString(part), len(part)
-	// }
-
-	// if v, err := NewNumberFromString(part); err == nil {
-	// 	return v, len(part)
-	// }
-
-	panic("should never reached this point")
-}
-
-func operator(expr string) (Operator, int) {
-	length := len(expr)
-
-	for i := 0; i < length; i++ {
-		// part := extractPart(expr[i:])
-		// i += len(part)
-
-		// switch partType {
-		// case operatorType:
-		// 	switch part {
-		// 	case "+":
-		// 		return plus, i
-		// 	}
-		// 	panic("should never reached this point")
-		// }
-	}
-
-	panic("should never reached this point")
-}
-
-func partType(expr string) exprType {
-	if expr[0] == '"' && expr[len(expr)-1] == '"' {
-		return stringType
-	}
-
-	if _, err := decimal.NewFromString(expr); err == nil {
-		return numericalType
-	}
-
-	if isOperator(expr) {
-		return operatorType
-	}
-
-	return unknownType
-}
-
-type tree []entry
-
-func (tree) kind() entryKind {
+func (Tree) kind() entryKind {
 	return treeEntryKind
 }
 
-func parseParts(expr string) (tree, error) {
-	exprTree := tree{}
+func Eval(expr string) Value {
+	panic("TODO")
+}
+
+func parseParts(expr string) (Value, error) {
+	// TODO: how to apply associativity (e.g. 1 + 2 * 3 = 7 and not 9)
+	panic("TODO")
+}
+
+func buildExprTree(expr string) (Tree, error) {
+	exprTree := Tree{}
 
 	for idx := 0; idx < len(expr); {
 		part, ptype, length, err := extractPart(expr[idx:])
@@ -278,7 +229,6 @@ func parseParts(expr string) (tree, error) {
 			exprTree = append(exprTree, v)
 
 		case operatorType:
-			// TODO: how to apply associativity (e.g. 1 + 2 * 3 = 7 and not 9)
 			switch part {
 			case plus.String():
 				exprTree = append(exprTree, plus)
@@ -298,18 +248,28 @@ func parseParts(expr string) (tree, error) {
 			// TODO: squash the leading and trailing '()'
 			fname, l, _ := readFunctionName(part)
 			fmt.Printf("  >>> sub: fname: '%s'\n", fname)
-			v, err := parseParts(part[l+1 : len(part)-1]) // exclude leading '(' and trailing ')'
-			fmt.Printf("  <<< sub: fname: '%s' >> err: '%s'\n", fname, err)
+			v, err := buildExprTree(part[l+1 : len(part)-1]) // exclude leading '(' and trailing ')'
+			fmt.Printf("  <<< sub: fname: '%s' >> err: '%v'\n", fname, err)
 			if err != nil {
 				return nil, err
 			}
-			exprTree = append(exprTree, v)
+			if fname == "" {
+				exprTree = append(exprTree, v)
+			} else {
+				exprTree = append(exprTree, NewFunction(fname, v))
+			}
 		}
 
 		idx += length
 	}
 
 	return exprTree, nil
+}
+
+func prioritiseExprTreeOperators(expr string) (Tree, error) {
+	// TODO perhaps more functions like this one needed to deal with leading negative numbers
+	// such as in "-1 + 3" or in "1 + func(-10)" or again "1 + (-3)"
+	panic("TODO")
 }
 
 func extractPart(expr string) (string, exprType, int, error) {
@@ -521,67 +481,4 @@ func isBlankSpace(r rune) bool {
 
 func isOperator(s string) bool {
 	return s == "+" || s == "-" || s == "/" || s == "*" || s == "^" || s == "%"
-}
-
-func getValueType(c rune) exprType {
-	switch {
-	case c == ' ', c == '\t', c == '\n':
-		return blankType
-
-	case c >= '0' && c <= '9',
-		c == '-',
-		c == '_',
-		c == '.':
-		return numericalType
-
-	case c >= 'a' && c <= 'z',
-		c >= 'A' && c <= 'Z',
-		c == '_':
-		return stringType
-
-	default:
-		return unknownType
-	}
-}
-
-func getOperatorType(c rune) exprType {
-	switch {
-	case c == ' ', c == '\t', c == '\n':
-		return blankType
-
-	case c >= '0' && c <= '9',
-		c == '_',
-		c == '.':
-		return numericalType
-
-	case c >= 'a' && c <= 'z',
-		c >= 'A' && c <= 'Z',
-		c == '_':
-		return stringType
-
-	case c == '+',
-		c == '-',
-		c == '*',
-		c == '/',
-		c == '^',
-		c == '%':
-		return operatorType
-
-	default:
-		return unknownType
-	}
-}
-
-func operate(op Operator, lhsValue Value, expr string) (Value, int) {
-	rhsValue, i := value(expr)
-
-	if op == plus {
-		return add(lhsValue, rhsValue), i
-	}
-
-	panic("not implemented yet")
-}
-
-func add(a, b Value) Value {
-	return a.Add(b)
 }
