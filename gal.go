@@ -77,12 +77,24 @@ type entry interface {
 }
 
 const (
-	plus      Operator = "+"
-	minus     Operator = "-"
-	times     Operator = "*"
-	dividedBy Operator = "/"
-	modulus   Operator = "%"
+	invalidOperator Operator = ""
+	plus            Operator = "+"
+	minus           Operator = "-"
+	times           Operator = "*"
+	dividedBy       Operator = "/"
+	modulus         Operator = "%"
 )
+
+func operatorPrecedence(o Operator) int {
+	switch o {
+	case plus, minus:
+		return 0
+	case times, dividedBy, modulus:
+		return 1
+	default:
+		panic("unknown operator: " + o.String())
+	}
+}
 
 type String struct {
 	value string
@@ -266,10 +278,64 @@ func buildExprTree(expr string) (Tree, error) {
 	return exprTree, nil
 }
 
-func prioritiseExprTreeOperators(expr string) (Tree, error) {
+func prioritiseExprTreeOperators(tree Tree) Tree {
 	// TODO perhaps more functions like this one needed to deal with leading negative numbers
 	// such as in "-1 + 3" or in "1 + func(-10)" or again "1 + (-3)"
-	panic("TODO")
+	outTree := Tree{}
+
+	for i := 0; i < len(tree); i++ {
+		e := tree[i]
+
+		switch e.kind() {
+		case treeEntryKind:
+			subtree := prioritiseExprTreeOperators(e.(Tree))
+			outTree = append(outTree, subtree)
+			continue
+
+		case operatorEntryKind:
+			currentOperatorPrecedence := operatorPrecedence(e.(Operator))
+
+			nextOperator := invalidOperator
+
+			// TODO: check that i+1 is not out of range
+			// TODO: does not (should it?) support expressions such as: 1+2+3 4*5
+			for _, e2 := range tree[i+1:] {
+				if e2.kind() == operatorEntryKind {
+					nextOperator = e2.(Operator)
+					break
+				}
+			}
+
+			outTree = append(outTree, e)
+
+			if nextOperator == invalidOperator || operatorPrecedence(nextOperator) <= currentOperatorPrecedence {
+				continue
+			}
+
+			subTree := Tree{}
+
+			// TODO: check that i+1 is not out of range
+			// TODO: does not (should it?) support expressions such as: 1+2+3 4*5
+			for _, e2 := range tree[i+1:] {
+				if e2.kind() == operatorEntryKind && operatorPrecedence(e2.(Operator)) != operatorPrecedence(nextOperator) {
+					break
+				}
+				subTree = append(subTree, e2)
+				i++
+			}
+
+			outTree = append(outTree, subTree)
+
+			i++
+			outTree = append(outTree, tree[i])
+
+		default:
+			outTree = append(outTree, e)
+			continue
+		}
+	}
+
+	return outTree
 }
 
 func extractPart(expr string) (string, exprType, int, error) {
