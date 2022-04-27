@@ -96,120 +96,20 @@ func operatorPrecedence(o Operator) int {
 	}
 }
 
-type String struct {
-	value string
-}
-
-func NewString(s string) String {
-	return String{value: s}
-}
-
-func (String) kind() entryKind {
-	return valueEntryKind
-}
-
-func (s String) Equal(other String) bool {
-	return s.value == other.value
-}
-
-func (s String) Add(other Value) Value {
-	switch v := other.(type) {
-	case String:
-		return String{value: s.value + v.value}
-	}
-
-	v, ok := other.(stringer)
-	if !ok {
-		return Undefined{}
-	}
-
-	return String{value: s.value + v.String()}
-}
-
-func (s String) String() string {
-	return s.value
-}
-
-type Number struct {
-	value decimal.Decimal
-}
-
-func NewNumber(i int64) Number {
-	d := decimal.NewFromInt(i)
-
-	return Number{value: d}
-}
-
-func NewNumberFromFloat(f float64) Number {
-	d := decimal.NewFromFloat(f)
-
-	return Number{value: d}
-}
-
-func NewNumberFromString(s string) (Number, error) {
-	d, err := decimal.NewFromString(s)
-	if err != nil {
-		return Number{}, errors.WithStack(err)
-	}
-
-	return Number{value: d}, nil
-}
-
-func (Number) kind() entryKind {
-	return valueEntryKind
-}
-
-func (n Number) Equal(other Number) bool {
-	return n.value.Equal(other.value)
-}
-
-func (n Number) Add(other Value) Value {
-	switch v := other.(type) {
-	case Number:
-		return Number{value: n.value.Add(v.value)}
-	}
-
-	v, ok := other.(numberer)
-	if !ok {
-		return Undefined{}
-	}
-
-	return Number{
-		value: n.value.Add(v.Number()),
-	}
-}
-
-func (n Number) String() string {
-	return n.value.String()
-}
-
-type Undefined struct{}
-
-func (Undefined) Equal(other Undefined) bool {
-	return true
-}
-
-func (Undefined) Add(Value) Value {
-	return Undefined{}
-}
-
-func (Undefined) String() string {
-	return "undefined"
-}
-
-type Tree []entry
-
-func (Tree) kind() entryKind {
-	return treeEntryKind
-}
-
 func Eval(expr string) Value {
 	panic("TODO")
 }
 
+// TODO: perhaps return []Value rather than Value
 func parseParts(expr string) (Value, error) {
-	// TODO: how to apply associativity (e.g. 1 + 2 * 3 = 7 and not 9)
-	panic("TODO")
+	tree, err := buildExprTree(expr)
+	if err != nil {
+		return nil, err
+	}
+
+	value := tree.PrioritiseOperators().Eval()
+
+	return value, nil
 }
 
 func buildExprTree(expr string) (Tree, error) {
@@ -276,66 +176,6 @@ func buildExprTree(expr string) (Tree, error) {
 	}
 
 	return exprTree, nil
-}
-
-func prioritiseExprTreeOperators(tree Tree) Tree {
-	// TODO perhaps more functions like this one needed to deal with leading negative numbers
-	// such as in "-1 + 3" or in "1 + func(-10)" or again "1 + (-3)"
-	outTree := Tree{}
-
-	for i := 0; i < len(tree); i++ {
-		e := tree[i]
-
-		switch e.kind() {
-		case treeEntryKind:
-			subtree := prioritiseExprTreeOperators(e.(Tree))
-			outTree = append(outTree, subtree)
-			continue
-
-		case operatorEntryKind:
-			currentOperatorPrecedence := operatorPrecedence(e.(Operator))
-
-			nextOperator := invalidOperator
-
-			// TODO: check that i+1 is not out of range
-			// TODO: does not (should it?) support expressions such as: 1+2+3 4*5
-			for _, e2 := range tree[i+1:] {
-				if e2.kind() == operatorEntryKind {
-					nextOperator = e2.(Operator)
-					break
-				}
-			}
-
-			outTree = append(outTree, e)
-
-			if nextOperator == invalidOperator || operatorPrecedence(nextOperator) <= currentOperatorPrecedence {
-				continue
-			}
-
-			subTree := Tree{}
-
-			// TODO: check that i+1 is not out of range
-			// TODO: does not (should it?) support expressions such as: 1+2+3 4*5
-			for _, e2 := range tree[i+1:] {
-				if e2.kind() == operatorEntryKind && operatorPrecedence(e2.(Operator)) != operatorPrecedence(nextOperator) {
-					break
-				}
-				subTree = append(subTree, e2)
-				i++
-			}
-
-			outTree = append(outTree, subTree)
-
-			i++
-			outTree = append(outTree, tree[i])
-
-		default:
-			outTree = append(outTree, e)
-			continue
-		}
-	}
-
-	return outTree
 }
 
 func extractPart(expr string) (string, exprType, int, error) {
@@ -437,12 +277,12 @@ func readVariable(expr string) (string, int, error) {
 			break
 		}
 		if isBlankSpace(r) {
-			return "", 0, errors.WithStack(newErrSyntaxError(fmt.Sprintf("invalid character '%c' for variable name '%s'\n", r, expr[:to])))
+			return "", 0, errors.WithStack(newErrSyntaxError(fmt.Sprintf("invalid character '%c' for variable name '%s'", r, expr[:to])))
 		}
 	}
 
 	if expr[to-1] != ':' {
-		return "", 0, errors.WithStack(newErrSyntaxError(fmt.Sprintf("missing ':' to end variable '%s'\n", expr[:to])))
+		return "", 0, errors.WithStack(newErrSyntaxError(fmt.Sprintf("missing ':' to end variable '%s'", expr[:to])))
 	}
 
 	return expr[:to], to, nil
@@ -510,7 +350,7 @@ func readNumber(expr string) (string, int, error) {
 			continue
 		}
 
-		return "", 0, errors.WithStack(newErrSyntaxError(fmt.Sprintf("invalid character '%c' for number '%s'\n", r, expr[:to])))
+		return "", 0, errors.WithStack(newErrSyntaxError(fmt.Sprintf("invalid character '%c' for number '%s'", r, expr[:to])))
 	}
 
 	return expr[:to], to, nil
