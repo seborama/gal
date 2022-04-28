@@ -3,16 +3,45 @@ package gal
 type Tree []entry
 
 func (tree Tree) Eval() Value {
+	var val Value
+	var op Operator = invalidOperator
+
 	for i := 0; i < len(tree); i++ {
 		e := tree[i]
 
 		switch e.kind() {
+		case valueEntryKind:
+			if val == nil && op == invalidOperator {
+				val = e.(Value)
+				continue
+			}
+
+			if val == nil {
+				return NewUndefinedWithReason("syntax error: nil value cannot be operated upon (op='" + op.String() + "')")
+			}
+
+			switch op {
+			case plus:
+				val = val.Add(e.(Value))
+
+			case times:
+				val = val.Times(e.(Value))
+
+			default:
+				panic("TODO")
+			}
+
 		case treeEntryKind:
+
 		case operatorEntryKind:
+			op = e.(Operator)
+
 		default:
+			panic("TODO")
 		}
 	}
-	panic("TODO")
+
+	return val
 }
 
 func (tree Tree) PrioritiseOperators() Tree {

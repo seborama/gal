@@ -29,6 +29,7 @@ type numberer interface {
 
 type Value interface {
 	Add(Value) Value
+	Times(Value) Value
 	stringer
 }
 

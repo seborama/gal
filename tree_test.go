@@ -73,3 +73,36 @@ func TestTree_PrioritiseOperators(t *testing.T) {
 		t.Error(cmp.Diff(expectedTree, outTree))
 	}
 }
+
+func TestTree_Eval_SimplePlus(t *testing.T) {
+	tree := Tree{
+		NewNumber(3),
+		plus,
+		NewNumber(-4),
+		times,
+		NewNumber(-2),
+		plus,
+		NewNumber(5),
+	}
+
+	val := tree.Eval()
+
+	expected := NewNumber(7)
+	if !cmp.Equal(expected, val) {
+		t.Error(cmp.Diff(expected, val))
+	}
+}
+
+func TestTree_Eval_InvalidExpression(t *testing.T) {
+	tree := Tree{
+		times,
+		NewNumber(-4),
+	}
+
+	val := tree.Eval()
+
+	expected := Undefined{reason: "syntax error: nil value cannot be operated upon (op='*')"}
+	if !cmp.Equal(expected, val) {
+		t.Error(cmp.Diff(expected, val))
+	}
+}

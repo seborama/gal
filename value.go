@@ -1,6 +1,8 @@
 package gal
 
 import (
+	"strings"
+
 	"github.com/pkg/errors"
 	"github.com/shopspring/decimal"
 )
@@ -25,6 +27,24 @@ func (s String) Add(other Value) Value {
 	switch v := other.(type) {
 	case String:
 		return String{value: s.value + v.value}
+	}
+
+	v, ok := other.(stringer)
+	if !ok {
+		return Undefined{}
+	}
+
+	return String{value: s.value + v.String()}
+}
+
+func (s String) Times(other Value) Value {
+	switch v := other.(type) {
+	case Number:
+		if !v.value.IsInteger() {
+			return Undefined{}
+		}
+
+		return String{value: strings.Repeat(s.value, int(v.value.IntPart()))}
 	}
 
 	v, ok := other.(stringer)
@@ -88,17 +108,49 @@ func (n Number) Add(other Value) Value {
 	}
 }
 
+func (n Number) Times(other Value) Value {
+	switch v := other.(type) {
+	case Number:
+		return Number{value: n.value.Mul(v.value)}
+	}
+
+	v, ok := other.(numberer)
+	if !ok {
+		return Undefined{}
+	}
+
+	return Number{
+		value: n.value.Mul(v.Number()),
+	}
+}
+
 func (n Number) String() string {
 	return n.value.String()
 }
 
-type Undefined struct{}
+type Undefined struct {
+	reason string // optional
+}
 
-func (Undefined) Equal(other Undefined) bool {
-	return true
+func NewUndefined() Undefined {
+	return Undefined{}
+}
+
+func NewUndefinedWithReason(reason string) Undefined {
+	return Undefined{
+		reason: reason,
+	}
+}
+
+func (u Undefined) Equal(other Undefined) bool {
+	return u.reason == other.reason
 }
 
 func (Undefined) Add(Value) Value {
+	return Undefined{}
+}
+
+func (Undefined) Times(Value) Value {
 	return Undefined{}
 }
 
