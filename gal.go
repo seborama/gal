@@ -16,7 +16,7 @@ const (
 	stringType
 	variableType
 	functionType
-	blankType // TODO: remove
+	blankType // TODO: remove since it's a non-expression
 )
 
 type stringer interface {
@@ -30,18 +30,9 @@ type numberer interface {
 type Value interface {
 	Add(Value) Value
 	Sub(Value) Value
-	Times(Value) Value
+	Multiply(Value) Value
+	PowerOf(Value) Value
 	stringer
-}
-
-type Operator string
-
-func (Operator) kind() entryKind {
-	return operatorEntryKind
-}
-
-func (o Operator) String() string {
-	return string(o)
 }
 
 type Function struct {
@@ -78,26 +69,6 @@ type entry interface {
 	kind() entryKind
 }
 
-const (
-	invalidOperator Operator = ""
-	plus            Operator = "+"
-	minus           Operator = "-"
-	times           Operator = "*"
-	dividedBy       Operator = "/"
-	modulus         Operator = "%"
-)
-
-func operatorPrecedence(o Operator) int {
-	switch o {
-	case plus, minus:
-		return 0
-	case times, dividedBy, modulus:
-		return 1
-	default:
-		panic("unknown operator: " + o.String())
-	}
-}
-
 // TODO: perhaps return []Value rather than Value
 func Eval(expr string) Value {
 	tree, err := parseExpression(expr)
@@ -114,7 +85,7 @@ func parseExpression(expr string) (Tree, error) {
 		return nil, err
 	}
 
-	return tree.PrioritiseOperators(), nil
+	return tree, nil
 }
 
 func buildExprTree(expr string) (Tree, error) {
@@ -151,10 +122,10 @@ func buildExprTree(expr string) (Tree, error) {
 				exprTree = append(exprTree, plus)
 			case minus.String():
 				exprTree = append(exprTree, minus)
-			case times.String():
-				exprTree = append(exprTree, times)
-			case dividedBy.String():
-				exprTree = append(exprTree, dividedBy)
+			case multiply.String():
+				exprTree = append(exprTree, multiply)
+			case divide.String():
+				exprTree = append(exprTree, divide)
 			case modulus.String():
 				exprTree = append(exprTree, modulus)
 			default:

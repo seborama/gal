@@ -24,24 +24,22 @@ func (s String) Equal(other String) bool {
 }
 
 func (s String) Add(other Value) Value {
-	switch v := other.(type) {
-	case String:
+	if v, ok := other.(String); ok {
 		return String{value: s.value + v.value}
 	}
 
-	v, ok := other.(stringer)
-	if !ok {
-		return Undefined{}
+	if v, ok := other.(stringer); ok {
+		return String{value: s.value + v.String()}
 	}
 
-	return String{value: s.value + v.String()}
+	return Undefined{}
 }
 
 func (s String) Sub(other Value) Value {
 	return Undefined{}
 }
 
-func (s String) Times(other Value) Value {
+func (s String) Multiply(other Value) Value {
 	switch v := other.(type) {
 	case Number:
 		if !v.value.IsInteger() {
@@ -57,6 +55,10 @@ func (s String) Times(other Value) Value {
 	}
 
 	return String{value: s.value + v.String()}
+}
+
+func (s String) PowerOf(Value) Value {
+	return Undefined{}
 }
 
 func (s String) String() string {
@@ -128,19 +130,41 @@ func (n Number) Sub(other Value) Value {
 	}
 }
 
-func (n Number) Times(other Value) Value {
-	switch v := other.(type) {
-	case Number:
-		return Number{value: n.value.Mul(v.value)}
+func (n Number) Multiply(other Value) Value {
+	if v, ok := other.(Number); ok {
+		return Number{
+			value: n.value.Mul(v.value),
+		}
 	}
 
-	v, ok := other.(numberer)
-	if !ok {
-		return Undefined{}
+	if v, ok := other.(numberer); ok {
+		return Number{
+			value: n.value.Mul(v.Number()),
+		}
 	}
 
+	return Undefined{}
+}
+
+func (n Number) PowerOf(other Value) Value {
+	if v, ok := other.(Number); ok {
+		return Number{
+			value: n.value.Pow(v.value),
+		}
+	}
+
+	if v, ok := other.(numberer); ok {
+		return Number{
+			value: n.value.Mul(v.Number()),
+		}
+	}
+
+	return Undefined{}
+}
+
+func (n Number) Neg() Number {
 	return Number{
-		value: n.value.Mul(v.Number()),
+		value: n.value.Neg(),
 	}
 }
 
@@ -162,6 +186,10 @@ func NewUndefinedWithReason(reason string) Undefined {
 	}
 }
 
+func (Undefined) kind() entryKind {
+	return unknownEntryKind
+}
+
 func (u Undefined) Equal(other Undefined) bool {
 	return u.reason == other.reason
 }
@@ -174,7 +202,11 @@ func (Undefined) Sub(Value) Value {
 	return Undefined{}
 }
 
-func (Undefined) Times(Value) Value {
+func (Undefined) Multiply(Value) Value {
+	return Undefined{}
+}
+
+func (Undefined) PowerOf(Value) Value {
 	return Undefined{}
 }
 
