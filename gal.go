@@ -366,10 +366,10 @@ func squashPlusMinusChain(expr string) (string, int) {
 	outcomeSign := 1
 
 	for _, r := range expr {
-		if isBlankSpace(r) {
-			break
-		}
-		if r != '+' && r != '-' {
+		// if isBlankSpace(r) {
+		// 	break
+		// }
+		if r != '+' && r != '-' && !isBlankSpace(r) {
 			break
 		}
 		if r == '-' {

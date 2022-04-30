@@ -5,6 +5,7 @@ type Tree []entry
 func (tree Tree) Eval() Value {
 	var val Value
 	var op Operator = invalidOperator
+	var prevEntry entry
 
 	for i := 0; i < len(tree); i++ {
 		e := tree[i]
@@ -38,6 +39,11 @@ func (tree Tree) Eval() Value {
 
 		case operatorEntryKind:
 			op = e.(Operator)
+			if prevEntry != nil &&
+				prevEntry == e &&
+				e != plus && e != minus {
+				return NewUndefinedWithReason("syntax error: operator '" + prevEntry.(Operator).String() + "' is followed by operator '" + op.String() + "')")
+			}
 
 		default:
 			panic("TODO")

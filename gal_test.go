@@ -41,7 +41,7 @@ func TestParse_FunctionName(t *testing.T) {
 }
 
 func TestParse_Operator(t *testing.T) {
-	expr := `+++----+---+2`
+	expr := `+ ++- ---+-- -+2`
 	extractPart(expr)
 }
 
@@ -93,7 +93,6 @@ func Test_buildExprTree_PlusMinus_String(t *testing.T) {
 
 	expectedTree := Tree{
 		NewString(`"-3 + -4"`),
-		plus,
 		minus,
 		NewNumber(3),
 		plus,
