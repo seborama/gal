@@ -24,6 +24,9 @@ func (tree Tree) Eval() Value {
 			case plus:
 				val = val.Add(e.(Value))
 
+			case minus:
+				val = val.Sub(e.(Value))
+
 			case times:
 				val = val.Times(e.(Value))
 

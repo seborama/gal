@@ -74,20 +74,20 @@ func TestTree_PrioritiseOperators(t *testing.T) {
 	}
 }
 
-func TestTree_Eval_SimplePlus(t *testing.T) {
+func TestTree_Eval_SimpleOps(t *testing.T) {
 	tree := Tree{
 		NewNumber(3),
 		plus,
 		NewNumber(-4),
 		times,
 		NewNumber(-2),
-		plus,
+		minus,
 		NewNumber(5),
 	}
 
 	val := tree.Eval()
 
-	expected := NewNumber(7)
+	expected := NewNumber(-3)
 	if !cmp.Equal(expected, val) {
 		t.Error(cmp.Diff(expected, val))
 	}

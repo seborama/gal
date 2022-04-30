@@ -29,6 +29,7 @@ type numberer interface {
 
 type Value interface {
 	Add(Value) Value
+	Sub(Value) Value
 	Times(Value) Value
 	stringer
 }
@@ -97,20 +98,23 @@ func operatorPrecedence(o Operator) int {
 	}
 }
 
+// TODO: perhaps return []Value rather than Value
 func Eval(expr string) Value {
-	panic("TODO")
+	tree, err := parseExpression(expr)
+	if err != nil {
+		return NewUndefinedWithReason(err.Error())
+	}
+
+	return tree.Eval()
 }
 
-// TODO: perhaps return []Value rather than Value
-func parseParts(expr string) (Value, error) {
+func parseExpression(expr string) (Tree, error) {
 	tree, err := buildExprTree(expr)
 	if err != nil {
 		return nil, err
 	}
 
-	value := tree.PrioritiseOperators().Eval()
-
-	return value, nil
+	return tree.PrioritiseOperators(), nil
 }
 
 func buildExprTree(expr string) (Tree, error) {

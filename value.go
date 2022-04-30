@@ -37,6 +37,10 @@ func (s String) Add(other Value) Value {
 	return String{value: s.value + v.String()}
 }
 
+func (s String) Sub(other Value) Value {
+	return Undefined{}
+}
+
 func (s String) Times(other Value) Value {
 	switch v := other.(type) {
 	case Number:
@@ -108,6 +112,22 @@ func (n Number) Add(other Value) Value {
 	}
 }
 
+func (n Number) Sub(other Value) Value {
+	switch v := other.(type) {
+	case Number:
+		return Number{value: n.value.Sub(v.value)}
+	}
+
+	v, ok := other.(numberer)
+	if !ok {
+		return Undefined{}
+	}
+
+	return Number{
+		value: n.value.Sub(v.Number()),
+	}
+}
+
 func (n Number) Times(other Value) Value {
 	switch v := other.(type) {
 	case Number:
@@ -147,6 +167,10 @@ func (u Undefined) Equal(other Undefined) bool {
 }
 
 func (Undefined) Add(Value) Value {
+	return Undefined{}
+}
+
+func (Undefined) Sub(Value) Value {
 	return Undefined{}
 }
 
