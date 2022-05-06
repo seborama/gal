@@ -1,11 +1,15 @@
 package gal
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type Tree []entry
 
 func (tree Tree) Eval() Value {
+	fmt.Println("DEBUG start of Eval: tree=", tree)
 	workingTree := tree.CleanUp()
+	fmt.Println("DEBUG cleaned-up tree:", tree)
 
 	var val Value
 	var op Operator = invalidOperator
@@ -27,16 +31,15 @@ func (tree Tree) Eval() Value {
 			val = calculate(val, op, e.(Value))
 
 		case treeEntryKind:
-			if val == nil && op == invalidOperator {
-				val = e.(Value)
-				continue
-			}
-
-			if val == nil {
+			if val == nil && op != invalidOperator {
 				return NewUndefinedWithReason("syntax error: nil value cannot be operated upon (op='" + op.String() + "')")
 			}
 
 			rhsVal := e.(Tree).Eval()
+			if val == nil {
+				val = rhsVal
+				continue
+			}
 
 			val = calculate(val, op, rhsVal)
 
@@ -45,7 +48,7 @@ func (tree Tree) Eval() Value {
 
 		case unknownEntryKind:
 			// TODO: distinguish between unknownEntryKind and undefinedEntryKind (which is a Value)
-			return workingTree[0].(Value)
+			return e.(Value)
 
 		default:
 			panic("TODO")
@@ -95,15 +98,6 @@ func (tree Tree) cleansePlusMinusTreeStart() Tree {
 		e := tree[i]
 
 		switch e.kind() {
-		case treeEntryKind:
-			subtree := e.(Tree).cleansePlusMinusTreeStart()
-			// TODO: test subtree[0] exists
-			if subtree[0].kind() == unknownEntryKind {
-				return subtree
-			}
-			outTree = append(outTree, subtree)
-			continue
-
 		case operatorEntryKind:
 			if i != 0 {
 				outTree = append(outTree, e)
@@ -125,6 +119,7 @@ func (tree Tree) cleansePlusMinusTreeStart() Tree {
 						continue
 					}
 
+					// TODO: is checking for all these syntax error conditions here truly necessary?
 					return Tree{
 						NewUndefinedWithReason("syntax error: attempt to negate non-number at start of tree"),
 					}
@@ -155,27 +150,32 @@ func (tree Tree) cleansePlusMinusTreeStart() Tree {
 //       this could be through splitting expressions that produce multiple values as []Tree.
 func (tree Tree) prioritiseOperators() Tree {
 	outTree := Tree{}
+	fmt.Println("DEBUG start of prioritiseOperators: tree=", tree)
 
 	for i := 0; i < len(tree); i++ {
 		e := tree[i]
+		fmt.Println("DEBUG - i=", i, "e=", e, "outTree=", outTree)
 
 		switch e.kind() {
-		case treeEntryKind:
-			subtree := e.(Tree).prioritiseOperators()
-			outTree = append(outTree, subtree)
-			continue
-
 		case operatorEntryKind:
 			outTree = append(outTree, e)
 
 			subTree := associateOnIncreasedPrecedence(tree[i:])
 			fmt.Println("DEBUG - i", i, "subTree", subTree)
-			if len(subTree) == 0 {
+
+			lenSubTree := len(subTree)
+			i += len(subTree)
+
+			if lenSubTree == 0 {
+				continue
+			}
+
+			if lenSubTree == 1 { // TODO: is thiis still necessary?
+				outTree = append(outTree, subTree[0])
 				continue
 			}
 
 			outTree = append(outTree, subTree)
-			i += len(subTree)
 
 		default:
 			outTree = append(outTree, e)
@@ -183,48 +183,71 @@ func (tree Tree) prioritiseOperators() Tree {
 		}
 	}
 
+	fmt.Println("DEBUG end of prioritiseOperators: outTree=", outTree)
 	return outTree
 }
 
 func associateOnIncreasedPrecedence(tree Tree) Tree {
-	currentOperatorPrecedence := operatorPrecedence(tree[0].(Operator))
+	fmt.Println("DEBUG start of associateOnIncreasedPrecedence: tree=", tree)
+	currentOperator := tree[0].(Operator)
 
-	// fetch the next available operator so to compare precedence and decide
-	// on associativity
-	nextOperator := invalidOperator
+	shift := 1
+	nextOperatorIdx := findNextOperator(tree[shift:]) // TODO: check tree[1] is not out of range
 
-	// TODO: check tree[1] is not out of range
-	for _, e := range tree[1:] {
-		if e.kind() == operatorEntryKind {
-			nextOperator = e.(Operator)
-			break
-		}
+	if nextOperatorIdx == -1 {
+		// no operator in the remainder of the tree
+		return tree[shift:]
 	}
 
-	// when no operator exists in the remainder of the tree (i.e. presumably only a
-	// right hand side operand remains) or when the precedence of the next operator is not
-	// greater than the current operator, keep processing the tree naturally, left to right,
-	// in the current associative context (which may be the root tree).
-	if nextOperator == invalidOperator ||
-		operatorPrecedence(nextOperator) <= currentOperatorPrecedence {
-		return nil
+	nextOperatorIdx += shift
+	nextOperator := tree[nextOperatorIdx].(Operator)
+
+	pComp := compareOperatorPrecedence(currentOperator, nextOperator)
+	if pComp <= 0 {
+		// next operator is of lesser or equal precedence
+		return tree[shift:nextOperatorIdx]
 	}
 
-	// the next operator has a greater precedence, start a new sub-tree to creative a new
-	// associative context.
-	var subTree Tree
+	subTree := tree[shift : nextOperatorIdx+1]
+	fmt.Println("DEBUG cuurenOp:", currentOperator, "subTree1=", subTree, "nextOp", nextOperator)
 
-	// TODO: check tree[1] is not out of range
-	for _, e := range tree[1:] {
-		// TODO: if e is a sub-tree, it should be recursively processed by prioritiseOperators too
-		if e.kind() == operatorEntryKind &&
-			operatorPrecedence(e.(Operator)) != operatorPrecedence(nextOperator) {
-			break
-		}
-		subTree = append(subTree, e)
-	}
+	moreTreeParts := associateOnIncreasedPrecedence(tree[nextOperatorIdx:])
+	subTree = append(subTree, moreTreeParts...)
+	fmt.Println("DEBUG subTree2=", subTree)
 
 	return subTree
+}
+
+// returns -1 if none found
+func findNextOperator(tree Tree) int {
+	pos := 0
+
+	for _, e := range tree[pos:] {
+		if e.kind() == operatorEntryKind {
+			return pos
+		}
+		pos++
+	}
+
+	return -1
+}
+
+// returns -1 if operator b has a lesser precedence than operator a.
+// returns 0 if both operators have the same precedence.
+// returns 1 if operator b has a greater precedence than operator a.
+func compareOperatorPrecedence(a, b Operator) int {
+	precA := operatorPrecedence(a)
+	precB := operatorPrecedence(b)
+
+	if precA == precB {
+		return 0
+	}
+
+	if precB < precA {
+		return -1
+	}
+
+	return 1
 }
 
 func (Tree) kind() entryKind {
