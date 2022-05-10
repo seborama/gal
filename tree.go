@@ -6,16 +6,33 @@ import (
 
 type Tree []entry
 
+func (tree Tree) TruncLen() int {
+	return len(tree)
+}
+
+func (tree Tree) FullLen() int {
+	l := len(tree)
+
+	for _, e := range tree {
+		if subTree, ok := e.(Tree); ok {
+			l += subTree.FullLen() - 1
+		}
+	}
+
+	return l
+}
+
 func (tree Tree) Eval() Value {
 	fmt.Println("DEBUG start of Eval: tree=", tree)
 	workingTree := tree.CleanUp()
-	fmt.Println("DEBUG cleaned-up tree:", tree)
+	fmt.Println("DEBUG cleaned-up tree:", workingTree)
 
 	var val Value
 	var op Operator = invalidOperator
 
 	for i := 0; i < len(workingTree); i++ {
 		e := workingTree[i]
+		fmt.Println("DEBUG - Eval - i:", i, "e:", e)
 
 		switch e.kind() {
 		case valueEntryKind:
@@ -75,7 +92,7 @@ func calculate(lhs Value, op Operator, rhs Value) Value {
 		outVal = lhs.PowerOf(rhs)
 
 	default:
-		panic("TODO")
+		panic(fmt.Sprintf("unimplemented operator '%s'", op.String()))
 	}
 
 	return outVal
@@ -92,6 +109,7 @@ func (tree Tree) CleanUp() Tree {
 // cleansePlusMinusTreeStart consolidates the - and + that are at the first position in a Tree.
 // `plus` is removed and `minus` causes the number that follows to be negated.
 func (tree Tree) cleansePlusMinusTreeStart() Tree {
+	fmt.Println("DEBUG - cleansePlusMinusTreeStart - start - tree:", tree)
 	outTree := Tree{}
 
 	for i := 0; i < len(tree); i++ {
@@ -113,8 +131,7 @@ func (tree Tree) cleansePlusMinusTreeStart() Tree {
 				// TODO: check that i+1 is not out of range
 				if tree[i+1].kind() == valueEntryKind {
 					if _, ok := tree[i+1].(Number); ok {
-						newEntry := tree[i+1].(Number).Neg()
-						outTree = append(outTree, newEntry)
+						outTree = append(outTree, NewNumber(-1), multiply, tree[i+1])
 						i++
 						continue
 					}
@@ -140,6 +157,7 @@ func (tree Tree) cleansePlusMinusTreeStart() Tree {
 		}
 	}
 
+	fmt.Println("DEBUG - cleansePlusMinusTreeStart - end - outTree:", outTree)
 	return outTree
 }
 
@@ -160,17 +178,16 @@ func (tree Tree) prioritiseOperators() Tree {
 		case operatorEntryKind:
 			outTree = append(outTree, e)
 
-			subTree := associateOnIncreasedPrecedence(tree[i:])
-			fmt.Println("DEBUG - i", i, "subTree", subTree)
+			subTree, lenSubTree := associateOnIncreasedPrecedence(tree[i:])
+			fmt.Println("DEBUG - i", i, "subTree:", subTree, "lenSubTree:", lenSubTree)
 
-			lenSubTree := len(subTree)
-			i += len(subTree)
+			i += lenSubTree
 
 			if lenSubTree == 0 {
 				continue
 			}
 
-			if lenSubTree == 1 { // TODO: is thiis still necessary?
+			if lenSubTree == 1 { // TODO: is this still necessary?
 				outTree = append(outTree, subTree[0])
 				continue
 			}
@@ -187,7 +204,67 @@ func (tree Tree) prioritiseOperators() Tree {
 	return outTree
 }
 
-func associateOnIncreasedPrecedence(tree Tree) Tree {
+func associateOnIncreasedPrecedence(tree Tree) (Tree, int) {
+	fmt.Println("DEBUG start of associateOnIncreasedPrecedence: tree=", tree)
+	var outTree Tree
+	currentOperator := tree[0].(Operator)
+
+	i := 1
+	for ; i < len(tree); i++ {
+		nextOperatorIdx := findNextOperator(tree[i:])
+		fmt.Println("DEBUG beginning of loop: tree1:", tree)
+		fmt.Println("DEBUG beginning of loop: tree1[i:]:", tree[i:])
+		fmt.Println("DEBUG beginning of loop: outTree1:", outTree)
+		fmt.Println("DEBUG currentOp:", currentOperator, "nextOperatorIdx=", nextOperatorIdx)
+
+		if nextOperatorIdx == noOpFound {
+			outTree = append(outTree, tree[i:]...)
+			break
+		}
+
+		nextOperatorIdx += i
+		nextOperator := tree[nextOperatorIdx].(Operator)
+
+		pComp := compareOperatorPrecedence(currentOperator, nextOperator)
+		if pComp < 0 {
+			// next operator is of lesser or equal precedence
+			outTree = append(outTree, tree[i:nextOperatorIdx]...)
+			fmt.Println("DEBUG currentOp:", currentOperator, "pComp:", pComp, "outTree=", outTree)
+			fmt.Println("DEBUG currentOp:", currentOperator, "pComp:", pComp, "tree[i:nextOperatorIdx]=", tree[i:nextOperatorIdx])
+			break
+		}
+
+		if pComp == 0 {
+			// next operator is of equal precedence
+			outTree = append(outTree, tree[i:nextOperatorIdx+1]...)
+			fmt.Println("DEBUG currentOp:", currentOperator, "pComp:", pComp, "outTree=", outTree)
+			fmt.Println("DEBUG currentOp:", currentOperator, "pComp:", pComp, "tree[i:nextOperatorIdx+1]=", tree[i:nextOperatorIdx+1])
+			continue
+		}
+
+		subTree := Tree{}
+		subTree = append(subTree, tree[i:nextOperatorIdx+1]...)
+		i += len(subTree)
+		fmt.Println("DEBUG currentOp:", currentOperator, "subTree1=", subTree, "nextOp", nextOperator)
+
+		moreTreeParts, lenMoreTreeParts := associateOnIncreasedPrecedence(tree[nextOperatorIdx:])
+		fmt.Println("DEBUG outTree2:", outTree)
+		fmt.Println("DEBUG moreTreeParts:", moreTreeParts, "lenMoreTreeParts:", lenMoreTreeParts)
+		fmt.Println("DEBUG currentOp:", currentOperator, "subTree2=", subTree, "nextOp", nextOperator)
+
+		subTree = append(subTree, moreTreeParts)
+		fmt.Println("DEBUG currentOp:", currentOperator, "subTree3=", subTree, "nextOp", nextOperator)
+
+		outTree = append(outTree, subTree)
+		fmt.Println("DEBUG outTree3:", outTree, "subTree.TruncLen():", subTree.TruncLen(), "subTree.FullLen():", subTree.FullLen())
+		i += lenMoreTreeParts - 1
+	}
+
+	fmt.Println("DEBUG outTree (end):", outTree)
+	return outTree, i
+}
+
+func associateOnIncreasedPrecedenceV1(tree Tree) Tree {
 	fmt.Println("DEBUG start of associateOnIncreasedPrecedence: tree=", tree)
 	currentOperator := tree[0].(Operator)
 
@@ -196,7 +273,9 @@ func associateOnIncreasedPrecedence(tree Tree) Tree {
 
 	if nextOperatorIdx == -1 {
 		// no operator in the remainder of the tree
-		return tree[shift:]
+		resTree := Tree{}
+		resTree = append(resTree, tree[shift:]...)
+		return resTree
 	}
 
 	nextOperatorIdx += shift
@@ -205,20 +284,27 @@ func associateOnIncreasedPrecedence(tree Tree) Tree {
 	pComp := compareOperatorPrecedence(currentOperator, nextOperator)
 	if pComp <= 0 {
 		// next operator is of lesser or equal precedence
-		return tree[shift:nextOperatorIdx]
+		resTree := Tree{}
+		resTree = append(resTree, tree[shift:nextOperatorIdx]...)
+		return resTree
 	}
 
-	subTree := tree[shift : nextOperatorIdx+1]
-	fmt.Println("DEBUG cuurenOp:", currentOperator, "subTree1=", subTree, "nextOp", nextOperator)
+	subTree := Tree{}
+	subTree = append(subTree, tree[shift:nextOperatorIdx+1]...)
+	fmt.Println("DEBUG currentOp:", currentOperator, "subTree1=", subTree, "nextOp", nextOperator)
 
-	moreTreeParts := associateOnIncreasedPrecedence(tree[nextOperatorIdx:])
-	subTree = append(subTree, moreTreeParts...)
-	fmt.Println("DEBUG subTree2=", subTree)
+	moreTreeParts := associateOnIncreasedPrecedenceV1(tree[nextOperatorIdx:])
+	fmt.Println("DEBUG currentOp:", currentOperator, "subTree2=", subTree, "nextOp", nextOperator)
+
+	subTree = append(subTree, moreTreeParts)
+	fmt.Println("DEBUG currentOp:", currentOperator, "subTree3=", subTree, "nextOp", nextOperator)
 
 	return subTree
 }
 
 // returns -1 if none found
+const noOpFound = -1
+
 func findNextOperator(tree Tree) int {
 	pos := 0
 
@@ -229,7 +315,7 @@ func findNextOperator(tree Tree) int {
 		pos++
 	}
 
-	return -1
+	return noOpFound
 }
 
 // returns -1 if operator b has a lesser precedence than operator a.

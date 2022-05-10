@@ -11,7 +11,7 @@ func (o Operator) String() string {
 }
 
 const (
-	invalidOperator Operator = ""
+	invalidOperator Operator = "invalid"
 	plus            Operator = "+"
 	minus           Operator = "-"
 	multiply        Operator = "*"

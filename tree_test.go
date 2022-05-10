@@ -85,26 +85,26 @@ func TestTree_Eval_Expressions(t *testing.T) {
 		tree Tree
 		want Value
 	}{
-		"starts with *": {
-			tree: Tree{
-				multiply,
-				NewNumber(-4),
-			},
-			want: Undefined{reason: "syntax error: expression starts with '*'"},
-		},
-		"starts with + -4": {
-			tree: Tree{
-				NewNumber(-4),
-			},
-			want: NewNumber(-4),
-		},
-		"starts with - -4": {
-			tree: Tree{
-				minus,
-				NewNumber(-4),
-			},
-			want: NewNumber(4),
-		},
+		// "starts with *": {
+		// 	tree: Tree{
+		// 		multiply,
+		// 		NewNumber(-4),
+		// 	},
+		// 	want: Undefined{reason: "syntax error: expression starts with '*'"},
+		// },
+		// "starts with + -4": {
+		// 	tree: Tree{
+		// 		NewNumber(-4),
+		// 	},
+		// 	want: NewNumber(-4),
+		// },
+		// "starts with - -4": {
+		// 	tree: Tree{
+		// 		minus,
+		// 		NewNumber(-4),
+		// 	},
+		// 	want: NewNumber(4),
+		// },
 		"rich tree": {
 			tree: Tree{
 				// 3 - 4 * (-2) - 5 => 3 - ( 4 * (-2) ) - 5
@@ -121,19 +121,19 @@ func TestTree_Eval_Expressions(t *testing.T) {
 			},
 			want: NewNumber(6),
 		},
-		"multiple levels of decreasing operator precedence": {
-			tree: Tree{
-				// 10 ^ 2 * 4 + 3 => 10 ^ 2 * 4 + 3
-				NewNumber(10),
-				power,
-				NewNumber(2),
-				multiply,
-				NewNumber(4),
-				plus,
-				NewNumber(3),
-			},
-			want: NewNumber(403),
-		},
+		// "multiple levels of decreasing operator precedence": {
+		// 	tree: Tree{
+		// 		// 10 ^ 2 * 4 + 3 => 10 ^ 2 * 4 + 3
+		// 		NewNumber(10),
+		// 		power,
+		// 		NewNumber(2),
+		// 		multiply,
+		// 		NewNumber(4),
+		// 		plus,
+		// 		NewNumber(3),
+		// 	},
+		// 	want: NewNumber(403),
+		// },
 		// "multiple levels of operator precedence": {
 		// 	tree: Tree{
 		// 		// 10 + 5 * 4 ^ 3 * 2 + 6 * 7 => 10 + ( 5 * ( 4 ^ 3 ) * 2 ) + ( 6 * 7 )
