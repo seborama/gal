@@ -19,18 +19,3 @@ const (
 	modulus         Operator = "%"
 	power           Operator = "^"
 )
-
-func operatorPrecedence(o Operator) int {
-	switch o {
-	case invalidOperator:
-		return 0
-	case plus, minus:
-		return 1
-	case multiply, divide, modulus:
-		return 2
-	case power:
-		return 3
-	default:
-		panic("unknown operator: " + o.String())
-	}
-}

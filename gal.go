@@ -267,11 +267,6 @@ func readVariable(expr string) (string, int, error) {
 	return expr[:to], to, nil
 }
 
-// f() is a function f with no args.
-// f(x) is a function f with one arg 'x'.
-// f(x, y, ...) is a function f with multiple args 'x', 'y', ...
-// (...) is a standard associative grouping with parentheses. It is akin to an 'identity' function: `f(x) = x`.
-// () just does nothing more than waste space
 func readFunctionName(expr string) (string, int, error) {
 	to := 0 // this could be an anonymous identity function (i.e. simple case of parenthesis grouping)
 
