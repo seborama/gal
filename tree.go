@@ -10,6 +10,14 @@ func (tree Tree) TrunkLen() int {
 	return len(tree)
 }
 
+func isPowerOperator(o Operator) bool {
+	return o == power
+}
+
+func isFactorOperator(o Operator) bool {
+	return o == multiply || o == divide || o == modulus
+}
+
 func (tree Tree) FullLen() int {
 	l := len(tree)
 
@@ -28,8 +36,8 @@ func (tree Tree) Eval() Value {
 	var val Value
 	var op Operator = invalidOperator
 
-	workingTree = workingTree.CalcPowers()
-	workingTree = workingTree.CalcFactors()
+	workingTree = workingTree.Calc(isPowerOperator)
+	workingTree = workingTree.Calc(isFactorOperator)
 
 	for i := 0; i < workingTree.TrunkLen(); i++ {
 		e := workingTree[i]
@@ -75,7 +83,7 @@ func (tree Tree) Eval() Value {
 	return val
 }
 
-func (tree Tree) CalcPowers() Tree {
+func (tree Tree) Calc(isPriorityOperator func(Operator) bool) Tree {
 	var outTree Tree
 
 	var val entry
@@ -116,80 +124,13 @@ func (tree Tree) CalcPowers() Tree {
 
 		case operatorEntryKind:
 			op = e.(Operator)
-			switch op {
-			case power:
-			default:
-				outTree = append(outTree, val)
-				outTree = append(outTree, op)
-				val = nil
-				op = invalidOperator
-			}
-
-		case unknownEntryKind:
-			// TODO: distinguish between unknownEntryKind and undefinedEntryKind (which is a Value)
-			return Tree{e}
-
-		default:
-			panic("TODO")
-		}
-	}
-
-	if val != nil {
-		outTree = append(outTree, val)
-	}
-
-	return outTree
-}
-
-func (tree Tree) CalcFactors() Tree {
-	var outTree Tree
-
-	var val entry
-	var op Operator = invalidOperator
-
-	for i := 0; i < tree.TrunkLen(); i++ {
-		e := tree[i]
-
-		switch e.kind() {
-		case valueEntryKind:
-			if val == nil && op == invalidOperator {
-				val = e
+			if isPriorityOperator(op) {
 				continue
 			}
-
-			if val == nil {
-				return Tree{
-					NewUndefinedWithReason("syntax error: nil value cannot be operated upon (op='" + op.String() + "')"),
-				}
-			}
-
-			val = calculate(val.(Value), op, e.(Value))
-
-		case treeEntryKind:
-			if val == nil && op != invalidOperator {
-				return Tree{
-					NewUndefinedWithReason("syntax error: nil value cannot be operated upon (op='" + op.String() + "')"),
-				}
-			}
-
-			rhsVal := e.(Tree).Eval()
-			if val == nil {
-				val = rhsVal
-				continue
-			}
-
-			val = calculate(val.(Value), op, rhsVal)
-
-		case operatorEntryKind:
-			op = e.(Operator)
-			switch op {
-			case multiply, divide, modulus:
-			default:
-				outTree = append(outTree, val)
-				outTree = append(outTree, op)
-				val = nil
-				op = invalidOperator
-			}
+			outTree = append(outTree, val)
+			outTree = append(outTree, op)
+			val = nil
+			op = invalidOperator
 
 		case unknownEntryKind:
 			// TODO: distinguish between unknownEntryKind and undefinedEntryKind (which is a Value)
