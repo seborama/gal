@@ -39,7 +39,7 @@ func TestTree_PrioritiseOperators(t *testing.T) {
 	// from: "-3 + -4" + -3 * 4 / (1 + 2 + 3 + 4) % 6 ^ 2 + log( 10 )
 	//   to: "-3 + -4" + - ( 3 * 4 / (1 + 2 + 3 + 4) % ( 6 ^ 2 ) ) + log( 10 )
 
-	outTree := inTree.prioritiseOperators()
+	outTree := inTree.Eval()
 
 	expectedTree := Tree{
 		NewString(`"-3 + -4"`),
@@ -85,26 +85,56 @@ func TestTree_Eval_Expressions(t *testing.T) {
 		tree Tree
 		want Value
 	}{
-		// "starts with *": {
-		// 	tree: Tree{
-		// 		multiply,
-		// 		NewNumber(-4),
-		// 	},
-		// 	want: Undefined{reason: "syntax error: expression starts with '*'"},
-		// },
-		// "starts with + -4": {
-		// 	tree: Tree{
-		// 		NewNumber(-4),
-		// 	},
-		// 	want: NewNumber(-4),
-		// },
-		// "starts with - -4": {
-		// 	tree: Tree{
-		// 		minus,
-		// 		NewNumber(-4),
-		// 	},
-		// 	want: NewNumber(4),
-		// },
+		"starts with *": {
+			tree: Tree{
+				multiply,
+				NewNumber(-4),
+			},
+			want: Undefined{reason: "syntax error: expression starts with '*'"},
+		},
+		"starts with + -4": {
+			tree: Tree{
+				NewNumber(-4),
+			},
+			want: NewNumber(-4),
+		},
+		"starts with - -4": {
+			tree: Tree{
+				minus,
+				NewNumber(-4),
+			},
+			want: NewNumber(4),
+		},
+		"chained * and /": {
+			tree: Tree{
+				// 3 * 4 / 2 / 3 * 4
+				NewNumber(3),
+				multiply,
+				NewNumber(4),
+				divide,
+				NewNumber(2),
+				divide,
+				NewNumber(3),
+				multiply,
+				NewNumber(4),
+			},
+			want: NewNumber(8),
+		},
+		"chained and tree'ed * and /": {
+			tree: Tree{
+				// 3 * 4 / 2 / 3 * 4
+				Tree{NewNumber(3)},
+				multiply,
+				Tree{NewNumber(4)},
+				divide,
+				Tree{NewNumber(2)},
+				divide,
+				Tree{NewNumber(3)},
+				multiply,
+				Tree{NewNumber(4)},
+			},
+			want: NewNumber(8),
+		},
 		"rich tree": {
 			tree: Tree{
 				// 3 - 4 * (-2) - 5 => 3 - ( 4 * (-2) ) - 5
@@ -121,58 +151,58 @@ func TestTree_Eval_Expressions(t *testing.T) {
 			},
 			want: NewNumber(6),
 		},
-		// "multiple levels of decreasing operator precedence": {
-		// 	tree: Tree{
-		// 		// 10 ^ 2 * 4 + 3 => 10 ^ 2 * 4 + 3
-		// 		NewNumber(10),
-		// 		power,
-		// 		NewNumber(2),
-		// 		multiply,
-		// 		NewNumber(4),
-		// 		plus,
-		// 		NewNumber(3),
-		// 	},
-		// 	want: NewNumber(403),
-		// },
-		// "multiple levels of operator precedence": {
-		// 	tree: Tree{
-		// 		// 10 + 5 * 4 ^ 3 * 2 + 6 * 7 => 10 + ( 5 * ( 4 ^ 3 ) * 2 ) + ( 6 * 7 )
-		// 		NewNumber(10),
-		// 		plus,
-		// 		NewNumber(5),
-		// 		multiply,
-		// 		NewNumber(4),
-		// 		power,
-		// 		NewNumber(3),
-		// 		multiply,
-		// 		NewNumber(2),
-		// 		plus,
-		// 		NewNumber(6),
-		// 		multiply,
-		// 		NewNumber(7),
-		// 	},
-		// 	want: NewNumber(692),
-		// },
-		// "rich sub-trees": {
-		// 	tree: Tree{
-		// 		NewNumber(10),
-		// 		plus,
-		// 		Tree{
-		// 			NewNumber(5),
-		// 			multiply,
-		// 			Tree{
-		// 				minus,
-		// 				NewNumber(4),
-		// 				modulus,
-		// 				Tree{
-		// 					minus,
-		// 					NewNumber(3),
-		// 				},
-		// 			},
-		// 		},
-		// 	},
-		// 	want: NewNumber(5),
-		// },
+		"multiple levels of decreasing operator precedence": {
+			tree: Tree{
+				// 10 ^ 2 * 4 + 3 => 10 ^ 2 * 4 + 3
+				NewNumber(10),
+				power,
+				NewNumber(2),
+				multiply,
+				NewNumber(4),
+				plus,
+				NewNumber(3),
+			},
+			want: NewNumber(403),
+		},
+		"multiple levels of operator precedence": {
+			tree: Tree{
+				// 10 + 5 * 4 ^ 3 * 2 + 6 * 7 => 10 + ( 5 * ( 4 ^ 3 ) * 2 ) + ( 6 * 7 )
+				NewNumber(10),
+				plus,
+				NewNumber(5),
+				multiply,
+				NewNumber(4),
+				power,
+				NewNumber(3),
+				multiply,
+				NewNumber(2),
+				plus,
+				NewNumber(6),
+				multiply,
+				NewNumber(7),
+			},
+			want: NewNumber(692),
+		},
+		"rich sub-trees": {
+			tree: Tree{
+				NewNumber(10),
+				plus,
+				Tree{
+					NewNumber(5),
+					multiply,
+					Tree{
+						minus,
+						NewNumber(4),
+						modulus,
+						Tree{
+							minus,
+							NewNumber(3),
+						},
+					},
+				},
+			},
+			want: NewNumber(5),
+		},
 	}
 
 	for name, tc := range tt {

@@ -31,8 +31,11 @@ type Value interface {
 	Add(Value) Value
 	Sub(Value) Value
 	Multiply(Value) Value
+	Divide(Value) Value
 	PowerOf(Value) Value
+	Mod(Value) Value
 	stringer
+	entry
 }
 
 type Function struct {

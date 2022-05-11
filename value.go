@@ -49,15 +49,18 @@ func (s String) Multiply(other Value) Value {
 		return String{value: strings.Repeat(s.value, int(v.value.IntPart()))}
 	}
 
-	v, ok := other.(stringer)
-	if !ok {
-		return Undefined{}
-	}
+	return Undefined{}
+}
 
-	return String{value: s.value + v.String()}
+func (s String) Divide(other Value) Value {
+	return Undefined{}
 }
 
 func (s String) PowerOf(Value) Value {
+	return Undefined{}
+}
+
+func (s String) Mod(Value) Value {
 	return Undefined{}
 }
 
@@ -146,6 +149,22 @@ func (n Number) Multiply(other Value) Value {
 	return Undefined{}
 }
 
+func (n Number) Divide(other Value) Value {
+	if v, ok := other.(Number); ok {
+		return Number{
+			value: n.value.Div(v.value),
+		}
+	}
+
+	if v, ok := other.(numberer); ok {
+		return Number{
+			value: n.value.Div(v.Number()),
+		}
+	}
+
+	return Undefined{}
+}
+
 func (n Number) PowerOf(other Value) Value {
 	if v, ok := other.(Number); ok {
 		return Number{
@@ -156,6 +175,22 @@ func (n Number) PowerOf(other Value) Value {
 	if v, ok := other.(numberer); ok {
 		return Number{
 			value: n.value.Mul(v.Number()),
+		}
+	}
+
+	return Undefined{}
+}
+
+func (n Number) Mod(other Value) Value {
+	if v, ok := other.(Number); ok {
+		return Number{
+			value: n.value.Mod(v.value),
+		}
+	}
+
+	if v, ok := other.(numberer); ok {
+		return Number{
+			value: n.value.Mod(v.Number()),
 		}
 	}
 
@@ -206,7 +241,15 @@ func (Undefined) Multiply(Value) Value {
 	return Undefined{}
 }
 
+func (Undefined) Divide(Value) Value {
+	return Undefined{}
+}
+
 func (Undefined) PowerOf(Value) Value {
+	return Undefined{}
+}
+
+func (Undefined) Mod(Value) Value {
 	return Undefined{}
 }
 
