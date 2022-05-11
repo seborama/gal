@@ -18,6 +18,10 @@ func isFactorOperator(o Operator) bool {
 	return o == multiply || o == divide || o == modulus
 }
 
+func isSumOperator(o Operator) bool {
+	return o == plus || o == minus
+}
+
 func (tree Tree) FullLen() int {
 	l := len(tree)
 
@@ -31,56 +35,14 @@ func (tree Tree) FullLen() int {
 }
 
 func (tree Tree) Eval() Value {
-	workingTree := tree.CleanUp()
+	workingTree := tree.CleanUp().
+		Calc(isPowerOperator).
+		Calc(isFactorOperator).
+		Calc(isSumOperator)
 
-	var val Value
-	var op Operator = invalidOperator
-
-	workingTree = workingTree.Calc(isPowerOperator)
-	workingTree = workingTree.Calc(isFactorOperator)
-
-	for i := 0; i < workingTree.TrunkLen(); i++ {
-		e := workingTree[i]
-
-		switch e.kind() {
-		case valueEntryKind:
-			if val == nil && op == invalidOperator {
-				val = e.(Value)
-				continue
-			}
-
-			if val == nil {
-				return NewUndefinedWithReason("syntax error: nil value cannot be operated upon (op='" + op.String() + "')")
-			}
-
-			val = calculate(val, op, e.(Value))
-
-		case treeEntryKind:
-			if val == nil && op != invalidOperator {
-				return NewUndefinedWithReason("syntax error: nil value cannot be operated upon (op='" + op.String() + "')")
-			}
-
-			rhsVal := e.(Tree).Eval()
-			if val == nil {
-				val = rhsVal
-				continue
-			}
-
-			val = calculate(val, op, rhsVal)
-
-		case operatorEntryKind:
-			op = e.(Operator)
-
-		case unknownEntryKind:
-			// TODO: distinguish between unknownEntryKind and undefinedEntryKind (which is a Value)
-			return e.(Value)
-
-		default:
-			panic("TODO")
-		}
-	}
-
-	return val
+	// TODO: refactor this
+	// perhaps add Tree.Value() which tests that only one entry is left and that it is a Value
+	return workingTree[0].(Value)
 }
 
 func (tree Tree) Calc(isPriorityOperator func(Operator) bool) Tree {
