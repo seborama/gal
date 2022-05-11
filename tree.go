@@ -10,18 +10,6 @@ func (tree Tree) TrunkLen() int {
 	return len(tree)
 }
 
-func isPowerOperator(o Operator) bool {
-	return o == power
-}
-
-func isFactorOperator(o Operator) bool {
-	return o == multiply || o == divide || o == modulus
-}
-
-func isSumOperator(o Operator) bool {
-	return o == plus || o == minus
-}
-
 func (tree Tree) FullLen() int {
 	l := len(tree)
 
@@ -35,17 +23,18 @@ func (tree Tree) FullLen() int {
 }
 
 func (tree Tree) Eval() Value {
+	// execute calculation by decreasing order of precedence
 	workingTree := tree.CleanUp().
-		Calc(isPowerOperator).
-		Calc(isFactorOperator).
-		Calc(isSumOperator)
+		Calc(powerOperators).
+		Calc(multiplicativeOperators).
+		Calc(additiveOperators)
 
 	// TODO: refactor this
 	// perhaps add Tree.Value() which tests that only one entry is left and that it is a Value
 	return workingTree[0].(Value)
 }
 
-func (tree Tree) Calc(isPriorityOperator func(Operator) bool) Tree {
+func (tree Tree) Calc(isOperatorInFocus func(Operator) bool) Tree {
 	var outTree Tree
 
 	var val entry
@@ -86,7 +75,7 @@ func (tree Tree) Calc(isPriorityOperator func(Operator) bool) Tree {
 
 		case operatorEntryKind:
 			op = e.(Operator)
-			if isPriorityOperator(op) {
+			if isOperatorInFocus(op) {
 				continue
 			}
 			outTree = append(outTree, val)

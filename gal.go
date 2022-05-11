@@ -74,7 +74,7 @@ type entry interface {
 
 // TODO: perhaps return []Value rather than Value
 func Eval(expr string) Value {
-	tree, err := parseExpression(expr)
+	tree, err := buildExprTree(expr)
 	if err != nil {
 		return NewUndefinedWithReason(err.Error())
 	}
@@ -82,30 +82,19 @@ func Eval(expr string) Value {
 	return tree.Eval()
 }
 
-func parseExpression(expr string) (Tree, error) {
-	tree, err := buildExprTree(expr)
-	if err != nil {
-		return nil, err
-	}
-
-	return tree, nil
-}
-
+// TODO: remove error and replace Tree{NewUndefinedWithReason(...)}
 func buildExprTree(expr string) (Tree, error) {
 	exprTree := Tree{}
 
 	for idx := 0; idx < len(expr); {
 		part, ptype, length, err := extractPart(expr[idx:])
 		if err != nil {
-			fmt.Println(err)
 			return nil, err
 		}
 
 		if ptype == blankType {
 			break
 		}
-
-		fmt.Printf("idx: %d >> type: %d >> part: '%s'\n", idx, ptype, part)
 
 		switch ptype {
 		case numericalType:
@@ -138,9 +127,7 @@ func buildExprTree(expr string) (Tree, error) {
 		case functionType:
 			// TODO: squash the leading and trailing '()'
 			fname, l, _ := readFunctionName(part)
-			fmt.Printf("  >>> sub: fname: '%s'\n", fname)
 			v, err := buildExprTree(part[l+1 : len(part)-1]) // exclude leading '(' and trailing ')'
-			fmt.Printf("  <<< sub: fname: '%s' >> err: '%v'\n", fname, err)
 			if err != nil {
 				return nil, err
 			}

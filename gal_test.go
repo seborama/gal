@@ -69,7 +69,7 @@ func Test_buildExprTree_VariousOperators(t *testing.T) {
 	require.NoError(t, err)
 
 	expectedTree := Tree{
-		minus, // TODO: this should either be preceded with '0' or removed in favour of next line changing to NewNumber(-1)
+		minus,
 		NewNumber(1),
 		plus,
 		NewNumber(2),

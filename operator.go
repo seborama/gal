@@ -19,3 +19,15 @@ const (
 	modulus         Operator = "%"
 	power           Operator = "^"
 )
+
+func powerOperators(o Operator) bool {
+	return o == power
+}
+
+func multiplicativeOperators(o Operator) bool {
+	return o == multiply || o == divide || o == modulus
+}
+
+func additiveOperators(o Operator) bool {
+	return o == plus || o == minus
+}
