@@ -94,6 +94,7 @@ func TestTree_Eval_Expressions(t *testing.T) {
 		},
 		"starts with + -4": {
 			tree: Tree{
+				plus,
 				NewNumber(-4),
 			},
 			want: NewNumber(-4),
@@ -122,16 +123,30 @@ func TestTree_Eval_Expressions(t *testing.T) {
 		},
 		"chained and tree'ed * and /": {
 			tree: Tree{
-				// 3 * 4 / 2 / 3 * 4
-				Tree{NewNumber(3)},
-				multiply,
-				Tree{NewNumber(4)},
+				// (((3)) * (4)) / (2) / (3) * (4)
+				Tree{
+					Tree{
+						Tree{
+							NewNumber(3),
+						},
+					},
+					multiply,
+					Tree{
+						NewNumber(4),
+					},
+				},
 				divide,
-				Tree{NewNumber(2)},
+				Tree{
+					NewNumber(2),
+				},
 				divide,
-				Tree{NewNumber(3)},
+				Tree{
+					NewNumber(3),
+				},
 				multiply,
-				Tree{NewNumber(4)},
+				Tree{
+					NewNumber(4),
+				},
 			},
 			want: NewNumber(8),
 		},
