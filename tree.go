@@ -1,8 +1,19 @@
 package gal
 
-import (
-	"fmt"
+type entryKind int
+
+const (
+	unknownEntryKind entryKind = iota
+	valueEntryKind
+	operatorEntryKind
+	treeEntryKind
+	functionEntryKind
+	variableEntryKind
 )
+
+type entry interface {
+	kind() entryKind
+}
 
 type Tree []entry
 
@@ -52,7 +63,7 @@ func (tree Tree) Calc(isOperatorInFocus func(Operator) bool) Tree {
 
 			if val == nil {
 				return Tree{
-					NewUndefinedWithReason("syntax error: nil value cannot be operated upon (op='" + op.String() + "')"),
+					NewUndefinedWithReasonf("syntax error: nil value cannot be operated upon (op='%s')", op.String()),
 				}
 			}
 
@@ -61,7 +72,7 @@ func (tree Tree) Calc(isOperatorInFocus func(Operator) bool) Tree {
 		case treeEntryKind:
 			if val == nil && op != invalidOperator {
 				return Tree{
-					NewUndefinedWithReason("syntax error: nil value cannot be operated upon (op='" + op.String() + "')"),
+					NewUndefinedWithReasonf("syntax error: nil value cannot be operated upon (op='%s')", op.String()),
 				}
 			}
 
@@ -83,13 +94,22 @@ func (tree Tree) Calc(isOperatorInFocus func(Operator) bool) Tree {
 			val = nil
 			op = invalidOperator
 
+		case functionEntryKind:
+			rhsVal := e.(Function).Eval()
+			if val == nil {
+				val = rhsVal
+				continue
+			}
+
+			val = calculate(val.(Value), op, rhsVal)
+
 		case unknownEntryKind:
 			// TODO: distinguish between unknownEntryKind and undefinedEntryKind (which is a Value)
 			return Tree{e}
 
 		default:
 			return Tree{
-				NewUndefinedWithReason(fmt.Sprintf("internal error: unknown entry kind: '%v'", e.kind())),
+				NewUndefinedWithReasonf("internal error: unknown entry kind: '%v'", e.kind()),
 			}
 		}
 	}
@@ -124,7 +144,7 @@ func calculate(lhs Value, op Operator, rhs Value) Value {
 		outVal = lhs.Mod(rhs)
 
 	default:
-		return NewUndefinedWithReason(fmt.Sprintf("unimplemented operator: '%s'", op.String()))
+		return NewUndefinedWithReasonf("unimplemented operator: '%s'", op.String())
 	}
 
 	return outVal
@@ -164,7 +184,7 @@ func (tree Tree) cleansePlusMinusTreeStart() Tree {
 
 			default:
 				return Tree{
-					NewUndefinedWithReason("syntax error: expression starts with '" + e.(Operator).String() + "'"),
+					NewUndefinedWithReasonf("syntax error: expression starts with '%s'", e.(Operator).String()),
 				}
 			}
 

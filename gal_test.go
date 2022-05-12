@@ -178,9 +178,12 @@ func Test_buildExprTree_Functions(t *testing.T) {
 								NewFunction(
 									"f",
 									Tree{
-										// TODO: this may change as multi-arg functions aren't really supported currently.
 										NewNumber(1),
+									},
+									Tree{
 										NewNumber(2),
+									},
+									Tree{
 										NewNumber(3),
 									},
 								),

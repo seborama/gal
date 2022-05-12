@@ -144,6 +144,27 @@ func TestTree_Eval_Expressions(t *testing.T) {
 			},
 			want: NewNumber(5),
 		},
+		"function": {
+			tree: Tree{
+				NewNumber(10),
+				plus,
+				NewFunction(
+					"trunc",
+					Tree{
+						NewNumber(6),
+					},
+					Tree{
+						NewFunction(
+							"sqrt",
+							Tree{
+								NewNumber(10),
+							},
+						),
+					},
+				),
+			},
+			want: NewNumberFromFloat(13.162277),
+		},
 	}
 
 	for name, tc := range tt {
@@ -153,7 +174,10 @@ func TestTree_Eval_Expressions(t *testing.T) {
 			val := tc.tree.Eval()
 
 			if !cmp.Equal(tc.want, val) {
-				t.Error(cmp.Diff(tc.want, val))
+				if _, ok := val.(Undefined); ok {
+					t.Log("Value:", val.String())
+				}
+				t.Errorf(cmp.Diff(tc.want, val))
 			}
 		})
 	}

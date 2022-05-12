@@ -16,7 +16,9 @@ Numbers implement arbitrary precision fixed-point decimal arithmetic with [shops
 * Operators: `+` `-` `*` `/` `%` `^`
 * Types: String, Number
 * Associativity with parentheses
-* Functions are syntactically supported but not implemented yet
+* Functions are syntactically supported but not fully implemented yet
+    * Pre-defined: pi, cos, floor, sin, sqrt, trunc
+    * User-defined: TODO
 
 ## High level design
 

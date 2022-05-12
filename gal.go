@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	"github.com/shopspring/decimal"
 )
 
 type exprType int
@@ -16,16 +15,8 @@ const (
 	stringType
 	variableType
 	functionType
-	blankType // TODO: remove since it's a non-expression
+	blankType // TODO: remove since it's a non-expression?
 )
-
-type stringer interface {
-	String() string
-}
-
-type numberer interface {
-	Number() decimal.Decimal
-}
 
 type Value interface {
 	Add(Value) Value
@@ -38,64 +29,11 @@ type Value interface {
 	entry
 }
 
-type Function struct {
-	Name string
-	Tree Tree
-}
-
-func NewFunction(name string, tree Tree) *Function {
-	return &Function{
-		Name: name,
-		Tree: tree,
-	}
-}
-
-func (Function) kind() entryKind {
-	return functionEntryKind
-}
-
-func (f Function) String() string {
-	return string(f.Name)
-}
-
-type Variable struct {
-	Name string
-}
-
-func NewVariable(name string) *Variable {
-	return &Variable{
-		Name: name,
-	}
-}
-
-func (Variable) kind() entryKind {
-	return variableEntryKind
-}
-
-func (v Variable) String() string {
-	return string(v.Name)
-}
-
-type entryKind int
-
-const (
-	unknownEntryKind entryKind = iota
-	valueEntryKind
-	operatorEntryKind
-	treeEntryKind
-	functionEntryKind
-	variableEntryKind
-)
-
-type entry interface {
-	kind() entryKind
-}
-
 // TODO: perhaps return []Value rather than Value
 func Eval(expr string) Value {
 	tree, err := buildExprTree(expr)
 	if err != nil {
-		return NewUndefinedWithReason(err.Error())
+		return NewUndefinedWithReasonf(err.Error())
 	}
 
 	return tree.Eval()
