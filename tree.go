@@ -88,7 +88,9 @@ func (tree Tree) Calc(isOperatorInFocus func(Operator) bool) Tree {
 			return Tree{e}
 
 		default:
-			panic("TODO")
+			return Tree{
+				NewUndefinedWithReason(fmt.Sprintf("internal error: unknown entry kind: '%v'", e.kind())),
+			}
 		}
 	}
 
@@ -122,7 +124,7 @@ func calculate(lhs Value, op Operator, rhs Value) Value {
 		outVal = lhs.Mod(rhs)
 
 	default:
-		panic(fmt.Sprintf("unimplemented operator '%s'", op.String()))
+		return NewUndefinedWithReason(fmt.Sprintf("unimplemented operator: '%s'", op.String()))
 	}
 
 	return outVal

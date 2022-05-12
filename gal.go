@@ -136,6 +136,11 @@ func buildExprTree(expr string) (Tree, error) {
 			} else {
 				exprTree = append(exprTree, NewFunction(fname, v))
 			}
+
+		default:
+			exprTree = Tree{
+				NewUndefinedWithReason("internal error: unknown expression type"),
+			}
 		}
 
 		idx += length
