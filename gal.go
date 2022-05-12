@@ -58,6 +58,24 @@ func (f Function) String() string {
 	return string(f.Name)
 }
 
+type Variable struct {
+	Name string
+}
+
+func NewVariable(name string) *Variable {
+	return &Variable{
+		Name: name,
+	}
+}
+
+func (Variable) kind() entryKind {
+	return variableEntryKind
+}
+
+func (v Variable) String() string {
+	return string(v.Name)
+}
+
 type entryKind int
 
 const (
@@ -66,6 +84,7 @@ const (
 	operatorEntryKind
 	treeEntryKind
 	functionEntryKind
+	variableEntryKind
 )
 
 type entry interface {
@@ -137,10 +156,12 @@ func buildExprTree(expr string) (Tree, error) {
 				exprTree = append(exprTree, NewFunction(fname, v))
 			}
 
+		case variableType:
+			v := NewVariable(part)
+			exprTree = append(exprTree, v)
+
 		default:
-			exprTree = Tree{
-				NewUndefinedWithReason("internal error: unknown expression type"),
-			}
+			return nil, newErrSyntaxError(fmt.Sprintf("internal error: unknown expression part type '%v'", ptype))
 		}
 
 		idx += length
@@ -149,6 +170,8 @@ func buildExprTree(expr string) (Tree, error) {
 	return exprTree, nil
 }
 
+// returns the part extracted as string, the type extracted, the cursor position
+// after extraction or an error.
 func extractPart(expr string) (string, exprType, int, error) {
 	// left trim blanks
 	pos := 0
