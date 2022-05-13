@@ -8,7 +8,6 @@ const (
 	operatorEntryKind
 	treeEntryKind
 	functionEntryKind
-	variableEntryKind
 )
 
 type entry interface {

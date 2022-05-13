@@ -19,6 +19,18 @@ Numbers implement arbitrary precision fixed-point decimal arithmetic with [shops
 * Functions:
     * Pre-defined: pi, cos, floor, sin, sqrt, trunc, and more (see `function.go`: `Eval()`)
     * User-defined: TODO
+* Variables, defined as `:variable_name:`
+
+## Functions
+
+Function names are case-insensitive.
+A function can optionally accept one or more arguments but it must return a single Value.
+
+## Variables
+
+Variable names are case-sensitive.
+
+Values are passed as a `map[string]Value` using `WithVariables` when calling `Eval`.
 
 ## High level design
 
