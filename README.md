@@ -16,8 +16,8 @@ Numbers implement arbitrary precision fixed-point decimal arithmetic with [shops
 * Operators: `+` `-` `*` `/` `%` `^`
 * Types: String, Number
 * Associativity with parentheses
-* Functions are syntactically supported but not fully implemented yet
-    * Pre-defined: pi, cos, floor, sin, sqrt, trunc
+* Functions:
+    * Pre-defined: pi, cos, floor, sin, sqrt, trunc, and more (see `function.go`: `Eval()`)
     * User-defined: TODO
 
 ## High level design

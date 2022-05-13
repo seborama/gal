@@ -157,7 +157,7 @@ func Test_buildExprTree_PlusMinus_String(t *testing.T) {
 }
 
 func Test_buildExprTree_Functions(t *testing.T) {
-	expr := `log(10 + sin(cos(3 + f(1 2 3))))`
+	expr := `log(10 + sin(cos(3 + f(1+2 3 4))))`
 	tree, err := buildExprTree(expr)
 	require.NoError(t, err)
 
@@ -179,12 +179,14 @@ func Test_buildExprTree_Functions(t *testing.T) {
 									"f",
 									Tree{
 										NewNumber(1),
-									},
-									Tree{
+										plus,
 										NewNumber(2),
 									},
 									Tree{
 										NewNumber(3),
+									},
+									Tree{
+										NewNumber(4),
 									},
 								),
 							},

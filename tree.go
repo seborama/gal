@@ -33,6 +33,25 @@ func (tree Tree) FullLen() int {
 	return l
 }
 
+// Split divides a Tree trunk at points where twoconsecutive Values are present.
+func (tree Tree) Split() []Tree {
+	var forest []Tree
+
+	partStart := 0
+
+	for i := 1; i < tree.TrunkLen(); i++ {
+		_, ok1 := tree[i].(Value)
+		_, ok2 := tree[i-1].(Value)
+
+		if ok1 && ok2 {
+			forest = append(forest, tree[partStart:i])
+			partStart = i
+		}
+	}
+
+	return append(forest, tree[partStart:])
+}
+
 func (tree Tree) Eval() Value {
 	// execute calculation by decreasing order of precedence
 	workingTree := tree.CleanUp().

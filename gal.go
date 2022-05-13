@@ -29,7 +29,6 @@ type Value interface {
 	entry
 }
 
-// TODO: perhaps return []Value rather than Value
 func Eval(expr string) Value {
 	tree, err := buildExprTree(expr)
 	if err != nil {
@@ -39,7 +38,6 @@ func Eval(expr string) Value {
 	return tree.Eval()
 }
 
-// TODO: remove error and replace Tree{NewUndefinedWithReason(...)}
 func buildExprTree(expr string) (Tree, error) {
 	exprTree := Tree{}
 
@@ -91,7 +89,7 @@ func buildExprTree(expr string) (Tree, error) {
 			if fname == "" {
 				exprTree = append(exprTree, v)
 			} else {
-				exprTree = append(exprTree, NewFunction(fname, v))
+				exprTree = append(exprTree, NewFunction(fname, v.Split()...))
 			}
 
 		case variableType:
