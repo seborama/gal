@@ -205,6 +205,12 @@ func (n Number) Sqrt() Number {
 	return n
 }
 
+func (n Number) Tan() Number {
+	return Number{
+		value: n.value.Tan(),
+	}
+}
+
 func (n Number) Floor() Number {
 	return Number{
 		value: n.value.Floor(),

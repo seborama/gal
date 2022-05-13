@@ -74,6 +74,15 @@ func (f Function) Eval() Value {
 			return v.Number().Sqrt()
 		}
 
+	case "tan":
+		if f.argsLen() != 1 {
+			return NewUndefinedWithReasonf("%s requires 1 parameter, got %d", f.Name, f.argsLen())
+		}
+		argVal := f.Args[0].Eval()
+		if v, ok := argVal.(numberer); ok {
+			return v.Number().Tan()
+		}
+
 	case "trunc":
 		if f.argsLen() != 2 {
 			return NewUndefinedWithReasonf("%s requires 2 parameters, got %d", f.Name, f.argsLen())

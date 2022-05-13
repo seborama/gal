@@ -1,169 +1,170 @@
-package gal
+package gal_test
 
 import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/seborama/gal"
 )
 
 func TestTree_Eval_Expressions(t *testing.T) {
 	tt := map[string]struct {
-		tree Tree
-		want Value
+		tree gal.Tree
+		want gal.Value
 	}{
 		"starts with *": {
-			tree: Tree{
-				multiply,
-				NewNumber(-4),
+			tree: gal.Tree{
+				gal.Multiply,
+				gal.NewNumber(-4),
 			},
-			want: Undefined{reason: "syntax error: expression starts with '*'"},
+			want: gal.NewUndefinedWithReasonf("syntax error: expression starts with '*'"),
 		},
 		"starts with + -4": {
-			tree: Tree{
-				plus,
-				NewNumber(-4),
+			tree: gal.Tree{
+				gal.Plus,
+				gal.NewNumber(-4),
 			},
-			want: NewNumber(-4),
+			want: gal.NewNumber(-4),
 		},
 		"starts with - -4": {
-			tree: Tree{
-				minus,
-				NewNumber(-4),
+			tree: gal.Tree{
+				gal.Minus,
+				gal.NewNumber(-4),
 			},
-			want: NewNumber(4),
+			want: gal.NewNumber(4),
 		},
 		"chained * and /": {
-			tree: Tree{
+			tree: gal.Tree{
 				// 3 * 4 / 2 / 3 * 4
-				NewNumber(3),
-				multiply,
-				NewNumber(4),
-				divide,
-				NewNumber(2),
-				divide,
-				NewNumber(3),
-				multiply,
-				NewNumber(4),
+				gal.NewNumber(3),
+				gal.Multiply,
+				gal.NewNumber(4),
+				gal.Divide,
+				gal.NewNumber(2),
+				gal.Divide,
+				gal.NewNumber(3),
+				gal.Multiply,
+				gal.NewNumber(4),
 			},
-			want: NewNumber(8),
+			want: gal.NewNumber(8),
 		},
 		"chained and tree'ed * and /": {
-			tree: Tree{
+			tree: gal.Tree{
 				// (((3)) * (4)) / (2) / (3) * (4)
-				Tree{
-					Tree{
-						Tree{
-							NewNumber(3),
+				gal.Tree{
+					gal.Tree{
+						gal.Tree{
+							gal.NewNumber(3),
 						},
 					},
-					multiply,
-					Tree{
-						NewNumber(4),
+					gal.Multiply,
+					gal.Tree{
+						gal.NewNumber(4),
 					},
 				},
-				divide,
-				Tree{
-					NewNumber(2),
+				gal.Divide,
+				gal.Tree{
+					gal.NewNumber(2),
 				},
-				divide,
-				Tree{
-					NewNumber(3),
+				gal.Divide,
+				gal.Tree{
+					gal.NewNumber(3),
 				},
-				multiply,
-				Tree{
-					NewNumber(4),
+				gal.Multiply,
+				gal.Tree{
+					gal.NewNumber(4),
 				},
 			},
-			want: NewNumber(8),
+			want: gal.NewNumber(8),
 		},
 		"rich tree": {
-			tree: Tree{
+			tree: gal.Tree{
 				// 3 - 4 * (-2) - 5 => 3 - ( 4 * (-2) ) - 5
-				NewNumber(3),
-				minus,
-				NewNumber(4),
-				multiply,
-				Tree{
-					minus,
-					NewNumber(2),
+				gal.NewNumber(3),
+				gal.Minus,
+				gal.NewNumber(4),
+				gal.Multiply,
+				gal.Tree{
+					gal.Minus,
+					gal.NewNumber(2),
 				},
-				minus,
-				NewNumber(5),
+				gal.Minus,
+				gal.NewNumber(5),
 			},
-			want: NewNumber(6),
+			want: gal.NewNumber(6),
 		},
 		"multiple levels of decreasing operator precedence": {
-			tree: Tree{
+			tree: gal.Tree{
 				// 10 ^ 2 * 4 + 3 => 10 ^ 2 * 4 + 3
-				NewNumber(10),
-				power,
-				NewNumber(2),
-				multiply,
-				NewNumber(4),
-				plus,
-				NewNumber(3),
+				gal.NewNumber(10),
+				gal.Power,
+				gal.NewNumber(2),
+				gal.Multiply,
+				gal.NewNumber(4),
+				gal.Plus,
+				gal.NewNumber(3),
 			},
-			want: NewNumber(403),
+			want: gal.NewNumber(403),
 		},
 		"multiple levels of operator precedence": {
-			tree: Tree{
+			tree: gal.Tree{
 				// 10 + 5 * 4 ^ 3 * 2 + 6 * 7 => 10 + ( 5 * ( 4 ^ 3 ) * 2 ) + ( 6 * 7 )
-				NewNumber(10),
-				plus,
-				NewNumber(5),
-				multiply,
-				NewNumber(4),
-				power,
-				NewNumber(3),
-				multiply,
-				NewNumber(2),
-				plus,
-				NewNumber(6),
-				multiply,
-				NewNumber(7),
+				gal.NewNumber(10),
+				gal.Plus,
+				gal.NewNumber(5),
+				gal.Multiply,
+				gal.NewNumber(4),
+				gal.Power,
+				gal.NewNumber(3),
+				gal.Multiply,
+				gal.NewNumber(2),
+				gal.Plus,
+				gal.NewNumber(6),
+				gal.Multiply,
+				gal.NewNumber(7),
 			},
-			want: NewNumber(692),
+			want: gal.NewNumber(692),
 		},
 		"rich sub-trees": {
-			tree: Tree{
-				NewNumber(10),
-				plus,
-				Tree{
-					NewNumber(5),
-					multiply,
-					Tree{
-						minus,
-						NewNumber(4),
-						modulus,
-						Tree{
-							minus,
-							NewNumber(3),
+			tree: gal.Tree{
+				gal.NewNumber(10),
+				gal.Plus,
+				gal.Tree{
+					gal.NewNumber(5),
+					gal.Multiply,
+					gal.Tree{
+						gal.Minus,
+						gal.NewNumber(4),
+						gal.Modulus,
+						gal.Tree{
+							gal.Minus,
+							gal.NewNumber(3),
 						},
 					},
 				},
 			},
-			want: NewNumber(5),
+			want: gal.NewNumber(5),
 		},
 		"function": {
-			tree: Tree{
-				NewNumber(10),
-				plus,
-				NewFunction(
+			tree: gal.Tree{
+				gal.NewNumber(10),
+				gal.Plus,
+				gal.NewFunction(
 					"trunc",
-					Tree{
-						NewNumber(6),
+					gal.Tree{
+						gal.NewNumber(6),
 					},
-					Tree{
-						NewFunction(
+					gal.Tree{
+						gal.NewFunction(
 							"sqrt",
-							Tree{
-								NewNumber(10),
+							gal.Tree{
+								gal.NewNumber(10),
 							},
 						),
 					},
 				),
 			},
-			want: NewNumberFromFloat(13.162277),
+			want: gal.NewNumberFromFloat(13.162277),
 		},
 	}
 
@@ -174,7 +175,7 @@ func TestTree_Eval_Expressions(t *testing.T) {
 			val := tc.tree.Eval()
 
 			if !cmp.Equal(tc.want, val) {
-				if _, ok := val.(Undefined); ok {
+				if _, ok := val.(gal.Undefined); ok {
 					t.Log("Value:", val.String())
 				}
 				t.Errorf(cmp.Diff(tc.want, val))

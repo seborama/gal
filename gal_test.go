@@ -1,13 +1,14 @@
-package gal
+package gal_test
 
 import (
 	"testing"
 
+	"github.com/seborama/gal"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestEval(t *testing.T) {
 	xpn := `-3 + 4`
-	val := Eval(xpn)
-	assert.Equal(t, NewNumber(1), val)
+	val := gal.Eval(xpn)
+	assert.Equal(t, gal.NewNumber(1), val)
 }

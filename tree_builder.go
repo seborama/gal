@@ -72,16 +72,16 @@ func (tb TreeBuilder) FromExpr(expr string) (Tree, error) {
 
 		case operatorType:
 			switch part {
-			case plus.String():
-				exprTree = append(exprTree, plus)
-			case minus.String():
-				exprTree = append(exprTree, minus)
-			case multiply.String():
-				exprTree = append(exprTree, multiply)
-			case divide.String():
-				exprTree = append(exprTree, divide)
-			case modulus.String():
-				exprTree = append(exprTree, modulus)
+			case Plus.String():
+				exprTree = append(exprTree, Plus)
+			case Minus.String():
+				exprTree = append(exprTree, Minus)
+			case Multiply.String():
+				exprTree = append(exprTree, Multiply)
+			case Divide.String():
+				exprTree = append(exprTree, Divide)
+			case Modulus.String():
+				exprTree = append(exprTree, Modulus)
 			default:
 				return nil, errors.WithStack(newErrUnknownOperator(part))
 			}

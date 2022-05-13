@@ -12,22 +12,22 @@ func (o Operator) String() string {
 
 const (
 	invalidOperator Operator = "invalid"
-	plus            Operator = "+"
-	minus           Operator = "-"
-	multiply        Operator = "*"
-	divide          Operator = "/"
-	modulus         Operator = "%"
-	power           Operator = "^"
+	Plus            Operator = "+"
+	Minus           Operator = "-"
+	Multiply        Operator = "*"
+	Divide          Operator = "/"
+	Modulus         Operator = "%"
+	Power           Operator = "^"
 )
 
 func powerOperators(o Operator) bool {
-	return o == power
+	return o == Power
 }
 
 func multiplicativeOperators(o Operator) bool {
-	return o == multiply || o == divide || o == modulus
+	return o == Multiply || o == Divide || o == Modulus
 }
 
 func additiveOperators(o Operator) bool {
-	return o == plus || o == minus
+	return o == Plus || o == Minus
 }

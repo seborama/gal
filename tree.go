@@ -143,22 +143,22 @@ func calculate(lhs Value, op Operator, rhs Value) Value {
 	var outVal Value = NewUndefined()
 
 	switch op {
-	case plus:
+	case Plus:
 		outVal = lhs.Add(rhs)
 
-	case minus:
+	case Minus:
 		outVal = lhs.Sub(rhs)
 
-	case multiply:
+	case Multiply:
 		outVal = lhs.Multiply(rhs)
 
-	case divide:
+	case Divide:
 		outVal = lhs.Divide(rhs)
 
-	case power:
+	case Power:
 		outVal = lhs.PowerOf(rhs)
 
-	case modulus:
+	case Modulus:
 		outVal = lhs.Mod(rhs)
 
 	default:
@@ -191,12 +191,12 @@ func (tree Tree) cleansePlusMinusTreeStart() Tree {
 			}
 
 			switch e.(Operator) {
-			case plus:
+			case Plus:
 				// drop superfluous plus sign at start of Tree
 				continue
 
-			case minus:
-				outTree = append(outTree, NewNumber(-1), multiply, tree[i+1])
+			case Minus:
+				outTree = append(outTree, NewNumber(-1), Multiply, tree[i+1])
 				i++
 				continue
 
