@@ -5,7 +5,7 @@ A simplistic expression evaluator in Go.
 This is a research project.\
 It is work in progress and right now in a very early stage.
 
-Check the tests in [`tree_test.go`](tree_test.go) for ideas of usage and capability, notably `TestTree_Eval*` tests.
+Check the tests for ideas of usage and capability.
 
 ## Numbers
 
@@ -42,4 +42,12 @@ Expressions are parsed in two stages:
 Notes:
 
 - a Tree may contain one or more sub-Trees (recursively or not) to hold functions or to express associativity.
-- Calculation is performed in successive executions of by decreased operator precedence.
+- Calculation is performed in successive rounds of decreased operator precedence. This is to enforce natural associativity.
+
+## Code structure
+
+The main entry point is `Eval` in `gal.go`.
+
+`Eval` instantiates a `TreeBuilder` optionally with configuration (notably to pass a map of variable names and values). It subsequently calls `TreeBuilder`'s `FromExpr` method to create a `Tree` from the expression to be evaluated.
+
+Finally, `Tree`'s `Eval` method performs the evaluation of the `Tree` and returns the resultant `Value` to `gal.go`'s `Eval` function.
