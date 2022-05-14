@@ -6,38 +6,15 @@ import (
 	"github.com/pkg/errors"
 )
 
-type variables map[string]Value
-
-type treeConfig struct {
-	variables variables
-}
-
-func (tc treeConfig) Variable(name string) (Value, bool) {
-	val, ok := tc.variables[name]
-	return val, ok
-}
-
-type option func(*treeConfig)
-
-func WithVariables(variables map[string]Value) option {
-	return func(cfg *treeConfig) {
-		cfg.variables = variables
-	}
-}
-
 type TreeBuilder struct {
-	cfg *treeConfig
+	cfg *parseConfig
 }
 
-func NewTreeBuilder(opts ...option) *TreeBuilder {
-	cfg := &treeConfig{}
+func NewTreeBuilder(opts ...parseOption) *TreeBuilder {
+	cfg := &parseConfig{}
 
 	for _, o := range opts {
 		o(cfg)
-	}
-
-	if cfg.variables == nil {
-		cfg.variables = variables{}
 	}
 
 	return &TreeBuilder{
@@ -96,14 +73,12 @@ func (tb TreeBuilder) FromExpr(expr string) (Tree, error) {
 			if fname == "" {
 				exprTree = append(exprTree, v)
 			} else {
-				exprTree = append(exprTree, NewFunction(fname, v.Split()...))
+				bodyFn := PreDefinedFunction(fname, tb.cfg.functions)
+				exprTree = append(exprTree, NewFunction(bodyFn, v.Split()...))
 			}
 
 		case variableType:
-			v, ok := tb.cfg.Variable(part)
-			if !ok {
-				return nil, newErrSyntaxError(fmt.Sprintf("syntax error: unknown variable '%s'", part))
-			}
+			v := NewVariable(part)
 			exprTree = append(exprTree, v)
 
 		default:
@@ -166,7 +141,7 @@ func extractPart(expr string) (string, exprType, int, error) {
 	}
 
 	// read part - operator
-	// TODO: only single character operators are supported
+	// NOTE: only single character operators are supported
 	if isOperator(string(expr[pos])) {
 		if expr[pos] == '+' || expr[pos] == '-' {
 			s, l := squashPlusMinusChain(expr[pos:])
@@ -260,7 +235,7 @@ func readFunctionArguments(expr string) (string, int, error) {
 				return expr[:to], to, nil
 			}
 		}
-		// TODO: handle stringType
+		// TODO: handle stringType so we could have e.g. len("abc") returning 3
 	}
 
 	return "", 0, errors.WithStack(newErrSyntaxError(fmt.Sprintf("missing ')' for function arguments '%s'", expr[:to])))

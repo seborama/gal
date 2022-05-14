@@ -23,13 +23,41 @@ type Value interface {
 	entry
 }
 
-func Eval(expr string, opts ...option) Value {
+// Example: Parse("blah", WithFunctions(...)).Eval(WithVariables(...))
+// This allows to parse an expression and then use the resulting Tree for multiple
+// evaluations with different variables provided.
+func Parse(expr string, opts ...parseOption) Tree {
 	treeBuilder := NewTreeBuilder(opts...)
 
 	tree, err := treeBuilder.FromExpr(expr)
 	if err != nil {
-		return NewUndefinedWithReasonf(err.Error())
+		return Tree{
+			NewUndefinedWithReasonf(err.Error()),
+		}
 	}
 
-	return tree.Eval()
+	return tree
+}
+
+type Functions map[string]FunctionalValue
+
+func (f Functions) Function(name string) (FunctionalValue, bool) {
+	if f == nil {
+		return nil, false
+	}
+
+	val, ok := f[name]
+	return val, ok
+}
+
+type parseConfig struct {
+	functions Functions
+}
+
+type parseOption func(*parseConfig)
+
+func WithFunctions(f Functions) parseOption {
+	return func(cfg *parseConfig) {
+		cfg.functions = f
+	}
 }

@@ -8,6 +8,7 @@ const (
 	operatorEntryKind
 	treeEntryKind
 	functionEntryKind
+	variableEntryKind
 )
 
 type entry interface {
@@ -32,17 +33,60 @@ func (tree Tree) FullLen() int {
 	return l
 }
 
-// Split divides a Tree trunk at points where twoconsecutive Values are present.
+type Variables map[string]Value
+
+type treeConfig struct {
+	variables Variables
+}
+
+func (tc treeConfig) Variable(name string) (Value, bool) {
+	if tc.variables == nil {
+		return nil, false
+	}
+
+	val, ok := tc.variables[name]
+	return val, ok
+}
+
+type treeOption func(*treeConfig)
+
+func WithVariables(variables Variables) treeOption {
+	return func(cfg *treeConfig) {
+		cfg.variables = variables
+	}
+}
+
+func (tree Tree) Eval(opts ...treeOption) Value {
+	//config
+	cfg := &treeConfig{}
+
+	for _, o := range opts {
+		o(cfg)
+	}
+
+	// execute calculation by decreasing order of precedence
+	workingTree := tree.CleanUp().
+		Calc(powerOperators, cfg).
+		Calc(multiplicativeOperators, cfg).
+		Calc(additiveOperators, cfg)
+
+	// TODO: refactor this
+	// perhaps add Tree.Value() which tests that only one entry is left and that it is a Value
+	return workingTree[0].(Value)
+}
+
+// Split divides a Tree trunk at points where two consecutive entries are present without
+// an operator in between.
 func (tree Tree) Split() []Tree {
 	var forest []Tree
 
 	partStart := 0
 
 	for i := 1; i < tree.TrunkLen(); i++ {
-		_, ok1 := tree[i].(Value)
-		_, ok2 := tree[i-1].(Value)
+		_, ok1 := tree[i].(Operator)
+		_, ok2 := tree[i-1].(Operator)
 
-		if ok1 && ok2 {
+		if !ok1 && !ok2 {
 			forest = append(forest, tree[partStart:i])
 			partStart = i
 		}
@@ -51,19 +95,7 @@ func (tree Tree) Split() []Tree {
 	return append(forest, tree[partStart:])
 }
 
-func (tree Tree) Eval() Value {
-	// execute calculation by decreasing order of precedence
-	workingTree := tree.CleanUp().
-		Calc(powerOperators).
-		Calc(multiplicativeOperators).
-		Calc(additiveOperators)
-
-	// TODO: refactor this
-	// perhaps add Tree.Value() which tests that only one entry is left and that it is a Value
-	return workingTree[0].(Value)
-}
-
-func (tree Tree) Calc(isOperatorInFocus func(Operator) bool) Tree {
+func (tree Tree) Calc(isOperatorInFilter func(Operator) bool, cfg *treeConfig) Tree {
 	var outTree Tree
 
 	var val entry
@@ -104,7 +136,7 @@ func (tree Tree) Calc(isOperatorInFocus func(Operator) bool) Tree {
 
 		case operatorEntryKind:
 			op = e.(Operator)
-			if isOperatorInFocus(op) {
+			if isOperatorInFilter(op) {
 				continue
 			}
 			outTree = append(outTree, val)
@@ -114,6 +146,22 @@ func (tree Tree) Calc(isOperatorInFocus func(Operator) bool) Tree {
 
 		case functionEntryKind:
 			rhsVal := e.(Function).Eval()
+			if val == nil {
+				val = rhsVal
+				continue
+			}
+
+			val = calculate(val.(Value), op, rhsVal)
+
+		case variableEntryKind:
+			varName := e.(Variable).Name
+			rhsVal, ok := cfg.Variable(varName)
+			if !ok {
+				return Tree{
+					NewUndefinedWithReasonf("syntax error: unknown variable name: '%s'", varName),
+				}
+			}
+
 			if val == nil {
 				val = rhsVal
 				continue
@@ -140,7 +188,7 @@ func (tree Tree) Calc(isOperatorInFocus func(Operator) bool) Tree {
 }
 
 func calculate(lhs Value, op Operator, rhs Value) Value {
-	var outVal Value = NewUndefined()
+	var outVal Value
 
 	switch op {
 	case Plus:

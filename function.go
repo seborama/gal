@@ -1,19 +1,31 @@
 package gal
 
 import (
+	"fmt"
 	"math"
 	"strings"
+
+	"github.com/google/go-cmp/cmp"
 )
 
-type Function struct {
-	Name string
-	Args []Tree
+type FunctionalValue func(...Tree) Value
+
+func (fv FunctionalValue) String() string {
+	// TODO: This is only to support the tests (see Function.Equal)).
+	//       This is not elegant but so far the only solution I have to compare
+	//       Functions in the tests.
+	return fmt.Sprintf("FunctionalValue @%p", fv)
 }
 
-func NewFunction(name string, args ...Tree) Function {
+type Function struct {
+	BodyFn FunctionalValue
+	Args   []Tree
+}
+
+func NewFunction(bodyFn FunctionalValue, args ...Tree) Function {
 	return Function{
-		Name: name,
-		Args: args,
+		BodyFn: bodyFn,
+		Args:   args,
 	}
 }
 
@@ -21,83 +33,136 @@ func (Function) kind() entryKind {
 	return functionEntryKind
 }
 
-func (f Function) String() string {
-	return string(f.Name)
-}
-
-func (f Function) argsLen() int {
-	return len(f.Args)
+func (f Function) Equal(other Function) bool {
+	// TODO: This is only to support the tests.
+	//       This is not elegant but so far the only solution I have to compare
+	//       Functions in the tests.
+	return f.BodyFn.String() == other.BodyFn.String() &&
+		cmp.Equal(f.Args, other.Args)
 }
 
 func (f Function) Eval() Value {
+	return f.BodyFn(f.Args...)
+}
+
+var preDefinedFunctions = map[string]FunctionalValue{
+	"pi":    Pi,
+	"cos":   Cos,
+	"sin":   Sin,
+	"tan":   Tan,
+	"sqrt":  Sqrt,
+	"floor": Floor,
+	"trunc": Trunc,
+}
+
+func PreDefinedFunction(name string, userFunctions Functions) FunctionalValue {
 	// note: for now function names are arbitrarily case-insensitive
-	switch strings.ToLower(f.Name) {
-	case "pi":
-		if f.argsLen() != 0 {
-			return NewUndefinedWithReasonf("%s requires no parameter, got %d", f.Name, f.argsLen())
-		}
-		return NewNumberFromFloat(math.Pi)
+	lowerName := strings.ToLower(name)
 
-	case "cos":
-		if f.argsLen() != 1 {
-			return NewUndefinedWithReasonf("%s requires 1 parameter, got %d", f.Name, f.argsLen())
-		}
-		argVal := f.Args[0].Eval()
-		if v, ok := argVal.(numberer); ok {
-			return v.Number().Cos()
-		}
-
-	case "floor":
-		if f.argsLen() != 1 {
-			return NewUndefinedWithReasonf("%s requires 1 parameter, got %d", f.Name, f.argsLen())
-		}
-		argVal := f.Args[0].Eval()
-		if v, ok := argVal.(numberer); ok {
-			return v.Number().Floor()
-		}
-
-	case "sin":
-		if f.argsLen() != 1 {
-			return NewUndefinedWithReasonf("%s requires 1 parameter, got %d", f.Name, f.argsLen())
-		}
-		argVal := f.Args[0].Eval()
-		if v, ok := argVal.(numberer); ok {
-			return v.Number().Sin()
-		}
-
-	case "sqrt":
-		if f.argsLen() != 1 {
-			return NewUndefinedWithReasonf("%s requires 1 parameter, got %d", f.Name, f.argsLen())
-		}
-		argVal := f.Args[0].Eval()
-		if v, ok := argVal.(numberer); ok {
-			return v.Number().Sqrt()
-		}
-
-	case "tan":
-		if f.argsLen() != 1 {
-			return NewUndefinedWithReasonf("%s requires 1 parameter, got %d", f.Name, f.argsLen())
-		}
-		argVal := f.Args[0].Eval()
-		if v, ok := argVal.(numberer); ok {
-			return v.Number().Tan()
-		}
-
-	case "trunc":
-		if f.argsLen() != 2 {
-			return NewUndefinedWithReasonf("%s requires 2 parameters, got %d", f.Name, f.argsLen())
-		}
-		argPrecision := f.Args[0].Eval()
-		precision, ok := argPrecision.(numberer)
-		if !ok {
-			return NewUndefinedWithReasonf("%s requires precision (argument #1) to be a number, got %s", f.Name, argPrecision.String())
-		}
-		argVal := f.Args[1].Eval()
-		if v, ok := argVal.(numberer); ok {
-			return v.Number().Trunc(int32(precision.Number().value.IntPart()))
-		}
-		return NewUndefinedWithReasonf("%s requires value (argument #2) to be a number, got %s", f.Name, argVal.String())
+	bodyFn, ok := preDefinedFunctions[lowerName]
+	if ok {
+		return bodyFn
 	}
 
-	return NewUndefinedWithReasonf("unknown function '%s'", f.Name)
+	bodyFn, ok = userFunctions.Function(lowerName)
+	if ok {
+		return bodyFn
+	}
+
+	return func(...Tree) Value {
+		return NewUndefinedWithReasonf("unknown function '%s'", name)
+	}
+}
+
+func Pi(args ...Tree) Value {
+	if len(args) != 0 {
+		return NewUndefinedWithReasonf("pi() requires no argument, got %d", len(args))
+	}
+
+	return NewNumberFromFloat(math.Pi)
+}
+
+func Cos(args ...Tree) Value {
+	if len(args) != 1 {
+		return NewUndefinedWithReasonf("cos() requires 1 argument, got %d", len(args))
+	}
+
+	argVal := args[0].Eval()
+	if v, ok := argVal.(numberer); ok {
+		return v.Number().Cos()
+	}
+
+	return NewUndefinedWithReasonf("cos(): invalid argument type '%T'", args[0])
+}
+
+func Sin(args ...Tree) Value {
+	if len(args) != 1 {
+		return NewUndefinedWithReasonf("sin() requires 1 argument, got %d", len(args))
+	}
+
+	argVal := args[0].Eval()
+	if v, ok := argVal.(numberer); ok {
+		return v.Number().Sin()
+	}
+
+	return NewUndefinedWithReasonf("sin(): invalid argument type '%T'", args[0])
+}
+
+func Tan(args ...Tree) Value {
+	if len(args) != 1 {
+		return NewUndefinedWithReasonf("tan() requires 1 argument, got %d", len(args))
+	}
+
+	argVal := args[0].Eval()
+	if v, ok := argVal.(numberer); ok {
+		return v.Number().Tan()
+	}
+
+	return NewUndefinedWithReasonf("tan(): invalid argument type '%T'", args[0])
+}
+
+func Sqrt(args ...Tree) Value {
+	if len(args) != 1 {
+		return NewUndefinedWithReasonf("sqrt() requires 1 argument, got %d", len(args))
+	}
+
+	argVal := args[0].Eval()
+	if v, ok := argVal.(numberer); ok {
+		return v.Number().Sqrt()
+	}
+
+	return NewUndefinedWithReasonf("sqrt(): invalid argument type '%T'", args[0])
+}
+
+func Floor(args ...Tree) Value {
+	if len(args) != 1 {
+		return NewUndefinedWithReasonf("floor() requires 1 argument, got %d", len(args))
+	}
+
+	argVal := args[0].Eval()
+	if v, ok := argVal.(numberer); ok {
+		return v.Number().Floor()
+	}
+
+	return NewUndefinedWithReasonf("floor(): invalid argument type '%T'", args[0])
+}
+
+func Trunc(args ...Tree) Value {
+	if len(args) != 2 {
+		return NewUndefinedWithReasonf("trunc() requires 2 arguments, got %d: '%v'", len(args), args)
+	}
+
+	argVal := args[0].Eval()
+
+	argPrecision := args[1].Eval()
+	precision, ok := argPrecision.(numberer)
+	if !ok {
+		return NewUndefinedWithReasonf("trunc() requires precision (argument #1) to be a number, got %s", argPrecision.String())
+	}
+
+	if v, ok := argVal.(numberer); ok {
+		return v.Number().Trunc(int32(precision.Number().value.IntPart()))
+	}
+
+	return NewUndefinedWithReasonf("trunc(): invalid argument #2 '%s'", argVal.String())
 }

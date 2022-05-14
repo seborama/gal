@@ -9,6 +9,6 @@ import (
 
 func TestEval(t *testing.T) {
 	xpn := `-3 + 4`
-	val := gal.Eval(xpn)
+	val := gal.Parse(xpn).Eval()
 	assert.Equal(t, gal.NewNumber(1), val)
 }

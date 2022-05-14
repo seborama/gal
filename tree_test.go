@@ -150,17 +150,17 @@ func TestTree_Eval_Expressions(t *testing.T) {
 				gal.NewNumber(10),
 				gal.Plus,
 				gal.NewFunction(
-					"trunc",
-					gal.Tree{
-						gal.NewNumber(6),
-					},
+					gal.Trunc,
 					gal.Tree{
 						gal.NewFunction(
-							"sqrt",
+							gal.Sqrt,
 							gal.Tree{
 								gal.NewNumber(10),
 							},
 						),
+					},
+					gal.Tree{
+						gal.NewNumber(6),
 					},
 				),
 			},
