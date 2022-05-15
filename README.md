@@ -95,6 +95,6 @@ Notes:
 
 The main entry point is `Parse` in `gal.go`.
 
-`Parse` instantiates a `TreeBuilder` optionally with configuration (notably to pass a map of variable names and values). It subsequently calls `TreeBuilder`'s `FromExpr` method to create a `Tree` from the expression to be evaluated.
+`Parse` instantiates a `TreeBuilder`. It subsequently calls `TreeBuilder`'s `FromExpr` method to create a parsed `Tree` representation of the expression to be evaluated.
 
 Finally, `Tree`'s `Eval` method performs the evaluation of the `Tree` and returns the resultant `Value` to `gal.go`'s `Eval` function.
