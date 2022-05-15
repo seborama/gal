@@ -48,24 +48,24 @@ func TestWithVariablesAndFunctions(t *testing.T) {
 				return gal.NewUndefinedWithReasonf("double() requires a single argument, got %d", len(args))
 			}
 
-			v, ok := args[0].(gal.Numberer)
+			value, ok := args[0].(gal.Numberer)
 			if !ok {
 				return gal.NewUndefinedWithReasonf("double(): syntax error - argument must be a number-like value, got '%v'", args[0])
 			}
 
-			return v.Number().Multiply(gal.NewNumber(2))
+			return value.Number().Multiply(gal.NewNumber(2))
 		},
 		"triple": func(args ...gal.Value) gal.Value {
 			if len(args) != 1 {
 				return gal.NewUndefinedWithReasonf("triple() requires a single argument, got %d", len(args))
 			}
 
-			v, ok := args[0].(gal.Numberer)
+			value, ok := args[0].(gal.Numberer)
 			if !ok {
 				return gal.NewUndefinedWithReasonf("triple(): syntax error - argument must be a number-like value, got '%v'", args[0])
 			}
 
-			return v.Number().Multiply(gal.NewNumber(3))
+			return value.Number().Multiply(gal.NewNumber(3))
 		},
 	}
 
@@ -77,8 +77,8 @@ func TestWithVariablesAndFunctions(t *testing.T) {
 	expr := `double(:val1:) + triple(:val2:)`
 
 	got := gal.
-		Parse(expr, gal.WithFunctions(funcs)).
-		Eval(gal.WithVariables(vars))
+		Parse(expr).
+		Eval(gal.WithVariables(vars), gal.WithFunctions(funcs))
 	expected := gal.NewNumber(23)
 
 	if !cmp.Equal(expected, got) {

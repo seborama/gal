@@ -54,6 +54,7 @@ func TestTreeBuilder_FromExpr_PlusMinus_String(t *testing.T) {
 		},
 		gal.Plus,
 		gal.NewFunction(
+			"tan",
 			gal.Tan,
 			gal.Tree{
 				gal.NewNumber(10),
@@ -73,27 +74,32 @@ func TestTreeBuilder_FromExpr_Functions(t *testing.T) {
 		"f": func(...gal.Value) gal.Value { return gal.NewNumber(123) },
 	}
 
-	got := gal.Parse(expr, gal.WithFunctions(funcs))
+	got := gal.Parse(expr)
 
 	expectedTree := gal.Tree{
 		gal.NewFunction(
+			"trunc",
 			gal.Trunc,
 			gal.Tree{
 				gal.NewFunction(
+					"tan",
 					gal.Tan,
 					gal.Tree{
 						gal.NewNumber(10),
 						gal.Plus,
 						gal.NewFunction(
+							"sin",
 							gal.Sin,
 							gal.Tree{
 								gal.NewFunction(
+									"cos",
 									gal.Cos,
 									gal.Tree{
 										gal.NewNumber(3),
 										gal.Plus,
 										gal.NewFunction(
-											funcs["f"],
+											"f",
+											nil,
 											gal.Tree{
 												gal.NewNumber(1),
 												gal.Plus,
@@ -124,7 +130,7 @@ func TestTreeBuilder_FromExpr_Functions(t *testing.T) {
 		t.FailNow()
 	}
 
-	gotVal := got.Eval()
+	gotVal := got.Eval(gal.WithFunctions(funcs))
 	expectedVal := gal.NewNumberFromFloat(5.323784)
 
 	if !cmp.Equal(expectedVal, gotVal) {

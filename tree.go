@@ -35,8 +35,23 @@ func (tree Tree) FullLen() int {
 
 type Variables map[string]Value
 
+type Functions map[string]FunctionalValue
+
+func (f Functions) Function(name string) FunctionalValue {
+	if f == nil {
+		return nil
+	}
+
+	if val, ok := f[name]; ok {
+		return val
+	}
+
+	return nil
+}
+
 type treeConfig struct {
 	variables Variables
+	functions Functions
 }
 
 func (tc treeConfig) Variable(name string) (Value, bool) {
@@ -50,9 +65,15 @@ func (tc treeConfig) Variable(name string) (Value, bool) {
 
 type treeOption func(*treeConfig)
 
-func WithVariables(variables Variables) treeOption {
+func WithVariables(vars Variables) treeOption {
 	return func(cfg *treeConfig) {
-		cfg.variables = variables
+		cfg.variables = vars
+	}
+}
+
+func WithFunctions(funcs Functions) treeOption {
+	return func(cfg *treeConfig) {
+		cfg.functions = funcs
 	}
 }
 
@@ -126,7 +147,7 @@ func (tree Tree) Calc(isOperatorInFilter func(Operator) bool, cfg *treeConfig) T
 				}
 			}
 
-			rhsVal := e.(Tree).Eval()
+			rhsVal := e.(Tree).Eval(WithFunctions(cfg.functions), WithVariables(cfg.variables))
 			if val == nil {
 				val = rhsVal
 				continue
@@ -145,7 +166,11 @@ func (tree Tree) Calc(isOperatorInFilter func(Operator) bool, cfg *treeConfig) T
 			op = invalidOperator
 
 		case functionEntryKind:
-			rhsVal := e.(Function).Eval(cfg.variables)
+			f := e.(Function)
+			if f.BodyFn == nil {
+				f.BodyFn = cfg.functions.Function(f.Name)
+			}
+			rhsVal := f.Eval(WithFunctions(cfg.functions), WithVariables(cfg.variables))
 			if val == nil {
 				val = rhsVal
 				continue

@@ -1,25 +1,13 @@
 package gal
 
 import (
-	"fmt"
-
 	"github.com/pkg/errors"
 )
 
-type TreeBuilder struct {
-	cfg *parseConfig
-}
+type TreeBuilder struct{}
 
-func NewTreeBuilder(opts ...parseOption) *TreeBuilder {
-	cfg := &parseConfig{}
-
-	for _, o := range opts {
-		o(cfg)
-	}
-
-	return &TreeBuilder{
-		cfg: cfg,
-	}
+func NewTreeBuilder() *TreeBuilder {
+	return &TreeBuilder{}
 }
 
 func (tb TreeBuilder) FromExpr(expr string) (Tree, error) {
@@ -60,7 +48,7 @@ func (tb TreeBuilder) FromExpr(expr string) (Tree, error) {
 			case Modulus.String():
 				exprTree = append(exprTree, Modulus)
 			default:
-				return nil, errors.WithStack(newErrUnknownOperator(part))
+				return nil, errors.Errorf("unknown operator: '%s'", part)
 			}
 
 		case functionType:
@@ -73,8 +61,8 @@ func (tb TreeBuilder) FromExpr(expr string) (Tree, error) {
 			if fname == "" {
 				exprTree = append(exprTree, v)
 			} else {
-				bodyFn := PreDefinedFunction(fname, tb.cfg.functions)
-				exprTree = append(exprTree, NewFunction(bodyFn, v.Split()...))
+				bodyFn := PreDefinedFunction(fname)
+				exprTree = append(exprTree, NewFunction(fname, bodyFn, v.Split()...))
 			}
 
 		case variableType:
@@ -82,7 +70,7 @@ func (tb TreeBuilder) FromExpr(expr string) (Tree, error) {
 			exprTree = append(exprTree, v)
 
 		default:
-			return nil, newErrSyntaxError(fmt.Sprintf("internal error: unknown expression part type '%v'", ptype))
+			return nil, errors.Errorf("internal error: unknown expression part type '%v'", ptype)
 		}
 
 		idx += length
@@ -177,7 +165,7 @@ func readString(expr string) (string, int, error) {
 	}
 
 	if expr[to-1] != '"' {
-		return "", 0, errors.WithStack(newErrSyntaxError(fmt.Sprintf("non-terminated string '%s'", expr[:to])))
+		return "", 0, errors.Errorf("syntax error: non-terminated string '%s'", expr[:to])
 	}
 
 	return expr[:to], to, nil
@@ -192,12 +180,12 @@ func readVariable(expr string) (string, int, error) {
 			break
 		}
 		if isBlankSpace(r) {
-			return "", 0, errors.WithStack(newErrSyntaxError(fmt.Sprintf("invalid character '%c' for variable name '%s'", r, expr[:to])))
+			return "", 0, errors.Errorf("syntax error: invalid character '%c' for variable name '%s'", r, expr[:to])
 		}
 	}
 
 	if expr[to-1] != ':' {
-		return "", 0, errors.WithStack(newErrSyntaxError(fmt.Sprintf("missing ':' to end variable '%s'", expr[:to])))
+		return "", 0, errors.Errorf("syntax error: missing ':' to end variable '%s'", expr[:to])
 	}
 
 	return expr[:to], to, nil
@@ -211,12 +199,12 @@ func readFunctionName(expr string) (string, int, error) {
 			return expr[:to], to, nil
 		}
 		if isBlankSpace(r) {
-			return "", 0, errors.WithStack(newErrSyntaxError(fmt.Sprintf("invalid character '%c' for function name '%s'", r, expr[:to])))
+			return "", 0, errors.Errorf("syntax error: invalid character '%c' for function name '%s'", r, expr[:to])
 		}
 		to += 1
 	}
 
-	return "", 0, errors.WithStack(newErrSyntaxError(fmt.Sprintf("missing '(' for function name '%s'", expr[:to])))
+	return "", 0, errors.Errorf("syntax error: missing '(' for function name '%s'", expr[:to])
 }
 
 func readFunctionArguments(expr string) (string, int, error) {
@@ -238,7 +226,7 @@ func readFunctionArguments(expr string) (string, int, error) {
 		// TODO: handle stringType so we could have e.g. len("abc") returning 3
 	}
 
-	return "", 0, errors.WithStack(newErrSyntaxError(fmt.Sprintf("missing ')' for function arguments '%s'", expr[:to])))
+	return "", 0, errors.Errorf("syntax error: missing ')' for function arguments '%s'", expr[:to])
 }
 
 func readNumber(expr string) (string, int, error) {
@@ -260,7 +248,7 @@ func readNumber(expr string) (string, int, error) {
 			continue
 		}
 
-		return "", 0, errors.WithStack(newErrSyntaxError(fmt.Sprintf("invalid character '%c' for number '%s'", r, expr[:to])))
+		return "", 0, errors.Errorf("syntax error: invalid character '%c' for number '%s'", r, expr[:to])
 	}
 
 	return expr[:to], to, nil

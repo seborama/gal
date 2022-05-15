@@ -2,8 +2,7 @@
 
 A simplistic expression parser and evaluator in Go.
 
-This is a research project.\
-It is work in progress and right now in a very early stage.
+This is a research project.
 
 ## Examples
 
@@ -26,13 +25,13 @@ func main() {
 	funcs := gal.Functions{
 		"double": func(args ...gal.Value) gal.Value {
 			// should first validate argument count here
-			v := args[0].(gal.Numberer) // should check type assertion is ok here
-			return v.Number().Multiply(gal.NewNumber(2))
+			value := args[0].(gal.Numberer) // should check type assertion is ok here
+			return value.Number().Multiply(gal.NewNumber(2))
 		},
 		"triple": func(args ...gal.Value) gal.Value {
 			// should first validate argument count here
-			v := args[0].(gal.Numberer)// should check type assertion is ok here
-			return v.Number().Multiply(gal.NewNumber(3))
+			value := args[0].(gal.Numberer)// should check type assertion is ok here
+			return value.Number().Multiply(gal.NewNumber(3))
 		},
 	}
 
@@ -44,8 +43,8 @@ func main() {
 	expr := `double(:val1:) + triple(:val2:)`
 
 	gal.
-		Parse(expr, gal.WithFunctions(funcs)).
-		Eval(gal.WithVariables(vars)) // returns 23
+		Parse(expr).
+		Eval(gal.WithVariables(vars), gal.WithFunctions(funcs)) // returns 23
 }
 ```
 
@@ -69,7 +68,9 @@ Function names are case-insensitive.
 
 A function can optionally accept one or more space-separated arguments, but it must return a single Value.
 
-User function definitions are passed as a `map[string]FunctionalValue` using `WithFunctions` when calling `Parse` from `gal`. This may move to `Eval` from `Tree` eventually. This would allow parsing the expression once and run `Eval` multiple times with different function definitions, as with variables.
+User function definitions are passed as a `map[string]FunctionalValue` using `WithFunctions` when calling `Eval` from `Tree`.
+
+This allows parsing the expression once with `Parse` and run `Tree`.`Eval` multiple times with different user function definitions.
 
 ## Variables
 
