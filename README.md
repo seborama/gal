@@ -9,12 +9,43 @@ It is work in progress and right now in a very early stage.
 
 Check the tests for ideas of usage and capability.
 
-More coming soon...
+Simple:
 
 ```go
 func main() {
-    expr := `trunc( tan(10 + sin(cos(3*4.4))) 6)`
+    expr := `trunc(tan(10 + sin(cos(3*4.4))) 6)`
     gal.Parse(expr).Eval() // returns 3.556049
+}
+```
+
+With user-defined functions and variables:
+
+```go
+// see TestWithVariablesAndFunctions() in gal_test.go for full code
+func main() {
+	funcs := gal.Functions{
+		"double": func(args ...gal.Value) gal.Value {
+			// should first validate argument count here
+			v := args[0].(gal.Numberer) // should check type assertion is ok here
+			return v.Number().Multiply(gal.NewNumber(2))
+		},
+		"triple": func(args ...gal.Value) gal.Value {
+			// should first validate argument count here
+			v := args[0].(gal.Numberer)// should check type assertion is ok here
+			return v.Number().Multiply(gal.NewNumber(3))
+		},
+	}
+
+	vars := gal.Variables{
+		":val1:": gal.NewNumber(4),
+		":val2:": gal.NewNumber(5),
+	}
+
+	expr := `double(:val1:) + triple(:val2:)`
+
+	gal.
+		Parse(expr, gal.WithFunctions(funcs)).
+		Eval(gal.WithVariables(vars)) // returns 23
 }
 ```
 

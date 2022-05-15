@@ -145,7 +145,7 @@ func (tree Tree) Calc(isOperatorInFilter func(Operator) bool, cfg *treeConfig) T
 			op = invalidOperator
 
 		case functionEntryKind:
-			rhsVal := e.(Function).Eval()
+			rhsVal := e.(Function).Eval(cfg.variables)
 			if val == nil {
 				val = rhsVal
 				continue

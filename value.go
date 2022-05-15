@@ -9,11 +9,11 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-type stringer interface {
+type Stringer interface {
 	String() string
 }
 
-type numberer interface {
+type Numberer interface {
 	Number() Number
 }
 
@@ -34,7 +34,7 @@ func (s String) Equal(other String) bool {
 }
 
 func (s String) Add(other Value) Value {
-	if v, ok := other.(stringer); ok {
+	if v, ok := other.(Stringer); ok {
 		return String{value: s.value + v.String()}
 	}
 
@@ -46,7 +46,7 @@ func (s String) Sub(other Value) Value {
 }
 
 func (s String) Multiply(other Value) Value {
-	if v, ok := other.(numberer); ok {
+	if v, ok := other.(Numberer); ok {
 		return String{
 			value: strings.Repeat(s.value, int(v.Number().value.IntPart())),
 		}
@@ -114,7 +114,7 @@ func (n Number) Equal(other Number) bool {
 }
 
 func (n Number) Add(other Value) Value {
-	if v, ok := other.(numberer); ok {
+	if v, ok := other.(Numberer); ok {
 		return Number{value: n.value.Add(v.Number().value)}
 	}
 
@@ -127,7 +127,7 @@ func (n Number) Sub(other Value) Value {
 		return Number{value: n.value.Sub(v.value)}
 	}
 
-	if v, ok := other.(numberer); ok {
+	if v, ok := other.(Numberer); ok {
 		return Number{
 			value: n.value.Sub(v.Number().value),
 		}
@@ -137,7 +137,7 @@ func (n Number) Sub(other Value) Value {
 }
 
 func (n Number) Multiply(other Value) Value {
-	if v, ok := other.(numberer); ok {
+	if v, ok := other.(Numberer); ok {
 		return Number{
 			value: n.value.Mul(v.Number().value),
 		}
@@ -147,7 +147,7 @@ func (n Number) Multiply(other Value) Value {
 }
 
 func (n Number) Divide(other Value) Value {
-	if v, ok := other.(numberer); ok {
+	if v, ok := other.(Numberer); ok {
 		return Number{
 			value: n.value.Div(v.Number().value),
 		}
@@ -157,7 +157,7 @@ func (n Number) Divide(other Value) Value {
 }
 
 func (n Number) PowerOf(other Value) Value {
-	if v, ok := other.(numberer); ok {
+	if v, ok := other.(Numberer); ok {
 		return Number{
 			value: n.value.Pow(v.Number().value),
 		}
@@ -167,7 +167,7 @@ func (n Number) PowerOf(other Value) Value {
 }
 
 func (n Number) Mod(other Value) Value {
-	if v, ok := other.(numberer); ok {
+	if v, ok := other.(Numberer); ok {
 		return Number{
 			value: n.value.Mod(v.Number().value),
 		}

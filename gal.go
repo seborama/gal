@@ -19,7 +19,7 @@ type Value interface {
 	Divide(Value) Value
 	PowerOf(Value) Value
 	Mod(Value) Value
-	stringer
+	Stringer
 	entry
 }
 

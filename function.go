@@ -8,7 +8,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-type FunctionalValue func(...Tree) Value
+type FunctionalValue func(...Value) Value
 
 func (fv FunctionalValue) String() string {
 	// TODO: This is only to support the tests (see Function.Equal)).
@@ -41,8 +41,16 @@ func (f Function) Equal(other Function) bool {
 		cmp.Equal(f.Args, other.Args)
 }
 
-func (f Function) Eval() Value {
-	return f.BodyFn(f.Args...)
+// TODO: passing vars here may not be necessary if Functions is passed to
+//       Tree.Eval (which is a separate TODO in itself)?
+func (f Function) Eval(vars Variables) Value {
+	var args []Value
+
+	for _, a := range f.Args {
+		args = append(args, a.Eval(WithVariables(vars)))
+	}
+
+	return f.BodyFn(args...)
 }
 
 var preDefinedFunctions = map[string]FunctionalValue{
@@ -69,12 +77,12 @@ func PreDefinedFunction(name string, userFunctions Functions) FunctionalValue {
 		return bodyFn
 	}
 
-	return func(...Tree) Value {
+	return func(...Value) Value {
 		return NewUndefinedWithReasonf("unknown function '%s'", name)
 	}
 }
 
-func Pi(args ...Tree) Value {
+func Pi(args ...Value) Value {
 	if len(args) != 0 {
 		return NewUndefinedWithReasonf("pi() requires no argument, got %d", len(args))
 	}
@@ -82,85 +90,85 @@ func Pi(args ...Tree) Value {
 	return NewNumberFromFloat(math.Pi)
 }
 
-func Cos(args ...Tree) Value {
+func Cos(args ...Value) Value {
 	if len(args) != 1 {
 		return NewUndefinedWithReasonf("cos() requires 1 argument, got %d", len(args))
 	}
 
-	argVal := args[0].Eval()
-	if v, ok := argVal.(numberer); ok {
+	argVal := args[0]
+	if v, ok := argVal.(Numberer); ok {
 		return v.Number().Cos()
 	}
 
 	return NewUndefinedWithReasonf("cos(): invalid argument type '%T'", args[0])
 }
 
-func Sin(args ...Tree) Value {
+func Sin(args ...Value) Value {
 	if len(args) != 1 {
 		return NewUndefinedWithReasonf("sin() requires 1 argument, got %d", len(args))
 	}
 
-	argVal := args[0].Eval()
-	if v, ok := argVal.(numberer); ok {
+	argVal := args[0]
+	if v, ok := argVal.(Numberer); ok {
 		return v.Number().Sin()
 	}
 
 	return NewUndefinedWithReasonf("sin(): invalid argument type '%T'", args[0])
 }
 
-func Tan(args ...Tree) Value {
+func Tan(args ...Value) Value {
 	if len(args) != 1 {
 		return NewUndefinedWithReasonf("tan() requires 1 argument, got %d", len(args))
 	}
 
-	argVal := args[0].Eval()
-	if v, ok := argVal.(numberer); ok {
+	argVal := args[0]
+	if v, ok := argVal.(Numberer); ok {
 		return v.Number().Tan()
 	}
 
 	return NewUndefinedWithReasonf("tan(): invalid argument type '%T'", args[0])
 }
 
-func Sqrt(args ...Tree) Value {
+func Sqrt(args ...Value) Value {
 	if len(args) != 1 {
 		return NewUndefinedWithReasonf("sqrt() requires 1 argument, got %d", len(args))
 	}
 
-	argVal := args[0].Eval()
-	if v, ok := argVal.(numberer); ok {
+	argVal := args[0]
+	if v, ok := argVal.(Numberer); ok {
 		return v.Number().Sqrt()
 	}
 
 	return NewUndefinedWithReasonf("sqrt(): invalid argument type '%T'", args[0])
 }
 
-func Floor(args ...Tree) Value {
+func Floor(args ...Value) Value {
 	if len(args) != 1 {
 		return NewUndefinedWithReasonf("floor() requires 1 argument, got %d", len(args))
 	}
 
-	argVal := args[0].Eval()
-	if v, ok := argVal.(numberer); ok {
+	argVal := args[0]
+	if v, ok := argVal.(Numberer); ok {
 		return v.Number().Floor()
 	}
 
 	return NewUndefinedWithReasonf("floor(): invalid argument type '%T'", args[0])
 }
 
-func Trunc(args ...Tree) Value {
+func Trunc(args ...Value) Value {
 	if len(args) != 2 {
 		return NewUndefinedWithReasonf("trunc() requires 2 arguments, got %d: '%v'", len(args), args)
 	}
 
-	argVal := args[0].Eval()
+	argVal := args[0]
 
-	argPrecision := args[1].Eval()
-	precision, ok := argPrecision.(numberer)
+	argPrecision := args[1]
+	precision, ok := argPrecision.(Numberer)
 	if !ok {
 		return NewUndefinedWithReasonf("trunc() requires precision (argument #1) to be a number, got %s", argPrecision.String())
 	}
 
-	if v, ok := argVal.(numberer); ok {
+	if v, ok := argVal.(Numberer); ok {
 		return v.Number().Trunc(int32(precision.Number().value.IntPart()))
 	}
 

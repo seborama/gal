@@ -70,7 +70,7 @@ func TestTreeBuilder_FromExpr_Functions(t *testing.T) {
 	expr := `trunc(tan(10 + sin(cos(3 + f(1+2 3 4)))) 6)`
 
 	funcs := gal.Functions{
-		"f": func(...gal.Tree) gal.Value { return gal.NewNumber(123) },
+		"f": func(...gal.Value) gal.Value { return gal.NewNumber(123) },
 	}
 
 	got := gal.Parse(expr, gal.WithFunctions(funcs))
@@ -129,32 +129,5 @@ func TestTreeBuilder_FromExpr_Functions(t *testing.T) {
 
 	if !cmp.Equal(expectedVal, gotVal) {
 		t.Error(cmp.Diff(expectedVal, gotVal))
-	}
-}
-
-func TestTreeBuilder_FromExpr_Variables(t *testing.T) {
-	vars := map[string]gal.Value{
-		":var1:": gal.NewNumber(4),
-		":var2:": gal.NewNumber(3),
-	}
-
-	expr := `2 + :var1: * :var2: - 5`
-
-	got := gal.Parse(expr).Eval(gal.WithVariables(vars))
-	expected := gal.NewNumber(9)
-
-	if !cmp.Equal(expected, got) {
-		t.Error(cmp.Diff(expected, got))
-	}
-}
-
-func TestTreeBuilder_FromExpr_UnknownVariable(t *testing.T) {
-	expr := `2 + :var1: * :var2: - 5`
-
-	got := gal.Parse(expr).Eval()
-	expected := gal.NewUndefinedWithReasonf("syntax error: unknown variable name: ':var1:'")
-
-	if !cmp.Equal(expected, got) {
-		t.Error(cmp.Diff(expected, got))
 	}
 }
