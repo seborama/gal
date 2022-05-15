@@ -99,3 +99,11 @@ The main entry point is `Parse` in `gal.go`.
 `Parse` instantiates a `TreeBuilder`. It subsequently calls `TreeBuilder`'s `FromExpr` method to create a parsed `Tree` representation of the expression to be evaluated.
 
 Finally, `Tree`'s `Eval` method performs the evaluation of the `Tree` and returns the resultant `Value` to `gal.go`'s `Eval` function.
+
+## To do
+
+A number of TODO's exist throughout the code.
+
+The next priorities are:
+- `TODO 001: handle stringType so we could have e.g. len("abc") returning 3`
+- `TODO 002: allow for multiple-character operators such as '**', '<<', '>>', etc`

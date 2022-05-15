@@ -130,6 +130,7 @@ func extractPart(expr string) (string, exprType, int, error) {
 
 	// read part - operator
 	// NOTE: only single character operators are supported
+	// TODO 002: allow for multiple-character operators such as '**', '<<', '>>', etc
 	if isOperator(string(expr[pos])) {
 		if expr[pos] == '+' || expr[pos] == '-' {
 			s, l := squashPlusMinusChain(expr[pos:])
@@ -223,7 +224,7 @@ func readFunctionArguments(expr string) (string, int, error) {
 				return expr[:to], to, nil
 			}
 		}
-		// TODO: handle stringType so we could have e.g. len("abc") returning 3
+		// TODO 001: handle stringType so we could have e.g. len("abc") returning 3
 	}
 
 	return "", 0, errors.Errorf("syntax error: missing ')' for function arguments '%s'", expr[:to])
