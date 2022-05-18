@@ -17,20 +17,24 @@ func main() {
 }
 ```
 
-With user-defined functions and variables:
+Advanced example, with user-defined functions and variables redefined once.\
+In this case, the expression is parsed once but evaluate twice:
 
 ```go
 // see TestWithVariablesAndFunctions() in gal_test.go for full code
 func main() {
+	// first of all, parse the expression (once only)
+	expr := `double(:val1:) + triple(:val2:)`
+	parsedExpr := gal.Parse(expr)
+
+	// step 1: define funcs and vars and Eval the expression
 	funcs := gal.Functions{
 		"double": func(args ...gal.Value) gal.Value {
-			// should first validate argument count here
-			value := args[0].(gal.Numberer) // should check type assertion is ok here
+			value := args[0].(gal.Numberer)
 			return value.Number().Multiply(gal.NewNumber(2))
 		},
 		"triple": func(args ...gal.Value) gal.Value {
-			// should first validate argument count here
-			value := args[0].(gal.Numberer)// should check type assertion is ok here
+			value := args[0].(gal.Numberer)
 			return value.Number().Multiply(gal.NewNumber(3))
 		},
 	}
@@ -40,11 +44,35 @@ func main() {
 		":val2:": gal.NewNumber(5),
 	}
 
-	expr := `double(:val1:) + triple(:val2:)`
+	// returns 4 * 2 + 5 * 3 == 23
+	parsedExpr.Eval(
+		gal.WithVariables(vars),
+		gal.WithFunctions(funcs),
+	)
 
-	gal.
-		Parse(expr).
-		Eval(gal.WithVariables(vars), gal.WithFunctions(funcs)) // returns 23
+	// step 2: re-define funcs and vars and Eval the expression again
+	// note that we do not need to parse the expression again, only just evaluate it
+	funcs = gal.Functions{
+		"double": func(args ...gal.Value) gal.Value {
+			value := args[0].(gal.Numberer)
+			return value.Number().Divide(gal.NewNumber(2))
+		},
+		"triple": func(args ...gal.Value) gal.Value {
+			value := args[0].(gal.Numberer)
+			return value.Number().Divide(gal.NewNumber(3))
+		},
+	}
+
+	vars = gal.Variables{
+		":val1:": gal.NewNumber(2),
+		":val2:": gal.NewNumber(6),
+	}
+
+	// returns 2 / 2 + 6 / 3 == 3 this time
+	parsedExpr.Eval(
+		gal.WithVariables(vars),
+		gal.WithFunctions(funcs),
+	)
 }
 ```
 

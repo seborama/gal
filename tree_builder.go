@@ -52,7 +52,6 @@ func (tb TreeBuilder) FromExpr(expr string) (Tree, error) {
 			}
 
 		case functionType:
-			// TODO: squash the leading and trailing '()'?
 			fname, l, _ := readFunctionName(part)
 			v, err := tb.FromExpr(part[l+1 : len(part)-1]) // exclude leading '(' and trailing ')'
 			if err != nil {
@@ -296,5 +295,10 @@ func isBlankSpace(r rune) bool {
 }
 
 func isOperator(s string) bool {
-	return s == "+" || s == "-" || s == "/" || s == "*" || s == "^" || s == "%"
+	return s == Plus.String() ||
+		s == Minus.String() ||
+		s == Divide.String() ||
+		s == Multiply.String() ||
+		s == Power.String() ||
+		s == Modulus.String()
 }

@@ -42,6 +42,10 @@ func TestTreeBuilder_FromExpr_UnknownVariable(t *testing.T) {
 }
 
 func TestWithVariablesAndFunctions(t *testing.T) {
+	expr := `double(:val1:) + triple(:val2:)`
+	parsedExpr := gal.Parse(expr)
+
+	// step 1: define funcs and vars and Eval the expression
 	funcs := gal.Functions{
 		"double": func(args ...gal.Value) gal.Value {
 			if len(args) != 1 {
@@ -74,12 +78,41 @@ func TestWithVariablesAndFunctions(t *testing.T) {
 		":val2:": gal.NewNumber(5),
 	}
 
-	expr := `double(:val1:) + triple(:val2:)`
-
-	got := gal.
-		Parse(expr).
-		Eval(gal.WithVariables(vars), gal.WithFunctions(funcs))
+	got := parsedExpr.Eval(
+		gal.WithVariables(vars),
+		gal.WithFunctions(funcs),
+	)
 	expected := gal.NewNumber(23)
+
+	if !cmp.Equal(expected, got) {
+		t.Error(cmp.Diff(expected, got))
+	}
+
+	// step 2: re-define funcs and vars and Eval the expression again
+	// note that we do not need to parse the expression again, only just evaluate it
+	funcs = gal.Functions{
+		"double": func(args ...gal.Value) gal.Value {
+			// should first validate argument count here
+			value := args[0].(gal.Numberer) // should check type assertion is ok here
+			return value.Number().Divide(gal.NewNumber(2))
+		},
+		"triple": func(args ...gal.Value) gal.Value {
+			// should first validate argument count here
+			value := args[0].(gal.Numberer) // should check type assertion is ok here
+			return value.Number().Divide(gal.NewNumber(3))
+		},
+	}
+
+	vars = gal.Variables{
+		":val1:": gal.NewNumber(2),
+		":val2:": gal.NewNumber(6),
+	}
+
+	got = parsedExpr.Eval(
+		gal.WithVariables(vars),
+		gal.WithFunctions(funcs),
+	)
+	expected = gal.NewNumber(3)
 
 	if !cmp.Equal(expected, got) {
 		t.Error(cmp.Diff(expected, got))
