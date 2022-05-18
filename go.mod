@@ -5,7 +5,7 @@ go 1.17
 require github.com/shopspring/decimal v1.3.1
 
 require (
-	github.com/google/go-cmp v0.5.7
+	github.com/google/go-cmp v0.5.8
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.7.1
 )

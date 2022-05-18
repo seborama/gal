@@ -52,7 +52,7 @@ func (tb TreeBuilder) FromExpr(expr string) (Tree, error) {
 			}
 
 		case functionType:
-			// TODO: squash the leading and trailing '()'
+			// TODO: squash the leading and trailing '()'?
 			fname, l, _ := readFunctionName(part)
 			v, err := tb.FromExpr(part[l+1 : len(part)-1]) // exclude leading '(' and trailing ')'
 			if err != nil {
@@ -169,7 +169,7 @@ func readString(expr string) (string, int, error) {
 		return "", 0, errors.Errorf("syntax error: non-terminated string '%s'", expr[:to])
 	}
 
-	return expr[:to], to, nil
+	return expr[1 : to-1], to, nil
 }
 
 func readVariable(expr string) (string, int, error) {
@@ -212,7 +212,19 @@ func readFunctionArguments(expr string) (string, int, error) {
 	to := 1
 	bktCount := 1 // the currently opened bracket
 
-	for _, r := range expr[1:] {
+	for i := 1; i < len(expr); i++ {
+		r := expr[i]
+
+		if r == '"' {
+			_, l, err := readString(expr[to:])
+			if err != nil {
+				return "", 0, err
+			}
+			to += l
+			i += l - 1
+			continue
+		}
+
 		to += 1
 		if r == '(' {
 			bktCount++
@@ -224,7 +236,6 @@ func readFunctionArguments(expr string) (string, int, error) {
 				return expr[:to], to, nil
 			}
 		}
-		// TODO 001: handle stringType so we could have e.g. len("abc") returning 3
 	}
 
 	return "", 0, errors.Errorf("syntax error: missing ')' for function arguments '%s'", expr[:to])

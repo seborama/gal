@@ -37,7 +37,7 @@ func TestTreeBuilder_FromExpr_PlusMinus_String(t *testing.T) {
 	require.NoError(t, err)
 
 	expectedTree := gal.Tree{
-		gal.NewString(`"-3 + -4"`),
+		gal.NewString(`-3 + -4`),
 		gal.Minus,
 		gal.NewNumber(3),
 		gal.Plus,
@@ -68,7 +68,7 @@ func TestTreeBuilder_FromExpr_PlusMinus_String(t *testing.T) {
 }
 
 func TestTreeBuilder_FromExpr_Functions(t *testing.T) {
-	expr := `trunc(tan(10 + sin(cos(3 + f(1+2 3 4)))) 6)`
+	expr := `trunc(tan(10 + sin(cos(3 + f(1+2 3 ")4((")))) 6)`
 
 	funcs := gal.Functions{
 		"f": func(...gal.Value) gal.Value { return gal.NewNumber(123) },
@@ -109,7 +109,7 @@ func TestTreeBuilder_FromExpr_Functions(t *testing.T) {
 												gal.NewNumber(3),
 											},
 											gal.Tree{
-												gal.NewNumber(4),
+												gal.NewString(")4(("),
 											},
 										),
 									},

@@ -105,5 +105,4 @@ Finally, `Tree`'s `Eval` method performs the evaluation of the `Tree` and return
 A number of TODO's exist throughout the code.
 
 The next priorities are:
-- `TODO 001: handle stringType so we could have e.g. len("abc") returning 3`
 - `TODO 002: allow for multiple-character operators such as '**', '<<', '>>', etc`
