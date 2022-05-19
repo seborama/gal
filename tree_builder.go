@@ -1,6 +1,8 @@
 package gal
 
 import (
+	"strings"
+
 	"github.com/pkg/errors"
 )
 
@@ -47,6 +49,8 @@ func (tb TreeBuilder) FromExpr(expr string) (Tree, error) {
 				exprTree = append(exprTree, Divide)
 			case Modulus.String():
 				exprTree = append(exprTree, Modulus)
+			case Power.String():
+				exprTree = append(exprTree, Power)
 			default:
 				return nil, errors.Errorf("unknown operator: '%s'", part)
 			}
@@ -128,14 +132,11 @@ func extractPart(expr string) (string, exprType, int, error) {
 	}
 
 	// read part - operator
-	// NOTE: only single character operators are supported
-	// TODO 002: allow for multiple-character operators such as '**', '<<', '>>', etc
-	if isOperator(string(expr[pos])) {
-		if expr[pos] == '+' || expr[pos] == '-' {
-			s, l := squashPlusMinusChain(expr[pos:])
-			return s, operatorType, pos + l, nil
+	if s, l := readOperator(expr[pos:]); l != 0 {
+		if s == "+" || s == "-" {
+			s, l = squashPlusMinusChain(expr[pos:]) // TODO: move this into readOperator()?
 		}
-		return string(expr[pos]), operatorType, pos + 1, nil
+		return s, operatorType, pos + l, nil
 	}
 
 	// read part - number
@@ -244,8 +245,8 @@ func readNumber(expr string) (string, int, error) {
 	to := 0
 	isFloat := false
 
-	for _, r := range expr {
-		if isBlankSpace(r) || isOperator(string(r)) {
+	for i, r := range expr {
+		if isBlankSpace(r) || isOperator(expr[i:]) {
 			break
 		}
 
@@ -294,11 +295,24 @@ func isBlankSpace(r rune) bool {
 	return r == ' ' || r == '\t' || r == '\n'
 }
 
+func readOperator(s string) (string, int) {
+	if strings.HasPrefix(s, Power.String()) {
+		return s[:2], 2
+	}
+
+	if strings.HasPrefix(s, Plus.String()) ||
+		strings.HasPrefix(s, Minus.String()) ||
+		strings.HasPrefix(s, Divide.String()) ||
+		strings.HasPrefix(s, Multiply.String()) ||
+		strings.HasPrefix(s, Power.String()) ||
+		strings.HasPrefix(s, Modulus.String()) {
+		return s[:1], 1
+	}
+
+	return "", 0
+}
+
 func isOperator(s string) bool {
-	return s == Plus.String() ||
-		s == Minus.String() ||
-		s == Divide.String() ||
-		s == Multiply.String() ||
-		s == Power.String() ||
-		s == Modulus.String()
+	_, l := readOperator(s)
+	return l != 0
 }

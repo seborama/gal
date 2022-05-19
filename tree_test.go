@@ -35,7 +35,6 @@ func TestTree_Eval_Expressions(t *testing.T) {
 		},
 		"chained * and /": {
 			tree: gal.Tree{
-				// 3 * 4 / 2 / 3 * 4
 				gal.NewNumber(3),
 				gal.Multiply,
 				gal.NewNumber(4),
@@ -50,7 +49,6 @@ func TestTree_Eval_Expressions(t *testing.T) {
 		},
 		"chained and tree'ed * and /": {
 			tree: gal.Tree{
-				// (((3)) * (4)) / (2) / (3) * (4)
 				gal.Tree{
 					gal.Tree{
 						gal.Tree{
@@ -79,7 +77,6 @@ func TestTree_Eval_Expressions(t *testing.T) {
 		},
 		"rich tree": {
 			tree: gal.Tree{
-				// 3 - 4 * (-2) - 5 => 3 - ( 4 * (-2) ) - 5
 				gal.NewNumber(3),
 				gal.Minus,
 				gal.NewNumber(4),
@@ -95,7 +92,6 @@ func TestTree_Eval_Expressions(t *testing.T) {
 		},
 		"multiple levels of decreasing operator precedence": {
 			tree: gal.Tree{
-				// 10 ^ 2 * 4 + 3 => 10 ^ 2 * 4 + 3
 				gal.NewNumber(10),
 				gal.Power,
 				gal.NewNumber(2),
@@ -108,7 +104,6 @@ func TestTree_Eval_Expressions(t *testing.T) {
 		},
 		"multiple levels of operator precedence": {
 			tree: gal.Tree{
-				// 10 + 5 * 4 ^ 3 * 2 + 6 * 7 => 10 + ( 5 * ( 4 ^ 3 ) * 2 ) + ( 6 * 7 )
 				gal.NewNumber(10),
 				gal.Plus,
 				gal.NewNumber(5),

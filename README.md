@@ -82,7 +82,7 @@ Numbers implement arbitrary precision fixed-point decimal arithmetic with [shops
 
 ## Supported operations
 
-* Operators: `+` `-` `*` `/` `%` `^`
+* Operators: `+` `-` `*` `/` `%` `**`
 * Types: String, Number
 * Associativity with parentheses
 * Functions:
@@ -133,4 +133,4 @@ Finally, `Tree`'s `Eval` method performs the evaluation of the `Tree` and return
 A number of TODO's exist throughout the code.
 
 The next priorities are:
-- `TODO 002: allow for multiple-character operators such as '**', '<<', '>>', etc`
+- review `TODO`'s

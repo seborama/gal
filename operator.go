@@ -17,7 +17,7 @@ const (
 	Multiply        Operator = "*"
 	Divide          Operator = "/"
 	Modulus         Operator = "%"
-	Power           Operator = "^"
+	Power           Operator = "**"
 )
 
 func powerOperators(o Operator) bool {
