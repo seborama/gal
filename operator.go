@@ -18,6 +18,8 @@ const (
 	Divide          Operator = "/"
 	Modulus         Operator = "%"
 	Power           Operator = "**"
+	LShift          Operator = "<<"
+	RShift          Operator = ">>"
 )
 
 func powerOperators(o Operator) bool {
@@ -30,4 +32,8 @@ func multiplicativeOperators(o Operator) bool {
 
 func additiveOperators(o Operator) bool {
 	return o == Plus || o == Minus
+}
+
+func bitwiseShiftOperators(o Operator) bool {
+	return o == LShift || o == RShift
 }

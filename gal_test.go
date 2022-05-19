@@ -9,9 +9,25 @@ import (
 )
 
 func TestEval(t *testing.T) {
-	xpn := `-3 + 4`
-	val := gal.Parse(xpn).Eval()
-	assert.Equal(t, gal.NewNumber(1), val)
+	expr := `-1 + 2 * 3 / 2 + 3 ** 2 -8`
+	val := gal.Parse(expr).Eval()
+	assert.Equal(t, gal.NewNumber(3).String(), val.String())
+
+	expr = `1-2+7<<4+5`
+	val = gal.Parse(expr).Eval()
+	assert.Equal(t, gal.NewNumber((1-2+7)<<(4+5)).String(), val.String())
+
+	expr = `-1-2-7<<4+5`
+	val = gal.Parse(expr).Eval()
+	assert.Equal(t, gal.NewNumber((-1-2-7)<<(4+5)).String(), val.String())
+
+	expr = `-100*2*7+1>>2+3`
+	val = gal.Parse(expr).Eval()
+	assert.Equal(t, gal.NewNumber((-100*2*7+1)>>(2+3)).String(), val.String())
+
+	expr = `100*2*7+1>>2+3`
+	val = gal.Parse(expr).Eval()
+	assert.Equal(t, gal.NewNumber((100*2*7+1)>>(2+3)).String(), val.String())
 }
 
 func TestTreeBuilder_FromExpr_Variables(t *testing.T) {

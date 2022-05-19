@@ -89,7 +89,8 @@ func (tree Tree) Eval(opts ...treeOption) Value {
 	workingTree := tree.CleanUp().
 		Calc(powerOperators, cfg).
 		Calc(multiplicativeOperators, cfg).
-		Calc(additiveOperators, cfg)
+		Calc(additiveOperators, cfg).
+		Calc(bitwiseShiftOperators, cfg)
 
 	// TODO: refactor this
 	// perhaps add Tree.Value() which tests that only one entry is left and that it is a Value
@@ -116,7 +117,7 @@ func (tree Tree) Split() []Tree {
 	return append(forest, tree[partStart:])
 }
 
-func (tree Tree) Calc(isOperatorInFilter func(Operator) bool, cfg *treeConfig) Tree {
+func (tree Tree) Calc(isOperatorInPrecedenceGroup func(Operator) bool, cfg *treeConfig) Tree {
 	var outTree Tree
 
 	var val entry
@@ -157,7 +158,7 @@ func (tree Tree) Calc(isOperatorInFilter func(Operator) bool, cfg *treeConfig) T
 
 		case operatorEntryKind:
 			op = e.(Operator)
-			if isOperatorInFilter(op) {
+			if isOperatorInPrecedenceGroup(op) {
 				continue
 			}
 			outTree = append(outTree, val)
@@ -233,6 +234,12 @@ func calculate(lhs Value, op Operator, rhs Value) Value {
 
 	case Modulus:
 		outVal = lhs.Mod(rhs)
+
+	case LShift:
+		outVal = lhs.LShift(rhs)
+
+	case RShift:
+		outVal = lhs.RShift(rhs)
 
 	default:
 		return NewUndefinedWithReasonf("unimplemented operator: '%s'", op.String())

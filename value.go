@@ -67,6 +67,14 @@ func (s String) Mod(Value) Value {
 	return Undefined{}
 }
 
+func (s String) LShift(Value) Value {
+	return Undefined{} // TODO: could eject characters on the leftwise
+}
+
+func (s String) RShift(Value) Value {
+	return Undefined{} // TODO: could eject characters on the rightwise
+}
+
 func (s String) String() string {
 	return s.value
 }
@@ -176,6 +184,40 @@ func (n Number) Mod(other Value) Value {
 	return NewUndefinedWithReasonf("NaN: %s", other.String())
 }
 
+func (n Number) LShift(other Value) Value {
+	if v, ok := other.(Numberer); ok {
+		if v.Number().value.IsNegative() {
+			return NewUndefinedWithReasonf("invalid negative bitwise shift")
+		}
+		if !v.Number().value.IsInteger() {
+			return NewUndefinedWithReasonf("invalid non-integer bitwise shift")
+		}
+
+		return Number{
+			value: n.value.Mul(decimal.NewFromInt(2).Pow(v.Number().value)).Floor(),
+		}
+	}
+
+	return NewUndefinedWithReasonf("NaN: %s", other.String())
+}
+
+func (n Number) RShift(other Value) Value {
+	if v, ok := other.(Numberer); ok {
+		if v.Number().value.IsNegative() {
+			return NewUndefinedWithReasonf("invalid negative bitwise shift")
+		}
+		if !v.Number().value.IsInteger() {
+			return NewUndefinedWithReasonf("invalid non-integer bitwise shift")
+		}
+
+		return Number{
+			value: n.value.Div(decimal.NewFromInt(2).Pow(v.Number().value)).Floor(),
+		}
+	}
+
+	return NewUndefinedWithReasonf("NaN: %s", other.String())
+}
+
 func (n Number) Neg() Number {
 	return Number{
 		value: n.value.Neg(),
@@ -274,6 +316,14 @@ func (Undefined) PowerOf(Value) Value {
 }
 
 func (Undefined) Mod(Value) Value {
+	return Undefined{}
+}
+
+func (Undefined) LShift(Value) Value {
+	return Undefined{}
+}
+
+func (Undefined) RShift(Value) Value {
 	return Undefined{}
 }
 

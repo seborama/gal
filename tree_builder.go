@@ -51,6 +51,10 @@ func (tb TreeBuilder) FromExpr(expr string) (Tree, error) {
 				exprTree = append(exprTree, Modulus)
 			case Power.String():
 				exprTree = append(exprTree, Power)
+			case LShift.String():
+				exprTree = append(exprTree, LShift)
+			case RShift.String():
+				exprTree = append(exprTree, RShift)
 			default:
 				return nil, errors.Errorf("unknown operator: '%s'", part)
 			}
@@ -296,7 +300,9 @@ func isBlankSpace(r rune) bool {
 }
 
 func readOperator(s string) (string, int) {
-	if strings.HasPrefix(s, Power.String()) {
+	if strings.HasPrefix(s, Power.String()) ||
+		strings.HasPrefix(s, LShift.String()) ||
+		strings.HasPrefix(s, RShift.String()) {
 		return s[:2], 2
 	}
 

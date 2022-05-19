@@ -82,7 +82,13 @@ Numbers implement arbitrary precision fixed-point decimal arithmetic with [shops
 
 ## Supported operations
 
-* Operators: `+` `-` `*` `/` `%` `**`
+* Operators: `+` `-` `*` `/` `%` `**` `<<` `>>`
+	* [Precedence](https://en.wikipedia.org/wiki/Order_of_operations#Programming_languages), highest to lowest:
+		* `**`
+		* `*` `/` `%`
+		* `+` `-`
+		* `<<` `>>`
+	* Note: Go classifies bit shift operators with the higher `*`.
 * Types: String, Number
 * Associativity with parentheses
 * Functions:

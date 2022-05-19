@@ -19,6 +19,8 @@ type Value interface {
 	Divide(Value) Value
 	PowerOf(Value) Value
 	Mod(Value) Value
+	LShift(Value) Value
+	RShift(Value) Value
 	Stringer
 	entry
 }
