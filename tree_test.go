@@ -17,7 +17,7 @@ func TestTree_Eval_Expressions(t *testing.T) {
 				gal.Multiply,
 				gal.NewNumber(-4),
 			},
-			want: gal.NewUndefinedWithReasonf("syntax error: expression starts with '*'"),
+			want: gal.NewUndefinedWithReasonf("syntax error: missing left hand side value for operator '*'"),
 		},
 		"starts with + -4": {
 			tree: gal.Tree{

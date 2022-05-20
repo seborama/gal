@@ -13,16 +13,12 @@ func NewTreeBuilder() *TreeBuilder {
 }
 
 func (tb TreeBuilder) FromExpr(expr string) (Tree, error) {
-	exprTree := Tree{}
+	tree := Tree{}
 
 	for idx := 0; idx < len(expr); {
 		part, ptype, length, err := extractPart(expr[idx:])
 		if err != nil {
 			return nil, err
-		}
-
-		if ptype == blankType {
-			break
 		}
 
 		switch ptype {
@@ -31,30 +27,30 @@ func (tb TreeBuilder) FromExpr(expr string) (Tree, error) {
 			if err != nil {
 				return nil, err
 			}
-			exprTree = append(exprTree, v)
+			tree = append(tree, v)
 
 		case stringType:
 			v := NewString(part)
-			exprTree = append(exprTree, v)
+			tree = append(tree, v)
 
 		case operatorType:
 			switch part {
 			case Plus.String():
-				exprTree = append(exprTree, Plus)
+				tree = append(tree, Plus)
 			case Minus.String():
-				exprTree = append(exprTree, Minus)
+				tree = append(tree, Minus)
 			case Multiply.String():
-				exprTree = append(exprTree, Multiply)
+				tree = append(tree, Multiply)
 			case Divide.String():
-				exprTree = append(exprTree, Divide)
+				tree = append(tree, Divide)
 			case Modulus.String():
-				exprTree = append(exprTree, Modulus)
+				tree = append(tree, Modulus)
 			case Power.String():
-				exprTree = append(exprTree, Power)
+				tree = append(tree, Power)
 			case LShift.String():
-				exprTree = append(exprTree, LShift)
+				tree = append(tree, LShift)
 			case RShift.String():
-				exprTree = append(exprTree, RShift)
+				tree = append(tree, RShift)
 			default:
 				return nil, errors.Errorf("unknown operator: '%s'", part)
 			}
@@ -66,15 +62,19 @@ func (tb TreeBuilder) FromExpr(expr string) (Tree, error) {
 				return nil, err
 			}
 			if fname == "" {
-				exprTree = append(exprTree, v)
+				tree = append(tree, v)
 			} else {
 				bodyFn := PreDefinedFunction(fname)
-				exprTree = append(exprTree, NewFunction(fname, bodyFn, v.Split()...))
+				tree = append(tree, NewFunction(fname, bodyFn, v.Split()...))
 			}
 
 		case variableType:
 			v := NewVariable(part)
-			exprTree = append(exprTree, v)
+			tree = append(tree, v)
+
+		case blankType:
+			// only returned when the entire expression is blank or only contains blanks.
+			return tree, nil
 
 		default:
 			return nil, errors.Errorf("internal error: unknown expression part type '%v'", ptype)
@@ -83,7 +83,17 @@ func (tb TreeBuilder) FromExpr(expr string) (Tree, error) {
 		idx += length
 	}
 
-	return exprTree, nil
+	// adjust trees that start with "Plus" or "Minus" followed by a "numberer"
+	if tree.TrunkLen() >= 2 {
+		switch tree[0] {
+		case Plus:
+			return tree[1:], nil
+		case Minus:
+			return append(Tree{NewNumber(-1), Multiply}, tree[1:]...), nil
+		}
+	}
+
+	return tree, nil
 }
 
 // returns the part extracted as string, the type extracted, the cursor position

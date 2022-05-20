@@ -14,7 +14,8 @@ func TestTreeBuilder_FromExpr_VariousOperators(t *testing.T) {
 	require.NoError(t, err)
 
 	expectedTree := gal.Tree{
-		gal.Minus,
+		gal.NewNumber(-1),
+		gal.Multiply,
 		gal.NewNumber(1),
 		gal.Plus,
 		gal.NewNumber(2),

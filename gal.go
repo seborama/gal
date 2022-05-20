@@ -4,12 +4,12 @@ type exprType int
 
 const (
 	unknownType exprType = iota
+	blankType
 	numericalType
 	operatorType
 	stringType
 	variableType
 	functionType
-	blankType // TODO: remove since it's a non-expression?
 )
 
 type Value interface {

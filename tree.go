@@ -86,7 +86,8 @@ func (tree Tree) Eval(opts ...treeOption) Value {
 	}
 
 	// execute calculation by decreasing order of precedence
-	workingTree := tree.CleanUp().
+	workingTree := tree.
+		CleanUp().
 		Calc(powerOperators, cfg).
 		Calc(multiplicativeOperators, cfg).
 		Calc(additiveOperators, cfg).
@@ -125,6 +126,11 @@ func (tree Tree) Calc(isOperatorInPrecedenceGroup func(Operator) bool, cfg *tree
 
 	for i := 0; i < tree.TrunkLen(); i++ {
 		e := tree[i]
+		if e == nil {
+			return Tree{
+				NewUndefinedWithReasonf("syntax error: nil value at tree entry #%d - tree: %+v", i, tree),
+			}
+		}
 
 		switch e.kind() {
 		case valueEntryKind:
@@ -135,7 +141,7 @@ func (tree Tree) Calc(isOperatorInPrecedenceGroup func(Operator) bool, cfg *tree
 
 			if val == nil {
 				return Tree{
-					NewUndefinedWithReasonf("syntax error: nil value cannot be operated upon (op='%s')", op.String()),
+					NewUndefinedWithReasonf("syntax error: missing left hand side value for operator '%s'", op.String()),
 				}
 			}
 
@@ -144,7 +150,7 @@ func (tree Tree) Calc(isOperatorInPrecedenceGroup func(Operator) bool, cfg *tree
 		case treeEntryKind:
 			if val == nil && op != invalidOperator {
 				return Tree{
-					NewUndefinedWithReasonf("syntax error: nil value cannot be operated upon (op='%s')", op.String()),
+					NewUndefinedWithReasonf("syntax error: missing left hand side value for operator '%s'", op.String()),
 				}
 			}
 
@@ -161,7 +167,9 @@ func (tree Tree) Calc(isOperatorInPrecedenceGroup func(Operator) bool, cfg *tree
 			if isOperatorInPrecedenceGroup(op) {
 				continue
 			}
-			outTree = append(outTree, val)
+			if val != nil {
+				outTree = append(outTree, val)
+			}
 			outTree = append(outTree, op)
 			val = nil
 			op = invalidOperator
@@ -196,7 +204,6 @@ func (tree Tree) Calc(isOperatorInPrecedenceGroup func(Operator) bool, cfg *tree
 			val = calculate(val.(Value), op, rhsVal)
 
 		case unknownEntryKind:
-			// TODO: distinguish between unknownEntryKind and undefinedEntryKind (which is a Value)
 			return Tree{e}
 
 		default:
@@ -249,8 +256,6 @@ func calculate(lhs Value, op Operator, rhs Value) Value {
 }
 
 func (tree Tree) CleanUp() Tree {
-	// TODO: add syntaxCheck() before prioritiseOperators to obtain a syntactically correct tree
-	//       i.e. 3 * * 4 would be detected as a syntax error, etc
 	return tree.
 		cleansePlusMinusTreeStart()
 }
@@ -258,40 +263,21 @@ func (tree Tree) CleanUp() Tree {
 // cleansePlusMinusTreeStart consolidates the - and + that are at the first position in a Tree.
 // `plus` is removed and `minus` causes the number that follows to be negated.
 func (tree Tree) cleansePlusMinusTreeStart() Tree {
-	outTree := Tree{}
+	outTree := make(Tree, len(tree))
+	copy(outTree, tree)
 
-	for i := 0; i < len(tree); i++ {
-		e := tree[i]
-
-		switch e.kind() {
-		case operatorEntryKind:
-			if i != 0 {
-				outTree = append(outTree, e)
-				continue
-			}
-
-			switch e.(Operator) {
-			case Plus:
-				// drop superfluous plus sign at start of Tree
-				continue
-
-			case Minus:
-				outTree = append(outTree, NewNumber(-1), Multiply, tree[i+1])
-				i++
-				continue
-
-			default:
-				return Tree{
-					NewUndefinedWithReasonf("syntax error: expression starts with '%s'", e.(Operator).String()),
-				}
-			}
-
-		default:
-			outTree = append(outTree, e)
-		}
+	if tree.TrunkLen() < 2 || (tree[0] != Plus && tree[0] != Minus) {
+		return outTree
 	}
 
-	return outTree
+	switch outTree[0] {
+	case Plus:
+		return outTree[1:]
+	case Minus:
+		return append(Tree{NewNumber(-1), Multiply}, outTree[1:]...)
+	}
+
+	panic("point never reached")
 }
 
 func (Tree) kind() entryKind {

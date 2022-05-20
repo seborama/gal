@@ -10,8 +10,14 @@ import (
 
 func TestEval(t *testing.T) {
 	expr := `-1 + 2 * 3 / 2 + 3 ** 2 -8`
-	val := gal.Parse(expr).Eval()
+	val := gal.
+		Parse(expr).
+		Eval()
 	assert.Equal(t, gal.NewNumber(3).String(), val.String())
+
+	expr = `-"123"+"100"`
+	val = gal.Parse(expr).Eval()
+	assert.Equal(t, gal.NewNumber(-23).String(), val.String())
 
 	expr = `1-2+7<<4+5`
 	val = gal.Parse(expr).Eval()
