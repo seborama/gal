@@ -59,15 +59,19 @@ func (f Function) Eval(opts ...treeOption) Value {
 }
 
 var preDefinedFunctions = map[string]FunctionalValue{
-	"pi":    Pi,
-	"cos":   Cos,
-	"sin":   Sin,
-	"tan":   Tan,
-	"sqrt":  Sqrt,
-	"floor": Floor,
-	"trunc": Trunc,
+	"pi":        Pi,
+	"factorial": Factorial,
+	"cos":       Cos,
+	"sin":       Sin,
+	"tan":       Tan,
+	"sqrt":      Sqrt,
+	"floor":     Floor,
+	"trunc":     Trunc,
 }
 
+// PreDefinedFunction returns a pre-defined function body if known.
+// It returns `nil` when no pre-defined function exists by the specified name.
+// This signals the Evaluator to attempt to find a user defined function.
 func PreDefinedFunction(name string) FunctionalValue {
 	// note: for now function names are arbitrarily case-insensitive
 	lowerName := strings.ToLower(name)
@@ -93,6 +97,17 @@ func Pi(args ...Value) Value {
 	}
 
 	return NewNumberFromFloat(math.Pi)
+}
+
+func Factorial(args ...Value) Value {
+	if len(args) != 1 {
+		return NewUndefinedWithReasonf("factorial() requires 1 argument, got %d", len(args))
+	}
+	if v, ok := args[0].(Numberer); ok {
+		return v.Number().Factorial()
+	}
+
+	return NewUndefinedWithReasonf("factorial(): invalid argument type '%s'", args[0].String())
 }
 
 func Cos(args ...Value) Value {

@@ -34,6 +34,10 @@ func TestEval(t *testing.T) {
 	expr = `100*2*7+1>>2+3`
 	val = gal.Parse(expr).Eval()
 	assert.Equal(t, gal.NewNumber((100*2*7+1)>>(2+3)).String(), val.String())
+
+	expr = `2+Factorial(4)-5`
+	val = gal.Parse(expr).Eval()
+	assert.Equal(t, gal.NewNumber(21).String(), val.String())
 }
 
 func TestTreeBuilder_FromExpr_Variables(t *testing.T) {

@@ -68,11 +68,11 @@ func (s String) Mod(Value) Value {
 }
 
 func (s String) LShift(Value) Value {
-	return Undefined{} // TODO: could eject characters on the leftwise
+	return Undefined{} // TODO: could eject characters on the left-wise
 }
 
 func (s String) RShift(Value) Value {
-	return Undefined{} // TODO: could eject characters on the rightwise
+	return Undefined{} // TODO: could eject characters on the right-wise
 }
 
 func (s String) String() string {
@@ -262,6 +262,25 @@ func (n Number) Floor() Number {
 func (n Number) Trunc(precision int32) Number {
 	return Number{
 		value: n.value.Truncate(precision),
+	}
+}
+
+func (n Number) Factorial() Number {
+	if !n.value.IsInteger() || n.value.IsNegative() {
+		panic(fmt.Sprintf("invalid calculation: Factorial requires a positive integer, cannot accept %s", n.String())) // TODO :-/
+	}
+
+	res := decimal.NewFromInt(1)
+
+	one := decimal.NewFromInt(1)
+	i := decimal.NewFromInt(2)
+	for i.LessThanOrEqual(n.value) {
+		res = res.Mul(i)
+		i = i.Add(one)
+	}
+
+	return Number{
+		value: res,
 	}
 }
 

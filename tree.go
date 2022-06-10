@@ -220,6 +220,35 @@ func (tree Tree) Calc(isOperatorInPrecedenceGroup func(Operator) bool, cfg *tree
 	return outTree
 }
 
+func (tree Tree) CleanUp() Tree {
+	return tree.
+		cleansePlusMinusTreeStart()
+}
+
+// cleansePlusMinusTreeStart consolidates the - and + that are at the first position in a Tree.
+// `plus` is removed and `minus` causes the number that follows to be negated.
+func (tree Tree) cleansePlusMinusTreeStart() Tree {
+	outTree := make(Tree, len(tree))
+	copy(outTree, tree)
+
+	if tree.TrunkLen() < 2 || (tree[0] != Plus && tree[0] != Minus) {
+		return outTree
+	}
+
+	switch outTree[0] {
+	case Plus:
+		return outTree[1:]
+	case Minus:
+		return append(Tree{NewNumber(-1), Multiply}, outTree[1:]...)
+	}
+
+	panic("point never reached")
+}
+
+func (Tree) kind() entryKind {
+	return treeEntryKind
+}
+
 func calculate(lhs Value, op Operator, rhs Value) Value {
 	var outVal Value
 
@@ -253,33 +282,4 @@ func calculate(lhs Value, op Operator, rhs Value) Value {
 	}
 
 	return outVal
-}
-
-func (tree Tree) CleanUp() Tree {
-	return tree.
-		cleansePlusMinusTreeStart()
-}
-
-// cleansePlusMinusTreeStart consolidates the - and + that are at the first position in a Tree.
-// `plus` is removed and `minus` causes the number that follows to be negated.
-func (tree Tree) cleansePlusMinusTreeStart() Tree {
-	outTree := make(Tree, len(tree))
-	copy(outTree, tree)
-
-	if tree.TrunkLen() < 2 || (tree[0] != Plus && tree[0] != Minus) {
-		return outTree
-	}
-
-	switch outTree[0] {
-	case Plus:
-		return outTree[1:]
-	case Minus:
-		return append(Tree{NewNumber(-1), Multiply}, outTree[1:]...)
-	}
-
-	panic("point never reached")
-}
-
-func (Tree) kind() entryKind {
-	return treeEntryKind
 }

@@ -9,7 +9,7 @@ import (
 )
 
 func TestTreeBuilder_FromExpr_VariousOperators(t *testing.T) {
-	expr := `-1 + 2 * 3 / 2 + 3 ** 2 -8` // == 3  // -1 + ( 2 * 3 / 2 ) + ( 3 ** 2 ) - 8
+	expr := `-1 + 2 * 3 / 2 + 3 ** 2 -8`
 	tree, err := gal.NewTreeBuilder().FromExpr(expr)
 	require.NoError(t, err)
 
