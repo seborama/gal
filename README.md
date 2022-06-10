@@ -7,7 +7,9 @@ This is a research project.
 Short link to repo Readme:
 
 <p align="left">
-  <img src="/static/bit.ly_3MDZ9QT.png" alt="Short URL" width="128">
+  <a href="https://bit.ly/3MDZ9QT">
+    <img src="/static/bit.ly_3MDZ9QT.png" alt="Short URL" width="128">
+  </a>
 </p>
 
 
