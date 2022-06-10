@@ -4,6 +4,13 @@ A simplistic expression parser and evaluator in Go.
 
 This is a research project.
 
+Short link:
+
+<p align="center">
+  <img src="/static/bit.ly_3MDZ9QT.png" alt="Short URL">
+</p>
+
+
 ## Examples
 
 Check the tests for ideas of usage and capability.
