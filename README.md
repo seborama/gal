@@ -4,10 +4,10 @@ A simplistic expression parser and evaluator in Go.
 
 This is a research project.
 
-Short link:
+Short link to repo Readme:
 
-<p align="center">
-  <img src="/static/bit.ly_3MDZ9QT.png" alt="Short URL">
+<p align="left">
+  <img src="/static/bit.ly_3MDZ9QT.png" alt="Short URL" width="128">
 </p>
 
 
