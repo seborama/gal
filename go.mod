@@ -1,4 +1,4 @@
-module github.com/seborama/gal/v5
+module github.com/seborama/gal/v6
 
 go 1.17
 
