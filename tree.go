@@ -21,6 +21,7 @@ func (tree Tree) TrunkLen() int {
 	return len(tree)
 }
 
+// FullLen returns the total number of non 'Tree-type' elements in the tree.
 func (tree Tree) FullLen() int {
 	l := len(tree)
 
@@ -33,10 +34,13 @@ func (tree Tree) FullLen() int {
 	return l
 }
 
+// Variables holds the value of user-defined variables.
 type Variables map[string]Value
 
+// Functions holds the definition of user-defined functions.
 type Functions map[string]FunctionalValue
 
+// Function returns the function definition of the function of the specified name.
 func (f Functions) Function(name string) FunctionalValue {
 	if f == nil {
 		return nil
@@ -54,6 +58,7 @@ type treeConfig struct {
 	functions Functions
 }
 
+// Variable returns the value of the variable specified by name.
 func (tc treeConfig) Variable(name string) (Value, bool) {
 	if tc.variables == nil {
 		return nil, false
@@ -65,18 +70,25 @@ func (tc treeConfig) Variable(name string) (Value, bool) {
 
 type treeOption func(*treeConfig)
 
+// WithVariables is a functional parameter for Tree evaluation.
+// It provides user-defined variables.
 func WithVariables(vars Variables) treeOption {
 	return func(cfg *treeConfig) {
 		cfg.variables = vars
 	}
 }
 
+// WithFunctions is a functional parameter for Tree evaluation.
+// It provides user-defined functions.
 func WithFunctions(funcs Functions) treeOption {
 	return func(cfg *treeConfig) {
 		cfg.functions = funcs
 	}
 }
 
+// Eval evaluates this tree and returns its value.
+// It accepts optional functional parameters to supply user-defined
+// entities such as functions and variables.
 func (tree Tree) Eval(opts ...treeOption) Value {
 	//config
 	cfg := &treeConfig{}
@@ -85,7 +97,9 @@ func (tree Tree) Eval(opts ...treeOption) Value {
 		o(cfg)
 	}
 
-	// execute calculation by decreasing order of precedence
+	// Execute calculation by decreasing order of precedence.
+	// It is necessary to proceed by operator precedence in order
+	// to calculate the expression under conventional rules of precedence.
 	workingTree := tree.
 		CleanUp().
 		Calc(powerOperators, cfg).
@@ -118,6 +132,13 @@ func (tree Tree) Split() []Tree {
 	return append(forest, tree[partStart:])
 }
 
+// Calc is a reduction operation that calculates the Value of sub-expressions contained
+// in this Tree, based on operator precedence.
+// When isOperatorInPrecedenceGroup returns true, the operator is calculated and the resultant
+// Value is inserted in _replacement_ of the terms (elements) of this Tree that where calculated.
+// For instance, a tree representing the expression '2 + 5 * 4 / 2' with an operator precedence
+// of 'multiplicativeOperators' would read the Tree left to right and return a new Tree that
+// represents: '2 + 10' where 10 was calculated (and reduced) from 5 * 4 = 20 / 2 = 10.
 func (tree Tree) Calc(isOperatorInPrecedenceGroup func(Operator) bool, cfg *treeConfig) Tree {
 	var outTree Tree
 
@@ -220,6 +241,7 @@ func (tree Tree) Calc(isOperatorInPrecedenceGroup func(Operator) bool, cfg *tree
 	return outTree
 }
 
+// CleanUp performs simplification operations before calculating this tree.
 func (tree Tree) CleanUp() Tree {
 	return tree.
 		cleansePlusMinusTreeStart()
