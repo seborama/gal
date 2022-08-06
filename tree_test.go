@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/seborama/gal"
+	"github.com/seborama/gal/v5"
 )
 
 func TestTree_Eval_Expressions(t *testing.T) {

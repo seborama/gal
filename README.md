@@ -1,5 +1,14 @@
 # Go Eval
 
+<p align="center">
+  <a href="https://pkg.go.dev/github.com/seborama/gal">
+    <img src="https://img.shields.io/badge/godoc-reference-blue.svg" alt="gal">
+  </a>
+  <a href="https://goreportcard.com/report/seborama/gal">
+    <img src="https://img.shields.io/badge/go%20report-A%2B-brightgreen.svg" alt="goreportcard">
+  </a>
+</p>
+
 A simplistic expression parser and evaluator in Go.
 
 This is a research project.
