@@ -17,6 +17,10 @@ type Numberer interface {
 	Number() Number
 }
 
+func ToNumber(val Value) Number {
+	return val.(Numberer).Number() // may panic
+}
+
 type String struct {
 	value string
 }
@@ -290,6 +294,14 @@ func (n Number) String() string {
 
 func (n Number) Number() Number {
 	return n
+}
+
+func (n Number) Float64() float64 {
+	return n.value.InexactFloat64()
+}
+
+func (n Number) Int64() int64 {
+	return n.value.IntPart()
 }
 
 type Undefined struct {

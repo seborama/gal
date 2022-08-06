@@ -42,56 +42,56 @@ In this case, the expression is parsed once but evaluate twice:
 ```go
 // see TestWithVariablesAndFunctions() in gal_test.go for full code
 func main() {
-	// first of all, parse the expression (once only)
-	expr := `double(:val1:) + triple(:val2:)`
-	parsedExpr := gal.Parse(expr)
+    // first of all, parse the expression (once only)
+    expr := `double(:val1:) + triple(:val2:)`
+    parsedExpr := gal.Parse(expr)
 
-	// step 1: define funcs and vars and Eval the expression
-	funcs := gal.Functions{
-		"double": func(args ...gal.Value) gal.Value {
-			value := args[0].(gal.Numberer)
-			return value.Number().Multiply(gal.NewNumber(2))
-		},
-		"triple": func(args ...gal.Value) gal.Value {
-			value := args[0].(gal.Numberer)
-			return value.Number().Multiply(gal.NewNumber(3))
-		},
-	}
+    // step 1: define funcs and vars and Eval the expression
+    funcs := gal.Functions{
+        "double": func(args ...gal.Value) gal.Value {
+            value := args[0].(gal.Numberer)
+            return value.Number().Multiply(gal.NewNumber(2))
+        },
+        "triple": func(args ...gal.Value) gal.Value {
+            value := args[0].(gal.Numberer)
+            return value.Number().Multiply(gal.NewNumber(3))
+        },
+    }
 
-	vars := gal.Variables{
-		":val1:": gal.NewNumber(4),
-		":val2:": gal.NewNumber(5),
-	}
+    vars := gal.Variables{
+        ":val1:": gal.NewNumber(4),
+        ":val2:": gal.NewNumber(5),
+    }
 
-	// returns 4 * 2 + 5 * 3 == 23
-	parsedExpr.Eval(
-		gal.WithVariables(vars),
-		gal.WithFunctions(funcs),
-	)
+    // returns 4 * 2 + 5 * 3 == 23
+    parsedExpr.Eval(
+        gal.WithVariables(vars),
+        gal.WithFunctions(funcs),
+    )
 
-	// step 2: re-define funcs and vars and Eval the expression again
-	// note that we do not need to parse the expression again, only just evaluate it
-	funcs = gal.Functions{
-		"double": func(args ...gal.Value) gal.Value {
-			value := args[0].(gal.Numberer)
-			return value.Number().Divide(gal.NewNumber(2))
-		},
-		"triple": func(args ...gal.Value) gal.Value {
-			value := args[0].(gal.Numberer)
-			return value.Number().Divide(gal.NewNumber(3))
-		},
-	}
+    // step 2: re-define funcs and vars and Eval the expression again
+    // note that we do not need to parse the expression again, only just evaluate it
+    funcs = gal.Functions{
+        "double": func(args ...gal.Value) gal.Value {
+            value := args[0].(gal.Numberer)
+            return value.Number().Divide(gal.NewNumber(2))
+        },
+        "triple": func(args ...gal.Value) gal.Value {
+            value := args[0].(gal.Numberer)
+            return value.Number().Divide(gal.NewNumber(3))
+        },
+    }
 
-	vars = gal.Variables{
-		":val1:": gal.NewNumber(2),
-		":val2:": gal.NewNumber(6),
-	}
+    vars = gal.Variables{
+        ":val1:": gal.NewNumber(2),
+        ":val2:": gal.NewNumber(6),
+    }
 
-	// returns 2 / 2 + 6 / 3 == 3 this time
-	parsedExpr.Eval(
-		gal.WithVariables(vars),
-		gal.WithFunctions(funcs),
-	)
+    // returns 2 / 2 + 6 / 3 == 3 this time
+    parsedExpr.Eval(
+        gal.WithVariables(vars),
+        gal.WithFunctions(funcs),
+    )
 }
 ```
 
@@ -102,12 +102,12 @@ Numbers implement arbitrary precision fixed-point decimal arithmetic with [shops
 ## Supported operations
 
 * Operators: `+` `-` `*` `/` `%` `**` `<<` `>>`
-	* [Precedence](https://en.wikipedia.org/wiki/Order_of_operations#Programming_languages), highest to lowest:
-		* `**`
-		* `*` `/` `%`
-		* `+` `-`
-		* `<<` `>>`
-	* Note: Go classifies bit shift operators with the higher `*`.
+    * [Precedence](https://en.wikipedia.org/wiki/Order_of_operations#Programming_languages), highest to lowest:
+        * `**`
+        * `*` `/` `%`
+        * `+` `-`
+        * `<<` `>>`
+    * Note: Go classifies bit shift operators with the higher `*`.
 * Types: String, Number
 * Associativity with parentheses
 * Functions:

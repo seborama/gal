@@ -84,6 +84,8 @@ func PreDefinedFunction(name string) FunctionalValue {
 	return nil
 }
 
+// UserDefinedFunction is a helper function that returns the definition of the
+// provided function name from the supplied userFunctions.
 func UserDefinedFunction(name string, userFunctions Functions) FunctionalValue {
 	// note: for now function names are arbitrarily case-insensitive
 	lowerName := strings.ToLower(name)
@@ -91,6 +93,7 @@ func UserDefinedFunction(name string, userFunctions Functions) FunctionalValue {
 	return userFunctions.Function(lowerName)
 }
 
+// Pi returns the Value of math.Pi.
 func Pi(args ...Value) Value {
 	if len(args) != 0 {
 		return NewUndefinedWithReasonf("pi() requires no argument, got %d", len(args))
@@ -99,6 +102,18 @@ func Pi(args ...Value) Value {
 	return NewNumberFromFloat(math.Pi)
 }
 
+// PiLong returns a value of Pi with many more digits than Pi.
+func PiLong(args ...Value) Value {
+	if len(args) != 0 {
+		return NewUndefinedWithReasonf("pi() requires no argument, got %d", len(args))
+	}
+
+	pi, _ := NewNumberFromString(Pi51199)
+
+	return pi
+}
+
+// Factorial returns the factorial of the provided argument.
 func Factorial(args ...Value) Value {
 	if len(args) != 1 {
 		return NewUndefinedWithReasonf("factorial() requires 1 argument, got %d", len(args))
@@ -110,6 +125,7 @@ func Factorial(args ...Value) Value {
 	return NewUndefinedWithReasonf("factorial(): invalid argument type '%s'", args[0].String())
 }
 
+// Cos returns the cosine.
 func Cos(args ...Value) Value {
 	if len(args) != 1 {
 		return NewUndefinedWithReasonf("cos() requires 1 argument, got %d", len(args))
@@ -123,6 +139,7 @@ func Cos(args ...Value) Value {
 	return NewUndefinedWithReasonf("cos(): invalid argument type '%s'", args[0].String())
 }
 
+// Sin returns the sine.
 func Sin(args ...Value) Value {
 	if len(args) != 1 {
 		return NewUndefinedWithReasonf("sin() requires 1 argument, got %d", len(args))
@@ -136,6 +153,7 @@ func Sin(args ...Value) Value {
 	return NewUndefinedWithReasonf("sin(): invalid argument type '%s'", args[0].String())
 }
 
+// Tan returns the tangent.
 func Tan(args ...Value) Value {
 	if len(args) != 1 {
 		return NewUndefinedWithReasonf("tan() requires 1 argument, got %d", len(args))
@@ -149,6 +167,7 @@ func Tan(args ...Value) Value {
 	return NewUndefinedWithReasonf("tan(): invalid argument type '%s'", args[0].String())
 }
 
+// Sqrt returns the square root.
 func Sqrt(args ...Value) Value {
 	if len(args) != 1 {
 		return NewUndefinedWithReasonf("sqrt() requires 1 argument, got %d", len(args))
@@ -162,6 +181,7 @@ func Sqrt(args ...Value) Value {
 	return NewUndefinedWithReasonf("sqrt(): invalid argument type '%T'", args[0])
 }
 
+// return the floor.
 func Floor(args ...Value) Value {
 	if len(args) != 1 {
 		return NewUndefinedWithReasonf("floor() requires 1 argument, got %d", len(args))

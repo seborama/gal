@@ -5,7 +5,71 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/seborama/gal/v6"
+	"github.com/stretchr/testify/assert"
 )
+
+func TestTree_FullLen(t *testing.T) {
+	tt := map[string]struct {
+		tree    gal.Tree
+		wantLen int
+	}{
+		"empty tree": {
+			tree:    gal.Tree{},
+			wantLen: 0,
+		},
+		"simple tree": {
+			tree: gal.Tree{
+				gal.Plus,
+				gal.NewNumber(-4),
+			},
+			wantLen: 2,
+		},
+		"semi-complex tree": {
+			tree: gal.Tree{
+				gal.NewNumber(-4),
+				gal.Plus,
+				gal.Tree{},
+			},
+			wantLen: 2,
+		},
+		"complex tree": {
+			tree: gal.Tree{
+				gal.NewNumber(-4),
+				gal.Plus,
+				gal.Tree{
+					gal.NewNumber(-4),
+					gal.Plus,
+					gal.Tree{
+						gal.NewNumber(-4),
+						gal.Plus,
+						gal.Tree{
+							gal.NewNumber(-4),
+							gal.Plus,
+							gal.Tree{
+								gal.NewNumber(-4),
+								gal.Plus,
+								gal.Tree{
+									gal.NewNumber(-4),
+								},
+							},
+						},
+					},
+				},
+			},
+			wantLen: 11,
+		},
+	}
+
+	for name, tc := range tt {
+		name := name
+		tc := tc
+
+		t.Run(name, func(t *testing.T) {
+			got := tc.tree.FullLen()
+			assert.Equal(t, tc.wantLen, got)
+		})
+	}
+}
 
 func TestTree_Eval_Expressions(t *testing.T) {
 	tt := map[string]struct {
