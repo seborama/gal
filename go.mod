@@ -1,11 +1,11 @@
 module github.com/seborama/gal/v6
 
-go 1.17
+go 1.20
 
-require github.com/shopspring/decimal v1.3.1
+require github.com/shopspring/decimal v1.4.0
 
 require (
-	github.com/google/go-cmp v0.5.8
+	github.com/google/go-cmp v0.6.0
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.7.1
 )
