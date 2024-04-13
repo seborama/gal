@@ -1,4 +1,4 @@
-module github.com/seborama/gal/v6
+module github.com/seborama/gal/v7
 
 go 1.20
 
