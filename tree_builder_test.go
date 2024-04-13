@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/seborama/gal/v6"
+	"github.com/seborama/gal/v7"
 	"github.com/stretchr/testify/require"
 )
 

@@ -4,7 +4,7 @@ import (
 	"math"
 	"testing"
 
-	"github.com/seborama/gal/v6"
+	"github.com/seborama/gal/v7"
 	"github.com/stretchr/testify/assert"
 )
 
