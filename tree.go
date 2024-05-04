@@ -306,11 +306,11 @@ func calculate(lhs Value, op Operator, rhs Value) Value {
 	case LessThanOrEqual:
 		outVal = lhs.LessThanOrEqual(rhs)
 
-	case Equal:
-		outVal = lhs.Equal(rhs)
+	case EqualTo:
+		outVal = lhs.EqualTo(rhs)
 
-	case NotEqual:
-		outVal = lhs.NotEqual(rhs)
+	case NotEqualTo:
+		outVal = lhs.NotEqualTo(rhs)
 
 	case GreaterThan:
 		outVal = lhs.GreaterThan(rhs)

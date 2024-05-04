@@ -101,14 +101,15 @@ Numbers implement arbitrary precision fixed-point decimal arithmetic with [shops
 
 ## Supported operations
 
-* Operators: `+` `-` `*` `/` `%` `**` `<<` `>>`
+* Operators: `+` `-` `*` `/` `%` `**` `<<` `>>` `<` `<=` `==` `!=` `>` `>=`
     * [Precedence](https://en.wikipedia.org/wiki/Order_of_operations#Programming_languages), highest to lowest:
         * `**`
         * `*` `/` `%`
         * `+` `-`
         * `<<` `>>`
+        * `<` `<=` `==` `!=` `>` `>=`
     * Note: Go classifies bit shift operators with the higher `*`.
-* Types: String, Number
+* Types: String, Number, Bool
 * Associativity with parentheses
 * Functions:
     * Pre-defined: pi, cos, floor, sin, sqrt, trunc, and more (see `function.go`: `Eval()`)

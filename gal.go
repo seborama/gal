@@ -23,8 +23,8 @@ type Value interface {
 	RShift(Value) Value
 	LessThan(Value) Bool
 	LessThanOrEqual(Value) Bool
-	Equal(Value) Bool
-	NotEqual(Value) Bool
+	EqualTo(Value) Bool
+	NotEqualTo(Value) Bool
 	GreaterThan(Value) Bool
 	GreaterThanOrEqual(Value) Bool
 	Stringer

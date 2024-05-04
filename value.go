@@ -10,15 +10,23 @@ import (
 )
 
 type Stringer interface {
-	String() string
+	String() string // TODO return String rather than string? Implications?
 }
 
 type Numberer interface {
 	Number() Number
 }
 
+// TODO: any useful use of this???
+type Booler interface {
+	Bool() Bool
+}
+
+// TODO: we may also want to create ToString() and ToBool()
 func ToNumber(val Value) Number {
 	return val.(Numberer).Number() // may panic
+	// TODO: we could try to convert String to Number since we have NewNumberFromString() to help us
+	// TODO: ... and we could also have NewNumberFromBool() to deal with Bool's
 }
 
 type String struct {
@@ -32,6 +40,11 @@ func NewString(s string) String {
 
 func (String) kind() entryKind {
 	return valueEntryKind
+}
+
+// Equal satisfies the external Equaler interface such as in testify assertions and the cmp package
+func (s String) Equal(other String) bool {
+	return s.value == other.value
 }
 
 func (s String) LessThan(other Value) Bool {
@@ -50,7 +63,7 @@ func (s String) LessThanOrEqual(other Value) Bool {
 	return False
 }
 
-func (s String) Equal(other Value) Bool {
+func (s String) EqualTo(other Value) Bool {
 	if v, ok := other.(Stringer); ok {
 		return NewBool(s.value == v.String())
 	}
@@ -58,8 +71,8 @@ func (s String) Equal(other Value) Bool {
 	return False
 }
 
-func (s String) NotEqual(other Value) Bool {
-	return s.Equal(other).Not()
+func (s String) NotEqualTo(other Value) Bool {
+	return s.EqualTo(other).Not()
 }
 
 func (s String) GreaterThan(other Value) Bool {
@@ -88,6 +101,7 @@ func (s String) Add(other Value) Value {
 
 func (s String) Multiply(other Value) Value {
 	if v, ok := other.(Numberer); ok {
+		// TODO: additionally, we could try and create a number from String / Bool to increase flexibility
 		return String{
 			value: strings.Repeat(s.value, int(v.Number().value.IntPart())),
 		}
@@ -145,6 +159,11 @@ func NewNumberFromString(s string) (Number, error) {
 
 func (Number) kind() entryKind {
 	return valueEntryKind
+}
+
+// Equal satisfies the external Equaler interface such as in testify assertions and the cmp package
+func (n Number) Equal(other Number) bool {
+	return n.value.Equal(other.value)
 }
 
 func (n Number) Add(other Value) Value {
@@ -267,7 +286,7 @@ func (n Number) Sqrt() Number {
 		new(big.Float).Sqrt(n.value.BigFloat()).String(),
 	)
 	if err != nil {
-		panic(err) // TODO: :-/
+		panic(err) // TODO: :-/ - Maybe `Sqrt() Value` and here return Undefined{} instead??
 	}
 
 	return n
@@ -326,7 +345,7 @@ func (n Number) LessThanOrEqual(other Value) Bool {
 	return False
 }
 
-func (n Number) Equal(other Value) Bool {
+func (n Number) EqualTo(other Value) Bool {
 	if v, ok := other.(Numberer); ok {
 		return NewBool(n.value.Equal(v.Number().value))
 	}
@@ -334,8 +353,8 @@ func (n Number) Equal(other Value) Bool {
 	return False
 }
 
-func (n Number) NotEqual(other Value) Bool {
-	return n.Equal(other).Not()
+func (n Number) NotEqualTo(other Value) Bool {
+	return n.EqualTo(other).Not()
 }
 
 func (n Number) GreaterThan(other Value) Bool {
@@ -383,15 +402,19 @@ func (Bool) kind() entryKind {
 	return valueEntryKind
 }
 
-func (b Bool) Equal(other Value) Bool {
+// Equal satisfies the external Equaler interface such as in testify assertions and the cmp package
+func (b Bool) Equal(other Bool) bool {
+	return b.value == other.value
+}
+func (b Bool) EqualTo(other Value) Bool {
 	if v, ok := other.(Bool); ok {
 		return NewBool(b.value == v.value)
 	}
 	return False
 }
 
-func (b Bool) NotEqual(other Value) Bool {
-	return b.Equal(other).Not()
+func (b Bool) NotEqualTo(other Value) Bool {
+	return b.EqualTo(other).Not()
 }
 
 func (b Bool) Not() Bool {
@@ -426,11 +449,16 @@ func (Undefined) kind() entryKind {
 	return unknownEntryKind
 }
 
-func (u Undefined) Equal(other Value) Bool {
+// Equal satisfies the external Equaler interface such as in testify assertions and the cmp package
+func (u Undefined) Equal(other Undefined) bool {
+	return u.reason == other.reason
+}
+
+func (u Undefined) EqualTo(other Value) Bool {
 	return False
 }
 
-func (u Undefined) NotEqual(other Value) Bool {
+func (u Undefined) NotEqualTo(other Value) Bool {
 	return True
 }
 

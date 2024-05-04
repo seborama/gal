@@ -51,10 +51,10 @@ func (tb TreeBuilder) FromExpr(expr string) (Tree, error) {
 				tree = append(tree, LessThan)
 			case LessThanOrEqual.String():
 				tree = append(tree, LessThanOrEqual)
-			case Equal.String():
-				tree = append(tree, Equal)
-			case NotEqual.String():
-				tree = append(tree, NotEqual)
+			case EqualTo.String():
+				tree = append(tree, EqualTo)
+			case NotEqualTo.String():
+				tree = append(tree, NotEqualTo)
 			case GreaterThan.String():
 				tree = append(tree, GreaterThan)
 			case GreaterThanOrEqual.String():
@@ -325,8 +325,8 @@ func readOperator(s string) (string, int) {
 	if strings.HasPrefix(s, Power.String()) ||
 		strings.HasPrefix(s, LShift.String()) ||
 		strings.HasPrefix(s, RShift.String()) ||
-		strings.HasPrefix(s, Equal.String()) ||
-		strings.HasPrefix(s, NotEqual.String()) ||
+		strings.HasPrefix(s, EqualTo.String()) ||
+		strings.HasPrefix(s, NotEqualTo.String()) ||
 		strings.HasPrefix(s, GreaterThanOrEqual.String()) ||
 		strings.HasPrefix(s, LessThanOrEqual.String()) {
 		return s[:2], 2

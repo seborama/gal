@@ -22,8 +22,8 @@ const (
 	RShift             Operator = ">>"
 	LessThan           Operator = "<"
 	LessThanOrEqual    Operator = "<="
-	Equal              Operator = "=="
-	NotEqual           Operator = "!="
+	EqualTo            Operator = "=="
+	NotEqualTo         Operator = "!="
 	GreaterThan        Operator = ">"
 	GreaterThanOrEqual Operator = ">="
 )
@@ -47,5 +47,5 @@ func bitwiseShiftOperators(o Operator) bool {
 func comparativeOperators(o Operator) bool {
 	return o == GreaterThan || o == GreaterThanOrEqual ||
 		o == LessThan || o == LessThanOrEqual ||
-		o == Equal || o == NotEqual
+		o == EqualTo || o == NotEqualTo
 }
