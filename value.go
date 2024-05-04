@@ -22,6 +22,7 @@ func ToNumber(val Value) Number {
 }
 
 type String struct {
+	Undefined
 	value string
 }
 
@@ -33,8 +34,48 @@ func (String) kind() entryKind {
 	return valueEntryKind
 }
 
-func (s String) Equal(other String) bool {
-	return s.value == other.value
+func (s String) LessThan(other Value) Bool {
+	if v, ok := other.(Stringer); ok {
+		return NewBool(s.value < v.String())
+	}
+
+	return False
+}
+
+func (s String) LessThanOrEqual(other Value) Bool {
+	if v, ok := other.(Stringer); ok {
+		return NewBool(s.value <= v.String())
+	}
+
+	return False
+}
+
+func (s String) Equal(other Value) Bool {
+	if v, ok := other.(Stringer); ok {
+		return NewBool(s.value == v.String())
+	}
+
+	return False
+}
+
+func (s String) NotEqual(other Value) Bool {
+	return s.Equal(other).Not()
+}
+
+func (s String) GreaterThan(other Value) Bool {
+	if v, ok := other.(Stringer); ok {
+		return NewBool(s.value > v.String())
+	}
+
+	return False
+}
+
+func (s String) GreaterThanOrEqual(other Value) Bool {
+	if v, ok := other.(Stringer); ok {
+		return NewBool(s.value >= v.String())
+	}
+
+	return False
 }
 
 func (s String) Add(other Value) Value {
@@ -45,10 +86,6 @@ func (s String) Add(other Value) Value {
 	return NewUndefinedWithReasonf("cannot Add non-string to a string")
 }
 
-func (s String) Sub(other Value) Value {
-	return NewUndefinedWithReasonf("cannot Sub from string")
-}
-
 func (s String) Multiply(other Value) Value {
 	if v, ok := other.(Numberer); ok {
 		return String{
@@ -57,18 +94,6 @@ func (s String) Multiply(other Value) Value {
 	}
 
 	return NewUndefinedWithReasonf("NaN: %s", other.String())
-}
-
-func (s String) Divide(other Value) Value {
-	return Undefined{}
-}
-
-func (s String) PowerOf(Value) Value {
-	return Undefined{}
-}
-
-func (s String) Mod(Value) Value {
-	return Undefined{}
 }
 
 func (s String) LShift(Value) Value {
@@ -93,6 +118,7 @@ func (s String) Number() Number {
 }
 
 type Number struct {
+	Undefined
 	value decimal.Decimal
 }
 
@@ -119,10 +145,6 @@ func NewNumberFromString(s string) (Number, error) {
 
 func (Number) kind() entryKind {
 	return valueEntryKind
-}
-
-func (n Number) Equal(other Number) bool {
-	return n.value.Equal(other.value)
 }
 
 func (n Number) Add(other Value) Value {
@@ -288,6 +310,50 @@ func (n Number) Factorial() Number {
 	}
 }
 
+func (n Number) LessThan(other Value) Bool {
+	if v, ok := other.(Numberer); ok {
+		return NewBool(n.value.LessThan(v.Number().value))
+	}
+
+	return False
+}
+
+func (n Number) LessThanOrEqual(other Value) Bool {
+	if v, ok := other.(Numberer); ok {
+		return NewBool(n.value.LessThanOrEqual(v.Number().value))
+	}
+
+	return False
+}
+
+func (n Number) Equal(other Value) Bool {
+	if v, ok := other.(Numberer); ok {
+		return NewBool(n.value.Equal(v.Number().value))
+	}
+
+	return False
+}
+
+func (n Number) NotEqual(other Value) Bool {
+	return n.Equal(other).Not()
+}
+
+func (n Number) GreaterThan(other Value) Bool {
+	if v, ok := other.(Numberer); ok {
+		return NewBool(n.value.GreaterThan(v.Number().value))
+	}
+
+	return False
+}
+
+func (n Number) GreaterThanOrEqual(other Value) Bool {
+	if v, ok := other.(Numberer); ok {
+		return NewBool(n.value.GreaterThanOrEqual(v.Number().value))
+	}
+
+	return False
+}
+
 func (n Number) String() string {
 	return n.value.String()
 }
@@ -303,6 +369,44 @@ func (n Number) Float64() float64 {
 func (n Number) Int64() int64 {
 	return n.value.IntPart()
 }
+
+type Bool struct {
+	Undefined
+	value bool
+}
+
+func NewBool(b bool) Bool {
+	return Bool{value: b}
+}
+
+func (Bool) kind() entryKind {
+	return valueEntryKind
+}
+
+func (b Bool) Equal(other Value) Bool {
+	if v, ok := other.(Bool); ok {
+		return NewBool(b.value == v.value)
+	}
+	return False
+}
+
+func (b Bool) NotEqual(other Value) Bool {
+	return b.Equal(other).Not()
+}
+
+func (b Bool) Not() Bool {
+	return NewBool(!b.value)
+}
+
+func (b Bool) String() string { // TODO: return String rather than string?
+	if b.value {
+		return "true"
+	}
+	return "false"
+}
+
+var False = NewBool(false)
+var True = NewBool(true)
 
 type Undefined struct {
 	reason string // optional
@@ -322,8 +426,28 @@ func (Undefined) kind() entryKind {
 	return unknownEntryKind
 }
 
-func (u Undefined) Equal(other Undefined) bool {
-	return u.reason == other.reason
+func (u Undefined) Equal(other Value) Bool {
+	return False
+}
+
+func (u Undefined) NotEqual(other Value) Bool {
+	return True
+}
+
+func (u Undefined) GreaterThan(other Value) Bool {
+	return False
+}
+
+func (u Undefined) GreaterThanOrEqual(other Value) Bool {
+	return False
+}
+
+func (u Undefined) LessThan(other Value) Bool {
+	return False
+}
+
+func (u Undefined) LessThanOrEqual(other Value) Bool {
+	return False
 }
 
 func (Undefined) Add(Value) Value {

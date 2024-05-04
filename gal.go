@@ -21,6 +21,12 @@ type Value interface {
 	Mod(Value) Value
 	LShift(Value) Value
 	RShift(Value) Value
+	LessThan(Value) Bool
+	LessThanOrEqual(Value) Bool
+	Equal(Value) Bool
+	NotEqual(Value) Bool
+	GreaterThan(Value) Bool
+	GreaterThanOrEqual(Value) Bool
 	Stringer
 	entry
 }
