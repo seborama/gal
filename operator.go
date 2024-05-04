@@ -11,15 +11,21 @@ func (o Operator) String() string {
 }
 
 const (
-	invalidOperator Operator = "invalid"
-	Plus            Operator = "+"
-	Minus           Operator = "-"
-	Multiply        Operator = "*"
-	Divide          Operator = "/"
-	Modulus         Operator = "%"
-	Power           Operator = "**"
-	LShift          Operator = "<<"
-	RShift          Operator = ">>"
+	invalidOperator    Operator = "invalid"
+	Plus               Operator = "+"
+	Minus              Operator = "-"
+	Multiply           Operator = "*"
+	Divide             Operator = "/"
+	Modulus            Operator = "%"
+	Power              Operator = "**"
+	LShift             Operator = "<<"
+	RShift             Operator = ">>"
+	LessThan           Operator = "<"
+	LessThanOrEqual    Operator = "<="
+	EqualTo            Operator = "=="
+	NotEqualTo         Operator = "!="
+	GreaterThan        Operator = ">"
+	GreaterThanOrEqual Operator = ">="
 )
 
 func powerOperators(o Operator) bool {
@@ -36,4 +42,10 @@ func additiveOperators(o Operator) bool {
 
 func bitwiseShiftOperators(o Operator) bool {
 	return o == LShift || o == RShift
+}
+
+func comparativeOperators(o Operator) bool {
+	return o == GreaterThan || o == GreaterThanOrEqual ||
+		o == LessThan || o == LessThanOrEqual ||
+		o == EqualTo || o == NotEqualTo
 }

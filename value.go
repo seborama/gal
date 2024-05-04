@@ -10,18 +10,27 @@ import (
 )
 
 type Stringer interface {
-	String() string
+	String() string // TODO return String rather than string? Implications?
 }
 
 type Numberer interface {
 	Number() Number
 }
 
+// TODO: any useful use of this???
+type Booler interface {
+	Bool() Bool
+}
+
+// TODO: we may also want to create ToString() and ToBool()
 func ToNumber(val Value) Number {
 	return val.(Numberer).Number() // may panic
+	// TODO: we could try to convert String to Number since we have NewNumberFromString() to help us
+	// TODO: ... and we could also have NewNumberFromBool() to deal with Bool's
 }
 
 type String struct {
+	Undefined
 	value string
 }
 
@@ -33,8 +42,53 @@ func (String) kind() entryKind {
 	return valueEntryKind
 }
 
+// Equal satisfies the external Equaler interface such as in testify assertions and the cmp package
 func (s String) Equal(other String) bool {
 	return s.value == other.value
+}
+
+func (s String) LessThan(other Value) Bool {
+	if v, ok := other.(Stringer); ok {
+		return NewBool(s.value < v.String())
+	}
+
+	return False
+}
+
+func (s String) LessThanOrEqual(other Value) Bool {
+	if v, ok := other.(Stringer); ok {
+		return NewBool(s.value <= v.String())
+	}
+
+	return False
+}
+
+func (s String) EqualTo(other Value) Bool {
+	if v, ok := other.(Stringer); ok {
+		return NewBool(s.value == v.String())
+	}
+
+	return False
+}
+
+func (s String) NotEqualTo(other Value) Bool {
+	return s.EqualTo(other).Not()
+}
+
+func (s String) GreaterThan(other Value) Bool {
+	if v, ok := other.(Stringer); ok {
+		return NewBool(s.value > v.String())
+	}
+
+	return False
+}
+
+func (s String) GreaterThanOrEqual(other Value) Bool {
+	if v, ok := other.(Stringer); ok {
+		return NewBool(s.value >= v.String())
+	}
+
+	return False
 }
 
 func (s String) Add(other Value) Value {
@@ -45,30 +99,15 @@ func (s String) Add(other Value) Value {
 	return NewUndefinedWithReasonf("cannot Add non-string to a string")
 }
 
-func (s String) Sub(other Value) Value {
-	return NewUndefinedWithReasonf("cannot Sub from string")
-}
-
 func (s String) Multiply(other Value) Value {
 	if v, ok := other.(Numberer); ok {
+		// TODO: additionally, we could try and create a number from String / Bool to increase flexibility
 		return String{
 			value: strings.Repeat(s.value, int(v.Number().value.IntPart())),
 		}
 	}
 
 	return NewUndefinedWithReasonf("NaN: %s", other.String())
-}
-
-func (s String) Divide(other Value) Value {
-	return Undefined{}
-}
-
-func (s String) PowerOf(Value) Value {
-	return Undefined{}
-}
-
-func (s String) Mod(Value) Value {
-	return Undefined{}
 }
 
 func (s String) LShift(Value) Value {
@@ -93,6 +132,7 @@ func (s String) Number() Number {
 }
 
 type Number struct {
+	Undefined
 	value decimal.Decimal
 }
 
@@ -121,6 +161,7 @@ func (Number) kind() entryKind {
 	return valueEntryKind
 }
 
+// Equal satisfies the external Equaler interface such as in testify assertions and the cmp package
 func (n Number) Equal(other Number) bool {
 	return n.value.Equal(other.value)
 }
@@ -245,7 +286,7 @@ func (n Number) Sqrt() Number {
 		new(big.Float).Sqrt(n.value.BigFloat()).String(),
 	)
 	if err != nil {
-		panic(err) // TODO: :-/
+		panic(err) // TODO: :-/ - Maybe `Sqrt() Value` and here return Undefined{} instead??
 	}
 
 	return n
@@ -288,6 +329,50 @@ func (n Number) Factorial() Number {
 	}
 }
 
+func (n Number) LessThan(other Value) Bool {
+	if v, ok := other.(Numberer); ok {
+		return NewBool(n.value.LessThan(v.Number().value))
+	}
+
+	return False
+}
+
+func (n Number) LessThanOrEqual(other Value) Bool {
+	if v, ok := other.(Numberer); ok {
+		return NewBool(n.value.LessThanOrEqual(v.Number().value))
+	}
+
+	return False
+}
+
+func (n Number) EqualTo(other Value) Bool {
+	if v, ok := other.(Numberer); ok {
+		return NewBool(n.value.Equal(v.Number().value))
+	}
+
+	return False
+}
+
+func (n Number) NotEqualTo(other Value) Bool {
+	return n.EqualTo(other).Not()
+}
+
+func (n Number) GreaterThan(other Value) Bool {
+	if v, ok := other.(Numberer); ok {
+		return NewBool(n.value.GreaterThan(v.Number().value))
+	}
+
+	return False
+}
+
+func (n Number) GreaterThanOrEqual(other Value) Bool {
+	if v, ok := other.(Numberer); ok {
+		return NewBool(n.value.GreaterThanOrEqual(v.Number().value))
+	}
+
+	return False
+}
+
 func (n Number) String() string {
 	return n.value.String()
 }
@@ -303,6 +388,48 @@ func (n Number) Float64() float64 {
 func (n Number) Int64() int64 {
 	return n.value.IntPart()
 }
+
+type Bool struct {
+	Undefined
+	value bool
+}
+
+func NewBool(b bool) Bool {
+	return Bool{value: b}
+}
+
+func (Bool) kind() entryKind {
+	return valueEntryKind
+}
+
+// Equal satisfies the external Equaler interface such as in testify assertions and the cmp package
+func (b Bool) Equal(other Bool) bool {
+	return b.value == other.value
+}
+func (b Bool) EqualTo(other Value) Bool {
+	if v, ok := other.(Bool); ok {
+		return NewBool(b.value == v.value)
+	}
+	return False
+}
+
+func (b Bool) NotEqualTo(other Value) Bool {
+	return b.EqualTo(other).Not()
+}
+
+func (b Bool) Not() Bool {
+	return NewBool(!b.value)
+}
+
+func (b Bool) String() string { // TODO: return String rather than string?
+	if b.value {
+		return "true"
+	}
+	return "false"
+}
+
+var False = NewBool(false)
+var True = NewBool(true)
 
 type Undefined struct {
 	reason string // optional
@@ -322,8 +449,33 @@ func (Undefined) kind() entryKind {
 	return unknownEntryKind
 }
 
+// Equal satisfies the external Equaler interface such as in testify assertions and the cmp package
 func (u Undefined) Equal(other Undefined) bool {
 	return u.reason == other.reason
+}
+
+func (u Undefined) EqualTo(other Value) Bool {
+	return False
+}
+
+func (u Undefined) NotEqualTo(other Value) Bool {
+	return True
+}
+
+func (u Undefined) GreaterThan(other Value) Bool {
+	return False
+}
+
+func (u Undefined) GreaterThanOrEqual(other Value) Bool {
+	return False
+}
+
+func (u Undefined) LessThan(other Value) Bool {
+	return False
+}
+
+func (u Undefined) LessThanOrEqual(other Value) Bool {
+	return False
 }
 
 func (Undefined) Add(Value) Value {

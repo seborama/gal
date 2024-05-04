@@ -47,6 +47,18 @@ func (tb TreeBuilder) FromExpr(expr string) (Tree, error) {
 				tree = append(tree, Modulus)
 			case Power.String():
 				tree = append(tree, Power)
+			case LessThan.String():
+				tree = append(tree, LessThan)
+			case LessThanOrEqual.String():
+				tree = append(tree, LessThanOrEqual)
+			case EqualTo.String():
+				tree = append(tree, EqualTo)
+			case NotEqualTo.String():
+				tree = append(tree, NotEqualTo)
+			case GreaterThan.String():
+				tree = append(tree, GreaterThan)
+			case GreaterThanOrEqual.String():
+				tree = append(tree, GreaterThanOrEqual)
 			case LShift.String():
 				tree = append(tree, LShift)
 			case RShift.String():
@@ -312,7 +324,11 @@ func isBlankSpace(r rune) bool {
 func readOperator(s string) (string, int) {
 	if strings.HasPrefix(s, Power.String()) ||
 		strings.HasPrefix(s, LShift.String()) ||
-		strings.HasPrefix(s, RShift.String()) {
+		strings.HasPrefix(s, RShift.String()) ||
+		strings.HasPrefix(s, EqualTo.String()) ||
+		strings.HasPrefix(s, NotEqualTo.String()) ||
+		strings.HasPrefix(s, GreaterThanOrEqual.String()) ||
+		strings.HasPrefix(s, LessThanOrEqual.String()) {
 		return s[:2], 2
 	}
 
@@ -321,7 +337,9 @@ func readOperator(s string) (string, int) {
 		strings.HasPrefix(s, Divide.String()) ||
 		strings.HasPrefix(s, Multiply.String()) ||
 		strings.HasPrefix(s, Power.String()) ||
-		strings.HasPrefix(s, Modulus.String()) {
+		strings.HasPrefix(s, Modulus.String()) ||
+		strings.HasPrefix(s, GreaterThan.String()) ||
+		strings.HasPrefix(s, LessThan.String()) {
 		return s[:1], 1
 	}
 

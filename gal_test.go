@@ -8,11 +8,59 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestBoolean(t *testing.T) {
+	expr := `2 > 1`
+	val := gal.Parse(expr).Eval()
+	assert.Equal(t, gal.True.String(), val.String())
+
+	expr = `2 > 2`
+	val = gal.Parse(expr).Eval()
+	assert.Equal(t, gal.False.String(), val.String())
+
+	expr = `2 >= 2`
+	val = gal.Parse(expr).Eval()
+	assert.Equal(t, gal.True.String(), val.String())
+
+	expr = `2 < 1`
+	val = gal.Parse(expr).Eval()
+	assert.Equal(t, gal.False.String(), val.String())
+
+	expr = `2 < 2`
+	val = gal.Parse(expr).Eval()
+	assert.Equal(t, gal.False.String(), val.String())
+
+	expr = `2 <= 2`
+	val = gal.Parse(expr).Eval()
+	assert.Equal(t, gal.True.String(), val.String())
+
+	expr = `2 != 2`
+	val = gal.Parse(expr).Eval()
+	assert.Equal(t, gal.False.String(), val.String())
+
+	expr = `1 != 2`
+	val = gal.Parse(expr).Eval()
+	assert.Equal(t, gal.True.String(), val.String())
+
+	expr = `3 != 2`
+	val = gal.Parse(expr).Eval()
+	assert.Equal(t, gal.True.String(), val.String())
+
+	expr = `2 == 2`
+	val = gal.Parse(expr).Eval()
+	assert.Equal(t, gal.True.String(), val.String())
+
+	expr = `1 == 2`
+	val = gal.Parse(expr).Eval()
+	assert.Equal(t, gal.False.String(), val.String())
+
+	expr = `3 == 2`
+	val = gal.Parse(expr).Eval()
+	assert.Equal(t, gal.False.String(), val.String())
+}
+
 func TestEval(t *testing.T) {
 	expr := `-1 + 2 * 3 / 2 + 3 ** 2 -8`
-	val := gal.
-		Parse(expr).
-		Eval()
+	val := gal.Parse(expr).Eval()
 	assert.Equal(t, gal.NewNumber(3).String(), val.String())
 
 	expr = `-"123"+"100"`

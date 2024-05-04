@@ -105,7 +105,8 @@ func (tree Tree) Eval(opts ...treeOption) Value {
 		Calc(powerOperators, cfg).
 		Calc(multiplicativeOperators, cfg).
 		Calc(additiveOperators, cfg).
-		Calc(bitwiseShiftOperators, cfg)
+		Calc(bitwiseShiftOperators, cfg).
+		Calc(comparativeOperators, cfg)
 
 	// TODO: refactor this
 	// perhaps add Tree.Value() which tests that only one entry is left and that it is a Value
@@ -298,6 +299,24 @@ func calculate(lhs Value, op Operator, rhs Value) Value {
 
 	case RShift:
 		outVal = lhs.RShift(rhs)
+
+	case LessThan:
+		outVal = lhs.LessThan(rhs)
+
+	case LessThanOrEqual:
+		outVal = lhs.LessThanOrEqual(rhs)
+
+	case EqualTo:
+		outVal = lhs.EqualTo(rhs)
+
+	case NotEqualTo:
+		outVal = lhs.NotEqualTo(rhs)
+
+	case GreaterThan:
+		outVal = lhs.GreaterThan(rhs)
+
+	case GreaterThanOrEqual:
+		outVal = lhs.GreaterThanOrEqual(rhs)
 
 	default:
 		return NewUndefinedWithReasonf("unimplemented operator: '%s'", op.String())
