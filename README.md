@@ -10,18 +10,11 @@
   </a>
 </p>
 
-A simplistic expression parser and evaluator in Go.
+A simple but powerful expression parser and evaluator in Go.
 
 This is a research project.
 
 Short link to repo Readme:
-
-<p align="left">
-  <a href="https://bit.ly/3MDZ9QT">
-    <img src="/static/bit.ly_3MDZ9QT.png" alt="Short URL" width="128">
-  </a>
-</p>
-
 
 ## Examples
 

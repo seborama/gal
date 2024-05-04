@@ -8,56 +8,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestBoolean(t *testing.T) {
-	expr := `2 > 1`
-	val := gal.Parse(expr).Eval()
-	assert.Equal(t, gal.True.String(), val.String())
-
-	expr = `2 > 2`
-	val = gal.Parse(expr).Eval()
-	assert.Equal(t, gal.False.String(), val.String())
-
-	expr = `2 >= 2`
-	val = gal.Parse(expr).Eval()
-	assert.Equal(t, gal.True.String(), val.String())
-
-	expr = `2 < 1`
-	val = gal.Parse(expr).Eval()
-	assert.Equal(t, gal.False.String(), val.String())
-
-	expr = `2 < 2`
-	val = gal.Parse(expr).Eval()
-	assert.Equal(t, gal.False.String(), val.String())
-
-	expr = `2 <= 2`
-	val = gal.Parse(expr).Eval()
-	assert.Equal(t, gal.True.String(), val.String())
-
-	expr = `2 != 2`
-	val = gal.Parse(expr).Eval()
-	assert.Equal(t, gal.False.String(), val.String())
-
-	expr = `1 != 2`
-	val = gal.Parse(expr).Eval()
-	assert.Equal(t, gal.True.String(), val.String())
-
-	expr = `3 != 2`
-	val = gal.Parse(expr).Eval()
-	assert.Equal(t, gal.True.String(), val.String())
-
-	expr = `2 == 2`
-	val = gal.Parse(expr).Eval()
-	assert.Equal(t, gal.True.String(), val.String())
-
-	expr = `1 == 2`
-	val = gal.Parse(expr).Eval()
-	assert.Equal(t, gal.False.String(), val.String())
-
-	expr = `3 == 2`
-	val = gal.Parse(expr).Eval()
-	assert.Equal(t, gal.False.String(), val.String())
-}
-
 func TestEval(t *testing.T) {
 	expr := `-1 + 2 * 3 / 2 + 3 ** 2 -8`
 	val := gal.Parse(expr).Eval()
@@ -191,4 +141,54 @@ func TestWithVariablesAndFunctions(t *testing.T) {
 	if !cmp.Equal(expected, got) {
 		t.Error(cmp.Diff(expected, got))
 	}
+}
+
+func TestEval_Boolean(t *testing.T) {
+	expr := `2 > 1`
+	val := gal.Parse(expr).Eval()
+	assert.Equal(t, gal.True.String(), val.String())
+
+	expr = `2 > 2`
+	val = gal.Parse(expr).Eval()
+	assert.Equal(t, gal.False.String(), val.String())
+
+	expr = `2 >= 2`
+	val = gal.Parse(expr).Eval()
+	assert.Equal(t, gal.True.String(), val.String())
+
+	expr = `2 < 1`
+	val = gal.Parse(expr).Eval()
+	assert.Equal(t, gal.False.String(), val.String())
+
+	expr = `2 < 2`
+	val = gal.Parse(expr).Eval()
+	assert.Equal(t, gal.False.String(), val.String())
+
+	expr = `2 <= 2`
+	val = gal.Parse(expr).Eval()
+	assert.Equal(t, gal.True.String(), val.String())
+
+	expr = `2 != 2`
+	val = gal.Parse(expr).Eval()
+	assert.Equal(t, gal.False.String(), val.String())
+
+	expr = `1 != 2`
+	val = gal.Parse(expr).Eval()
+	assert.Equal(t, gal.True.String(), val.String())
+
+	expr = `3 != 2`
+	val = gal.Parse(expr).Eval()
+	assert.Equal(t, gal.True.String(), val.String())
+
+	expr = `2 == 2`
+	val = gal.Parse(expr).Eval()
+	assert.Equal(t, gal.True.String(), val.String())
+
+	expr = `1 == 2`
+	val = gal.Parse(expr).Eval()
+	assert.Equal(t, gal.False.String(), val.String())
+
+	expr = `3 == 2`
+	val = gal.Parse(expr).Eval()
+	assert.Equal(t, gal.False.String(), val.String())
 }
