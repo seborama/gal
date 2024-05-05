@@ -28,6 +28,9 @@ func TestFactorial(t *testing.T) {
 
 	val = gal.Factorial(gal.NewNumber(10))
 	assert.Equal(t, gal.NewNumber(3_628_800).String(), val.String())
+
+	val = gal.Factorial(gal.NewNumber(-10))
+	assert.Equal(t, "undefined: Factorial: requires a positive integer, cannot accept -10", val.String())
 }
 
 func TestCos(t *testing.T) {
@@ -53,4 +56,20 @@ func TestSqrt(t *testing.T) {
 func TestFloor(t *testing.T) {
 	val := gal.Floor(gal.NewNumberFromFloat(0.0))
 	assert.Equal(t, int64(0), gal.ToNumber(val).Int64())
+}
+
+func TestLn(t *testing.T) {
+	val := gal.Ln(gal.NewNumber(123456), gal.NewNumber(5))
+	assert.Equal(t, "11.72364", val.String())
+
+	val = gal.Ln(gal.NewNumber(-123456), gal.NewNumber(5))
+	assert.Equal(t, "undefined: Ln:cannot calculate natural logarithm for negative decimals", val.String())
+}
+
+func TestLog(t *testing.T) {
+	val := gal.Log(gal.NewNumber(123456), gal.NewNumber(5))
+	assert.Equal(t, "5.09152", val.String())
+
+	val = gal.Log(gal.NewNumber(-123456), gal.NewNumber(5))
+	assert.Equal(t, "undefined: Log:cannot calculate natural logarithm for negative decimals", val.String())
 }
