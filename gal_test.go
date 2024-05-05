@@ -1,10 +1,11 @@
 package gal_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/seborama/gal/v7"
+	"github.com/seborama/gal/v8"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -63,6 +64,56 @@ func TestTreeBuilder_FromExpr_UnknownVariable(t *testing.T) {
 	if !cmp.Equal(expected, got) {
 		t.Error(cmp.Diff(expected, got))
 	}
+}
+
+func TestEval_Boolean(t *testing.T) {
+	expr := `2 > 1`
+	val := gal.Parse(expr).Eval()
+	assert.Equal(t, gal.True.String(), val.String())
+
+	expr = `2 > 2`
+	val = gal.Parse(expr).Eval()
+	assert.Equal(t, gal.False.String(), val.String())
+
+	expr = `2 >= 2`
+	val = gal.Parse(expr).Eval()
+	assert.Equal(t, gal.True.String(), val.String())
+
+	expr = `2 < 1`
+	val = gal.Parse(expr).Eval()
+	assert.Equal(t, gal.False.String(), val.String())
+
+	expr = `2 < 2`
+	val = gal.Parse(expr).Eval()
+	assert.Equal(t, gal.False.String(), val.String())
+
+	expr = `2 <= 2`
+	val = gal.Parse(expr).Eval()
+	assert.Equal(t, gal.True.String(), val.String())
+
+	expr = `2 != 2`
+	val = gal.Parse(expr).Eval()
+	assert.Equal(t, gal.False.String(), val.String())
+
+	expr = `1 != 2`
+	val = gal.Parse(expr).Eval()
+	assert.Equal(t, gal.True.String(), val.String())
+
+	expr = `3 != 2`
+	val = gal.Parse(expr).Eval()
+	assert.Equal(t, gal.True.String(), val.String())
+
+	expr = `2 == 2`
+	val = gal.Parse(expr).Eval()
+	assert.Equal(t, gal.True.String(), val.String())
+
+	expr = `1 == 2`
+	val = gal.Parse(expr).Eval()
+	assert.Equal(t, gal.False.String(), val.String())
+
+	expr = `3 == 2`
+	val = gal.Parse(expr).Eval()
+	assert.Equal(t, gal.False.String(), val.String())
 }
 
 func TestWithVariablesAndFunctions(t *testing.T) {
@@ -143,52 +194,140 @@ func TestWithVariablesAndFunctions(t *testing.T) {
 	}
 }
 
-func TestEval_Boolean(t *testing.T) {
-	expr := `2 > 1`
-	val := gal.Parse(expr).Eval()
-	assert.Equal(t, gal.True.String(), val.String())
+func TestNestedFunctions(t *testing.T) {
+	expr := `double(triple(7))`
+	parsedExpr := gal.Parse(expr)
 
-	expr = `2 > 2`
-	val = gal.Parse(expr).Eval()
-	assert.Equal(t, gal.False.String(), val.String())
+	// step 1: define funcs and vars and Eval the expression
+	funcs := gal.Functions{
+		"double": func(args ...gal.Value) gal.Value {
+			if len(args) != 1 {
+				return gal.NewUndefinedWithReasonf("double() requires a single argument, got %d", len(args))
+			}
 
-	expr = `2 >= 2`
-	val = gal.Parse(expr).Eval()
-	assert.Equal(t, gal.True.String(), val.String())
+			value, ok := args[0].(gal.Numberer)
+			if !ok {
+				return gal.NewUndefinedWithReasonf("double(): syntax error - argument must be a number-like value, got '%v'", args[0])
+			}
 
-	expr = `2 < 1`
-	val = gal.Parse(expr).Eval()
-	assert.Equal(t, gal.False.String(), val.String())
+			return value.Number().Multiply(gal.NewNumber(2))
+		},
+		"triple": func(args ...gal.Value) gal.Value {
+			if len(args) != 1 {
+				return gal.NewUndefinedWithReasonf("triple() requires a single argument, got %d", len(args))
+			}
 
-	expr = `2 < 2`
-	val = gal.Parse(expr).Eval()
-	assert.Equal(t, gal.False.String(), val.String())
+			value, ok := args[0].(gal.Numberer)
+			if !ok {
+				return gal.NewUndefinedWithReasonf("triple(): syntax error - argument must be a number-like value, got '%v'", args[0])
+			}
 
-	expr = `2 <= 2`
-	val = gal.Parse(expr).Eval()
-	assert.Equal(t, gal.True.String(), val.String())
+			return value.Number().Multiply(gal.NewNumber(3))
+		},
+	}
 
-	expr = `2 != 2`
-	val = gal.Parse(expr).Eval()
-	assert.Equal(t, gal.False.String(), val.String())
+	got := parsedExpr.Eval(
+		gal.WithFunctions(funcs),
+	)
+	expected := gal.NewNumber(42)
+	assert.Equal(t, expected.String(), got.String())
+}
 
-	expr = `1 != 2`
-	val = gal.Parse(expr).Eval()
-	assert.Equal(t, gal.True.String(), val.String())
+// If renaming this test, also update the README.md file, where it is mentioned.
+func TestMultiValueFunctions(t *testing.T) {
+	expr := `sum(div(triple(7) double(4)))`
+	parsedExpr := gal.Parse(expr)
 
-	expr = `3 != 2`
-	val = gal.Parse(expr).Eval()
-	assert.Equal(t, gal.True.String(), val.String())
+	// step 1: define funcs and vars and Eval the expression
+	funcs := gal.Functions{
+		"double": func(args ...gal.Value) gal.Value {
+			if len(args) != 1 {
+				return gal.NewUndefinedWithReasonf("double() requires a single argument, got %d", len(args))
+			}
 
-	expr = `2 == 2`
-	val = gal.Parse(expr).Eval()
-	assert.Equal(t, gal.True.String(), val.String())
+			value, ok := args[0].(gal.Numberer)
+			if !ok {
+				return gal.NewUndefinedWithReasonf("double(): syntax error - argument must be a number-like value, got '%v'", args[0])
+			}
 
-	expr = `1 == 2`
-	val = gal.Parse(expr).Eval()
-	assert.Equal(t, gal.False.String(), val.String())
+			return value.Number().Multiply(gal.NewNumber(2))
+		},
+		"triple": func(args ...gal.Value) gal.Value {
+			if len(args) != 1 {
+				return gal.NewUndefinedWithReasonf("triple() requires a single argument, got %d", len(args))
+			}
 
-	expr = `3 == 2`
-	val = gal.Parse(expr).Eval()
-	assert.Equal(t, gal.False.String(), val.String())
+			value, ok := args[0].(gal.Numberer)
+			if !ok {
+				return gal.NewUndefinedWithReasonf("triple(): syntax error - argument must be a number-like value, got '%v'", args[0])
+			}
+
+			return value.Number().Multiply(gal.NewNumber(3))
+		},
+		"div": func(args ...gal.Value) gal.Value {
+			// returns the division of value1 by value2 as the interger portion and the remainder
+			if len(args) != 2 {
+				return gal.NewUndefinedWithReasonf("mult() requires two arguments, got %d", len(args))
+			}
+
+			dividend := args[0].(gal.Numberer).Number()
+			divisor := args[1].(gal.Numberer).Number()
+
+			quotient := dividend.Divide(divisor).(gal.Numberer).Number().IntPart()
+			remainder := dividend.Number().Sub(quotient.(gal.Number).Multiply(divisor.Number()))
+			return gal.NewMultiValue(quotient, remainder)
+		},
+		"sum": func(args ...gal.Value) gal.Value {
+			// NOTE: we convert the args to a MultiValue to make this function "bilingual".
+			// That way, it can receiv either two Numberer's or one single MultiValue that holds 2 Numberer's.
+			var margs gal.MultiValue
+			if len(args) == 1 {
+				fmt.Println("DEBUG - a single MultiValue")
+				margs = args[0].(gal.MultiValue) // not checking type satisfaction for simplicity
+			}
+			if len(args) == 2 {
+				fmt.Println("DEBUG - two Value's")
+				margs = gal.NewMultiValue(args...)
+			}
+			if margs.Size() != 2 {
+				return gal.NewUndefinedWithReasonf("sum() requires either two Numberer-type Value's or one MultiValue holdings 2 Numberer's, as arguments, but got %d arguments", margs.Size())
+			}
+
+			value1 := args[0].(gal.MultiValue).Get(0).(gal.Numberer)
+			value2 := args[0].(gal.MultiValue).Get(1).(gal.Numberer)
+
+			return value1.Number().Add(value2.Number())
+		},
+	}
+
+	got := parsedExpr.Eval(
+		gal.WithFunctions(funcs),
+	)
+	expected := gal.NewNumber(7)
+	assert.Equal(t, expected.String(), got.String())
+}
+
+func TestStringsWithSpaces(t *testing.T) {
+	expr := `"ab cd" + "ef gh"`
+	parsedExpr := gal.Parse(expr)
+
+	got := parsedExpr.Eval()
+	assert.Equal(t, "ab cdef gh", got.String())
+}
+
+func TestFunctionsAndStringsWithSpaces(t *testing.T) {
+	expr := `f("ab cd") + f("ef gh")`
+	parsedExpr := gal.Parse(expr)
+
+	got := parsedExpr.Eval(
+		gal.WithFunctions(gal.Functions{
+			"f": func(args ...gal.Value) gal.Value {
+				if len(args) != 1 {
+					return gal.NewUndefinedWithReasonf("f() requires a single argument, got %d", len(args))
+				}
+				return args[0]
+			},
+		}),
+	)
+	assert.Equal(t, "ab cdef gh", got.String())
 }

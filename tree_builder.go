@@ -74,9 +74,11 @@ func (tb TreeBuilder) FromExpr(expr string) (Tree, error) {
 				return nil, err
 			}
 			if fname == "" {
+				// parenthesis grouping, not a real function per-se.
+				// conceptually, parenthesis grouping is a special case of anonymous identity function
 				tree = append(tree, v)
 			} else {
-				bodyFn := PreDefinedFunction(fname)
+				bodyFn := BuiltInFunction(fname)
 				tree = append(tree, NewFunction(fname, bodyFn, v.Split()...))
 			}
 
@@ -166,7 +168,7 @@ func extractPart(expr string) (string, exprType, int, error) {
 	}
 
 	// read part - number
-	// TODO: complex numbers are not supported
+	// TODO: complex numbers are not supported - could be "native" or via function or perhaps even a MultiValue?
 	s, l, err := readNumber(expr[pos:])
 	if err != nil {
 		return "", unknownType, 0, err

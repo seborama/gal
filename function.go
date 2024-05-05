@@ -11,9 +11,6 @@ import (
 type FunctionalValue func(...Value) Value
 
 func (fv FunctionalValue) String() string {
-	// TODO: This is only to support the tests (see Function.Equal)).
-	//       This is not elegant but so far the only solution I have to compare
-	//       Functions in the tests.
 	return fmt.Sprintf("FunctionalValue @%p", fv)
 }
 
@@ -35,10 +32,8 @@ func (Function) kind() entryKind {
 	return functionEntryKind
 }
 
+// Equal satisfies the external Equaler interface such as in testify assertions and the cmp package
 func (f Function) Equal(other Function) bool {
-	// TODO: This is only to support the tests.
-	//       This is not elegant but so far the only solution I have to compare
-	//       Functions in the tests.
 	return f.Name == other.Name &&
 		f.BodyFn.String() == other.BodyFn.String() &&
 		cmp.Equal(f.Args, other.Args)
@@ -58,7 +53,7 @@ func (f Function) Eval(opts ...treeOption) Value {
 	return f.BodyFn(args...)
 }
 
-var preDefinedFunctions = map[string]FunctionalValue{
+var builtInFunctions = map[string]FunctionalValue{
 	"pi":        Pi,
 	"factorial": Factorial,
 	"cos":       Cos,
@@ -69,14 +64,14 @@ var preDefinedFunctions = map[string]FunctionalValue{
 	"trunc":     Trunc,
 }
 
-// PreDefinedFunction returns a pre-defined function body if known.
-// It returns `nil` when no pre-defined function exists by the specified name.
+// BuiltInFunction returns a built-in function body if known.
+// It returns `nil` when no built-in function exists by the specified name.
 // This signals the Evaluator to attempt to find a user defined function.
-func PreDefinedFunction(name string) FunctionalValue {
+func BuiltInFunction(name string) FunctionalValue {
 	// note: for now function names are arbitrarily case-insensitive
 	lowerName := strings.ToLower(name)
 
-	bodyFn, ok := preDefinedFunctions[lowerName]
+	bodyFn, ok := builtInFunctions[lowerName]
 	if ok {
 		return bodyFn
 	}

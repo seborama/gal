@@ -24,9 +24,64 @@ type Booler interface {
 
 // TODO: we may also want to create ToString() and ToBool()
 func ToNumber(val Value) Number {
+	// TODO: we could also try to convert Bool to Number since we could add NewNumberFromBool() to deal with Bool's
 	return val.(Numberer).Number() // may panic
-	// TODO: we could try to convert String to Number since we have NewNumberFromString() to help us
-	// TODO: ... and we could also have NewNumberFromBool() to deal with Bool's
+}
+
+// MultiValue is a container of zero or more Value's.
+// TODO: impose a minimum of 1 value?
+// For the time being, it is only usable and useful with functions.
+// Functions can accept a MultiValue, and also return a MultiValue.
+// This allows a function to effectively return multiple values as a MultiValue.
+// TODO: we could add a syntax to instantiate a MultiValue within an expression.
+// TODO: ... perhaps along the lines of [[v1 v2 ...]] or simply a built-in function such as
+// TODO: ... MultiValue(...) - nothing stops the user from creating their own for now :-)
+//
+// TODO: implement other methods such as Add, LessThan, etc (if meaningful)
+type MultiValue struct { // TODO: call this a ValueGroup? Or just a Group?
+	Undefined
+	values []Value
+}
+
+func NewMultiValue(values ...Value) MultiValue {
+	return MultiValue{values: values}
+}
+
+func (MultiValue) kind() entryKind {
+	return valueEntryKind
+}
+
+// Equal satisfies the external Equaler interface such as in testify assertions and the cmp package
+// Note that the current implementation defines equality as values matching and in order they appear.
+func (m MultiValue) Equal(other MultiValue) bool {
+	for i := range m.values {
+		// TODO: add test to confirm this is correct!
+		if m.values[i].NotEqualTo(other.values[i]) == False {
+			return false
+		}
+	}
+	return true
+}
+
+// TODO: add test to confirm / illustrate output.
+func (m MultiValue) String() string {
+	var vals []string
+	for _, val := range m.values {
+		vals = append(vals, val.String())
+	}
+	return `"` + strings.Join(vals, `","`) + `"`
+}
+
+func (m MultiValue) Get(i int) Value {
+	if i > len(m.values) {
+		return NewUndefinedWithReasonf(fmt.Sprintf("out of bounds: trying to get arg #%d on MultiValue that has %d arguments", i, len(m.values)))
+	}
+
+	return m.values[i]
+}
+
+func (m MultiValue) Size() int {
+	return len(m.values)
 }
 
 type String struct {
@@ -227,6 +282,12 @@ func (n Number) Mod(other Value) Value {
 	}
 
 	return NewUndefinedWithReasonf("NaN: %s", other.String())
+}
+
+func (n Number) IntPart() Value {
+	return Number{
+		value: n.value.Truncate(0),
+	}
 }
 
 func (n Number) LShift(other Value) Value {

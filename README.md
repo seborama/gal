@@ -1,12 +1,12 @@
 # Go Eval
 
 <p align="center">
-  <a href="https://pkg.go.dev/github.com/seborama/gal/v7">
+  <a href="https://pkg.go.dev/github.com/seborama/gal/v8">
     <img src="https://img.shields.io/badge/godoc-reference-blue.svg" alt="gal">
   </a>
 
-  <a href="https://goreportcard.com/report/github.com/seborama/gal/v7">
-    <img src="https://goreportcard.com/badge/github.com/seborama/gal/v7" alt="gal">
+  <a href="https://goreportcard.com/report/github.com/seborama/gal/v8">
+    <img src="https://goreportcard.com/badge/github.com/seborama/gal/v8" alt="gal">
   </a>
 </p>
 
@@ -105,7 +105,7 @@ Numbers implement arbitrary precision fixed-point decimal arithmetic with [shops
 * Types: String, Number, Bool
 * Associativity with parentheses
 * Functions:
-    * Pre-defined: pi, cos, floor, sin, sqrt, trunc, and more (see `function.go`: `Eval()`)
+    * Built-in: pi, cos, floor, sin, sqrt, trunc, and more (see `function.go`: `Eval()`)
     * User-defined, injected via `WithFunctions()`
 * Variables, defined as `:variable_name:` and injected via `WithVariables()`
 
@@ -113,7 +113,9 @@ Numbers implement arbitrary precision fixed-point decimal arithmetic with [shops
 
 Function names are case-insensitive.
 
-A function can optionally accept one or more space-separated arguments, but it must return a single Value.
+A function can optionally accept one or more **space-separated** arguments, but it must return a single `Value`.
+
+It should be noted that a `MultiValue` type is available that can hold multiple `Value`. A function can use `MultiValue` as its return type to effectively return multiple `Value`'s. Of course, as `MultiValue` is a `Value` type, functions can also accept it as part of their argument(s). Refer to the tests (`TestMultiValueFunctions`) for such examples.
 
 User function definitions are passed as a `map[string]FunctionalValue` using `WithFunctions` when calling `Eval` from `Tree`.
 
