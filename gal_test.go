@@ -1,12 +1,12 @@
 package gal_test
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/seborama/gal/v8"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/seborama/gal/v8"
 )
 
 func TestEval(t *testing.T) {
@@ -130,6 +130,10 @@ func TestEval_Boolean(t *testing.T) {
 	expr = `( 123 == 123 And 12 > 45 ) Or ( "b" != "b" )`
 	val = gal.Parse(expr).Eval()
 	assert.Equal(t, gal.False.String(), val.String())
+
+	expr = `True Or False`
+	val = gal.Parse(expr).Eval()
+	assert.Equal(t, gal.True.String(), val.String())
 }
 
 func TestWithVariablesAndFunctions(t *testing.T) {
@@ -298,11 +302,9 @@ func TestMultiValueFunctions(t *testing.T) {
 			// That way, it can receiv either two Numberer's or one single MultiValue that holds 2 Numberer's.
 			var margs gal.MultiValue
 			if len(args) == 1 {
-				fmt.Println("DEBUG - a single MultiValue")
 				margs = args[0].(gal.MultiValue) // not checking type satisfaction for simplicity
 			}
 			if len(args) == 2 {
-				fmt.Println("DEBUG - two Value's")
 				margs = gal.NewMultiValue(args...)
 			}
 			if margs.Size() != 2 {
@@ -328,7 +330,7 @@ func TestStringsWithSpaces(t *testing.T) {
 	parsedExpr := gal.Parse(expr)
 
 	got := parsedExpr.Eval()
-	assert.Equal(t, "ab cdef gh", got.String())
+	assert.Equal(t, `"ab cdef gh"`, got.String())
 }
 
 func TestFunctionsAndStringsWithSpaces(t *testing.T) {
@@ -345,5 +347,5 @@ func TestFunctionsAndStringsWithSpaces(t *testing.T) {
 			},
 		}),
 	)
-	assert.Equal(t, "ab cdef gh", got.String())
+	assert.Equal(t, `"ab cdef gh"`, got.String())
 }

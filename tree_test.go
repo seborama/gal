@@ -4,8 +4,9 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/seborama/gal/v8"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/seborama/gal/v8"
 )
 
 func TestTree_FullLen(t *testing.T) {

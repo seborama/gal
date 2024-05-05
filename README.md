@@ -115,6 +115,20 @@ Both examples will happily accept a `Value` of type `String` or `Number` and pro
 
 Numbers implement arbitrary precision fixed-point decimal arithmetic with [shopspring/decimal](https://github.com/shopspring/decimal).
 
+## Strings
+
+Strings must be enclosed in double-quotes (`"`) e.g. valid: `"this is a string"`, invalid: `this is a syntax error` (missing double-quotes).
+
+Escapes are supported:
+- `"this is \"also\" a valid string"`
+- `"this is fine too\\"` (escapes cancel each other out)
+
+## Bools
+
+In additional to boolean expressions, sepcial contants `True` and `False` may be used.
+
+Do not double-quote them, or they will become plain strings!
+
 ## Supported operations
 
 * Operators: `+` `-` `*` `/` `%` `**` `<<` `>>` `<` `<=` `==` `!=` `>` `>=` `And` `&&` `Or` `||`
