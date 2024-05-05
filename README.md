@@ -102,7 +102,8 @@ n := args[0].(gal.Numberer).Number()
 or, for additional type safety:
 
 ```go
-if value, ok := args[0].(gal.Numberer); !ok {
+value, ok := args[0].(gal.Numberer)
+if !ok {
     return gal.NewUndefinedWithReasonf("NaN '%s'", args[0])
 }
 n := value.Number()
@@ -125,7 +126,7 @@ Escapes are supported:
 
 ## Bools
 
-In additional to boolean expressions, sepcial contants `True` and `False` may be used.
+In addition to boolean expressions, sepcial contants `True` and `False` may be used.
 
 Do not double-quote them, or they will become plain strings!
 
@@ -143,7 +144,7 @@ Do not double-quote them, or they will become plain strings!
         * Go classifies bit shift operators with the higher `*`.
         * `&&` is synonymous of `And`.
         * `||` is synonymous of `Or`.
-* Types: String, Number, Bool
+* Types: String, Number, Bool, MultiValue
 * Associativity with parentheses: `(` and `)`
 * Functions:
     * Built-in: pi, cos, floor, sin, sqrt, trunc, and more (see `function.go`: `Eval()`)
@@ -156,7 +157,7 @@ A function is defined as a Go type: `type FunctionalValue func(...Value) Value`
 
 Function names are case-insensitive.
 
-A function can optionally accept one or more **space-separated** arguments, but it must return a single `Value`.
+A **function** can optionally accept one or more **space-separated arguments**, but it must return a single `Value`.
 
 It should be noted that a `MultiValue` type is available that can hold multiple `Value` elements. A function can use `MultiValue` as its return type to effectively return multiple `Value`'s. Of course, as `MultiValue` is a `Value` type, functions can also accept it as part of their argument(s). Refer to the test `TestMultiValueFunctions`, for an example.
 

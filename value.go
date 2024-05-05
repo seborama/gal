@@ -158,7 +158,6 @@ func (s String) Add(other Value) Value {
 
 func (s String) Multiply(other Value) Value {
 	if v, ok := other.(Numberer); ok {
-		// TODO: additionally, we could try and create a number from String / Bool to increase flexibility
 		return String{
 			value: strings.Repeat(s.value, int(v.Number().value.IntPart())),
 		}
@@ -343,12 +342,12 @@ func (n Number) Cos() Number {
 	}
 }
 
-func (n Number) Sqrt() Number {
+func (n Number) Sqrt() Value {
 	n, err := NewNumberFromString(
 		new(big.Float).Sqrt(n.value.BigFloat()).String(),
 	)
 	if err != nil {
-		panic(err) // TODO: :-/ - Maybe `Sqrt() Value` and here return Undefined{} instead??
+		return NewUndefinedWithReasonf("Sqrt:" + err.Error())
 	}
 
 	return n
@@ -357,6 +356,33 @@ func (n Number) Sqrt() Number {
 func (n Number) Tan() Number {
 	return Number{
 		value: n.value.Tan(),
+	}
+}
+
+func (n Number) Ln(precision int32) Value {
+	res, err := n.value.Ln(precision)
+	if err != nil {
+		return NewUndefinedWithReasonf("Ln:" + err.Error())
+	}
+
+	return Number{
+		value: res,
+	}
+}
+
+func (n Number) Log(precision int32) Value {
+	res1, err := n.value.Ln(precision)
+	if err != nil {
+		return NewUndefinedWithReasonf("Log:" + err.Error())
+	}
+
+	res10, err := decimal.New(10, 0).Ln(precision)
+	if err != nil {
+		return NewUndefinedWithReasonf("Log:" + err.Error())
+	}
+
+	return Number{
+		value: res1.Div(res10).Truncate(precision),
 	}
 }
 
@@ -372,9 +398,9 @@ func (n Number) Trunc(precision int32) Number {
 	}
 }
 
-func (n Number) Factorial() Number {
+func (n Number) Factorial() Value {
 	if !n.value.IsInteger() || n.value.IsNegative() {
-		panic(fmt.Sprintf("invalid calculation: Factorial requires a positive integer, cannot accept %s", n.String())) // TODO :-/
+		return NewUndefinedWithReasonf(fmt.Sprintf("Factorial: requires a positive integer, cannot accept %s", n.String()))
 	}
 
 	res := decimal.NewFromInt(1)

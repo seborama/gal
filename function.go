@@ -62,6 +62,8 @@ var builtInFunctions = map[string]FunctionalValue{
 	"sqrt":      Sqrt,
 	"floor":     Floor,
 	"trunc":     Trunc,
+	"ln":        Ln,
+	"log":       Log,
 }
 
 // BuiltInFunction returns a built-in function body if known.
@@ -160,6 +162,36 @@ func Tan(args ...Value) Value {
 	}
 
 	return NewUndefinedWithReasonf("tan(): invalid argument type '%s'", args[0].String())
+}
+
+// Ln returns the natural logarithm of d.
+func Ln(args ...Value) Value {
+	if len(args) != 2 {
+		return NewUndefinedWithReasonf("ln() requires 2 arguments, got %d", len(args))
+	}
+
+	if v, ok := args[0].(Numberer); ok {
+		if p, ok := args[1].(Numberer); ok {
+			return v.Number().Ln(int32(p.Number().value.IntPart()))
+		}
+	}
+
+	return NewUndefinedWithReasonf("ln(): invalid argument type '%s'", args[0].String())
+}
+
+// Log returns the logarithm base 10 of d.
+func Log(args ...Value) Value {
+	if len(args) != 2 {
+		return NewUndefinedWithReasonf("log() requires 2 arguments, got %d", len(args))
+	}
+
+	if v, ok := args[0].(Numberer); ok {
+		if p, ok := args[1].(Numberer); ok {
+			return v.Number().Log(int32(p.Number().value.IntPart()))
+		}
+	}
+
+	return NewUndefinedWithReasonf("log(): invalid argument type '%s'", args[0].String())
 }
 
 // Sqrt returns the square root.
