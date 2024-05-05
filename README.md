@@ -14,8 +14,6 @@ A simple but powerful expression parser and evaluator in Go.
 
 This is a research project.
 
-Short link to repo Readme:
-
 ## Examples
 
 Check the tests for ideas of usage and capability.
