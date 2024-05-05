@@ -12,7 +12,7 @@
 
 A simple but powerful expression parser and evaluator in Go.
 
-This is a research project.
+This project started as a personal research.
 
 ## Examples
 
@@ -86,22 +86,51 @@ func main() {
 }
 ```
 
+## Type interfaces
+
+`gal` comes with  pre-defined type interfaces: Numberer, Booler, Stringer (and maybe more in the future).
+
+They allow the general use of types. For instance, the String `"123"` can be converted to the Number `123`.
+With `Numberer`, a user-defined function can transparently use String and Number when both hold a number representation.
+
+A user-defined function can do this:
+
+```go
+n := args[0].(gal.Numberer).Number()
+```
+
+or, for additional type safety:
+
+```go
+if value, ok := args[0].(gal.Numberer); !ok {
+    return gal.NewUndefinedWithReasonf("NaN '%s'", args[0])
+}
+n := value.Number()
+/* ... */
+```
+
+Both examples will happily accept a `Value` of type `String` or `Number` and process it as if it were a `Number`.
+
 ## Numbers
 
 Numbers implement arbitrary precision fixed-point decimal arithmetic with [shopspring/decimal](https://github.com/shopspring/decimal).
 
 ## Supported operations
 
-* Operators: `+` `-` `*` `/` `%` `**` `<<` `>>` `<` `<=` `==` `!=` `>` `>=`
+* Operators: `+` `-` `*` `/` `%` `**` `<<` `>>` `<` `<=` `==` `!=` `>` `>=` `And` `&&` `Or` `||`
     * [Precedence](https://en.wikipedia.org/wiki/Order_of_operations#Programming_languages), highest to lowest:
         * `**`
         * `*` `/` `%`
         * `+` `-`
         * `<<` `>>`
         * `<` `<=` `==` `!=` `>` `>=`
-    * Note: Go classifies bit shift operators with the higher `*`.
+        * `And` `&&` `Or` `||`
+    * Notes:
+        * Go classifies bit shift operators with the higher `*`.
+        * `&&` is synonymous of `And`.
+        * `||` is synonymous of `Or`.
 * Types: String, Number, Bool
-* Associativity with parentheses
+* Associativity with parentheses: `(` and `)`
 * Functions:
     * Built-in: pi, cos, floor, sin, sqrt, trunc, and more (see `function.go`: `Eval()`)
     * User-defined, injected via `WithFunctions()`
@@ -109,11 +138,13 @@ Numbers implement arbitrary precision fixed-point decimal arithmetic with [shops
 
 ## Functions
 
+A function is defined as a Go type: `type FunctionalValue func(...Value) Value`
+
 Function names are case-insensitive.
 
 A function can optionally accept one or more **space-separated** arguments, but it must return a single `Value`.
 
-It should be noted that a `MultiValue` type is available that can hold multiple `Value`. A function can use `MultiValue` as its return type to effectively return multiple `Value`'s. Of course, as `MultiValue` is a `Value` type, functions can also accept it as part of their argument(s). Refer to the tests (`TestMultiValueFunctions`) for such examples.
+It should be noted that a `MultiValue` type is available that can hold multiple `Value` elements. A function can use `MultiValue` as its return type to effectively return multiple `Value`'s. Of course, as `MultiValue` is a `Value` type, functions can also accept it as part of their argument(s). Refer to the test `TestMultiValueFunctions`, for an example.
 
 User function definitions are passed as a `map[string]FunctionalValue` using `WithFunctions` when calling `Eval` from `Tree`.
 

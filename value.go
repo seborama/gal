@@ -482,6 +482,24 @@ func (b Bool) Not() Bool {
 	return NewBool(!b.value)
 }
 
+func (b Bool) And(other Value) Bool {
+	if v, ok := other.(Booler); ok {
+		return NewBool(b.value && v.Bool().value)
+	}
+	return False // TODO: should Bool be a Maybe?
+}
+
+func (b Bool) Or(other Value) Bool {
+	if v, ok := other.(Booler); ok {
+		return NewBool(b.value || v.Bool().value)
+	}
+	return False // TODO: should Bool be a Maybe?
+}
+
+func (b Bool) Bool() Bool {
+	return b
+}
+
 func (b Bool) String() string { // TODO: return String rather than string?
 	if b.value {
 		return "true"
@@ -569,6 +587,16 @@ func (Undefined) LShift(Value) Value {
 
 func (Undefined) RShift(Value) Value {
 	return Undefined{}
+}
+
+func (Undefined) And(other Value) Bool {
+	// perhaps this should be a panic... Or else Bool should be a Maybe?
+	return False
+}
+
+func (Undefined) Or(other Value) Bool {
+	// perhaps this should be a panic... Or else Bool should be a Maybe?
+	return False
 }
 
 func (u Undefined) String() string {

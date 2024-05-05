@@ -114,6 +114,22 @@ func TestEval_Boolean(t *testing.T) {
 	expr = `3 == 2`
 	val = gal.Parse(expr).Eval()
 	assert.Equal(t, gal.False.String(), val.String())
+
+	expr = `( 123 == 123 && 12 <= 45 ) Or ( "a" != "b" )`
+	val = gal.Parse(expr).Eval()
+	assert.Equal(t, gal.True.String(), val.String())
+
+	expr = `( 123 == 123 && 12 <= 45 ) Or ( "b" != "b" )`
+	val = gal.Parse(expr).Eval()
+	assert.Equal(t, gal.True.String(), val.String())
+
+	expr = `( 123 == 123 && 12 > 45 ) Or ( "b" == "b" )`
+	val = gal.Parse(expr).Eval()
+	assert.Equal(t, gal.True.String(), val.String())
+
+	expr = `( 123 == 123 And 12 > 45 ) Or ( "b" != "b" )`
+	val = gal.Parse(expr).Eval()
+	assert.Equal(t, gal.False.String(), val.String())
 }
 
 func TestWithVariablesAndFunctions(t *testing.T) {

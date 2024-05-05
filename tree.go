@@ -106,7 +106,8 @@ func (tree Tree) Eval(opts ...treeOption) Value {
 		Calc(multiplicativeOperators, cfg).
 		Calc(additiveOperators, cfg).
 		Calc(bitwiseShiftOperators, cfg).
-		Calc(comparativeOperators, cfg)
+		Calc(comparativeOperators, cfg).
+		Calc(logicalOperators, cfg)
 
 	// TODO: refactor this
 	// perhaps add Tree.Value() which tests that only one entry is left and that it is a Value
@@ -187,6 +188,7 @@ func (tree Tree) Calc(isOperatorInPrecedenceGroup func(Operator) bool, cfg *tree
 		case operatorEntryKind:
 			op = e.(Operator)
 			if isOperatorInPrecedenceGroup(op) {
+				// same operator precedence: keep operating linearly, do not build a tree
 				continue
 			}
 			if val != nil {
@@ -317,6 +319,12 @@ func calculate(lhs Value, op Operator, rhs Value) Value {
 
 	case GreaterThanOrEqual:
 		outVal = lhs.GreaterThanOrEqual(rhs)
+
+	case And, And2:
+		outVal = lhs.And(rhs)
+
+	case Or, Or2:
+		outVal = lhs.Or(rhs)
 
 	default:
 		return NewUndefinedWithReasonf("unimplemented operator: '%s'", op.String())

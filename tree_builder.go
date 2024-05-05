@@ -63,12 +63,20 @@ func (tb TreeBuilder) FromExpr(expr string) (Tree, error) {
 				tree = append(tree, LShift)
 			case RShift.String():
 				tree = append(tree, RShift)
+			case And.String():
+				tree = append(tree, And)
+			case And2.String():
+				tree = append(tree, And2) // NOTE: re-route to And?
+			case Or.String():
+				tree = append(tree, Or)
+			case Or2.String():
+				tree = append(tree, Or2) // NOTE: re-route to Or?
 			default:
 				return nil, errors.Errorf("unknown operator: '%s'", part)
 			}
 
 		case functionType:
-			fname, l, _ := readFunctionName(part)
+			fname, l, _ := readFunctionName(part)          // ignore err: we already parsed the function name when in extractPart()
 			v, err := tb.FromExpr(part[l+1 : len(part)-1]) // exclude leading '(' and trailing ')'
 			if err != nil {
 				return nil, err
@@ -97,7 +105,7 @@ func (tb TreeBuilder) FromExpr(expr string) (Tree, error) {
 		idx += length
 	}
 
-	// adjust trees that start with "Plus" or "Minus" followed by a "numberer"
+	// adjust trees that start with "Plus" or "Minus" followed by a "Numberer"
 	if tree.TrunkLen() >= 2 {
 		switch tree[0] {
 		case Plus:
@@ -149,14 +157,18 @@ func extractPart(expr string) (string, exprType, int, error) {
 	// conceptually, parenthesis grouping is a special case of anonymous identity function
 	if expr[pos] == '(' || (expr[pos] >= 'a' && expr[pos] <= 'z') || (expr[pos] >= 'A' && expr[pos] <= 'Z') {
 		fname, lf, err := readFunctionName(expr[pos:])
-		if err != nil {
+		switch {
+		case errors.Is(err, errFunctionNameWithoutParens):
+			// allow to continue so we can check alphanumerical operator names such as "And", "Or", etc
+		case err != nil:
 			return "", unknownType, 0, err
+		default:
+			fargs, la, err := readFunctionArguments(expr[pos+lf:])
+			if err != nil {
+				return "", unknownType, 0, err
+			}
+			return fname + fargs, functionType, pos + lf + la, nil
 		}
-		fargs, la, err := readFunctionArguments(expr[pos+lf:])
-		if err != nil {
-			return "", unknownType, 0, err
-		}
-		return fname + fargs, functionType, pos + lf + la, nil
 	}
 
 	// read part - operator
@@ -220,6 +232,8 @@ func readVariable(expr string) (string, int, error) {
 	return expr[:to], to, nil
 }
 
+var errFunctionNameWithoutParens = errors.New("function with Parenthesis")
+
 func readFunctionName(expr string) (string, int, error) {
 	to := 0 // this could be an anonymous identity function (i.e. simple case of parenthesis grouping)
 
@@ -228,7 +242,7 @@ func readFunctionName(expr string) (string, int, error) {
 			return expr[:to], to, nil
 		}
 		if isBlankSpace(r) {
-			return "", 0, errors.Errorf("syntax error: invalid character '%c' for function name '%s'", r, expr[:to])
+			return expr[:to], to, errFunctionNameWithoutParens
 		}
 		to += 1
 	}
@@ -324,28 +338,35 @@ func isBlankSpace(r rune) bool {
 }
 
 func readOperator(s string) (string, int) {
-	if strings.HasPrefix(s, Power.String()) ||
-		strings.HasPrefix(s, LShift.String()) ||
-		strings.HasPrefix(s, RShift.String()) ||
-		strings.HasPrefix(s, EqualTo.String()) ||
-		strings.HasPrefix(s, NotEqualTo.String()) ||
-		strings.HasPrefix(s, GreaterThanOrEqual.String()) ||
-		strings.HasPrefix(s, LessThanOrEqual.String()) {
+	switch {
+	case strings.HasPrefix(s, And.String()):
+		return s[:3], 3
+
+	case strings.HasPrefix(s, Power.String()),
+		strings.HasPrefix(s, LShift.String()),
+		strings.HasPrefix(s, RShift.String()),
+		strings.HasPrefix(s, EqualTo.String()),
+		strings.HasPrefix(s, NotEqualTo.String()),
+		strings.HasPrefix(s, GreaterThanOrEqual.String()),
+		strings.HasPrefix(s, LessThanOrEqual.String()),
+		strings.HasPrefix(s, And2.String()),
+		strings.HasPrefix(s, Or.String()),
+		strings.HasPrefix(s, Or2.String()):
 		return s[:2], 2
-	}
 
-	if strings.HasPrefix(s, Plus.String()) ||
-		strings.HasPrefix(s, Minus.String()) ||
-		strings.HasPrefix(s, Divide.String()) ||
-		strings.HasPrefix(s, Multiply.String()) ||
-		strings.HasPrefix(s, Power.String()) ||
-		strings.HasPrefix(s, Modulus.String()) ||
-		strings.HasPrefix(s, GreaterThan.String()) ||
-		strings.HasPrefix(s, LessThan.String()) {
+	case strings.HasPrefix(s, Plus.String()),
+		strings.HasPrefix(s, Minus.String()),
+		strings.HasPrefix(s, Divide.String()),
+		strings.HasPrefix(s, Multiply.String()),
+		strings.HasPrefix(s, Power.String()),
+		strings.HasPrefix(s, Modulus.String()),
+		strings.HasPrefix(s, GreaterThan.String()),
+		strings.HasPrefix(s, LessThan.String()):
 		return s[:1], 1
-	}
 
-	return "", 0
+	default:
+		return "", 0
+	}
 }
 
 func isOperator(s string) bool {

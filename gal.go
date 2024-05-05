@@ -13,6 +13,7 @@ const (
 )
 
 type Value interface {
+	// Calculation
 	Add(Value) Value
 	Sub(Value) Value
 	Multiply(Value) Value
@@ -21,12 +22,16 @@ type Value interface {
 	Mod(Value) Value
 	LShift(Value) Value
 	RShift(Value) Value
+	// Logical
 	LessThan(Value) Bool
 	LessThanOrEqual(Value) Bool
 	EqualTo(Value) Bool
 	NotEqualTo(Value) Bool
 	GreaterThan(Value) Bool
 	GreaterThanOrEqual(Value) Bool
+	And(Value) Bool
+	Or(Value) Bool
+	// Helpers
 	Stringer
 	entry
 }

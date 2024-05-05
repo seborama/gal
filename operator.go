@@ -26,6 +26,10 @@ const (
 	NotEqualTo         Operator = "!="
 	GreaterThan        Operator = ">"
 	GreaterThanOrEqual Operator = ">="
+	And                Operator = "And" // TODO: case sentive for now
+	And2               Operator = "&&"
+	Or                 Operator = "Or" // TODO: case sentive for now
+	Or2                Operator = "||"
 )
 
 func powerOperators(o Operator) bool {
@@ -48,4 +52,9 @@ func comparativeOperators(o Operator) bool {
 	return o == GreaterThan || o == GreaterThanOrEqual ||
 		o == LessThan || o == LessThanOrEqual ||
 		o == EqualTo || o == NotEqualTo
+}
+
+func logicalOperators(o Operator) bool {
+	return o == And || o == And2 ||
+		o == Or || o == Or2
 }
