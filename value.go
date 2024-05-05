@@ -10,14 +10,13 @@ import (
 )
 
 type Stringer interface {
-	String() string // TODO return String rather than string? Implications?
+	AsString() String // name is not String so to not clash with fmt.Stringer interface
 }
 
 type Numberer interface {
 	Number() Number
 }
 
-// TODO: any useful use of this???
 type Booler interface {
 	Bool() Bool
 }
@@ -38,7 +37,7 @@ func ToNumber(val Value) Number {
 // TODO: ... MultiValue(...) - nothing stops the user from creating their own for now :-)
 //
 // TODO: implement other methods such as Add, LessThan, etc (if meaningful)
-type MultiValue struct { // TODO: call this a ValueGroup? Or just a Group?
+type MultiValue struct {
 	Undefined
 	values []Value
 }
@@ -63,13 +62,16 @@ func (m MultiValue) Equal(other MultiValue) bool {
 	return true
 }
 
-// TODO: add test to confirm / illustrate output.
 func (m MultiValue) String() string {
 	var vals []string
 	for _, val := range m.values {
 		vals = append(vals, val.String())
 	}
-	return `"` + strings.Join(vals, `","`) + `"`
+	return strings.Join(vals, `,`)
+}
+
+func (m MultiValue) AsString() String {
+	return NewString(m.String())
 }
 
 func (m MultiValue) Get(i int) Value {
@@ -104,7 +106,7 @@ func (s String) Equal(other String) bool {
 
 func (s String) LessThan(other Value) Bool {
 	if v, ok := other.(Stringer); ok {
-		return NewBool(s.value < v.String())
+		return NewBool(s.value < v.AsString().value)
 	}
 
 	return False
@@ -112,7 +114,7 @@ func (s String) LessThan(other Value) Bool {
 
 func (s String) LessThanOrEqual(other Value) Bool {
 	if v, ok := other.(Stringer); ok {
-		return NewBool(s.value <= v.String())
+		return NewBool(s.value <= v.AsString().value)
 	}
 
 	return False
@@ -120,7 +122,7 @@ func (s String) LessThanOrEqual(other Value) Bool {
 
 func (s String) EqualTo(other Value) Bool {
 	if v, ok := other.(Stringer); ok {
-		return NewBool(s.value == v.String())
+		return NewBool(s.value == v.AsString().value) // beware to compare what's comparable: do NOT use s.value == v.String() because String() may decorate the value (see String and MultiValue for example)
 	}
 
 	return False
@@ -132,7 +134,7 @@ func (s String) NotEqualTo(other Value) Bool {
 
 func (s String) GreaterThan(other Value) Bool {
 	if v, ok := other.(Stringer); ok {
-		return NewBool(s.value > v.String())
+		return NewBool(s.value > v.AsString().value)
 	}
 
 	return False
@@ -140,7 +142,7 @@ func (s String) GreaterThan(other Value) Bool {
 
 func (s String) GreaterThanOrEqual(other Value) Bool {
 	if v, ok := other.(Stringer); ok {
-		return NewBool(s.value >= v.String())
+		return NewBool(s.value >= v.AsString().value)
 	}
 
 	return False
@@ -148,7 +150,7 @@ func (s String) GreaterThanOrEqual(other Value) Bool {
 
 func (s String) Add(other Value) Value {
 	if v, ok := other.(Stringer); ok {
-		return String{value: s.value + v.String()}
+		return String{value: s.value + v.AsString().value}
 	}
 
 	return NewUndefinedWithReasonf("cannot Add non-string to a string")
@@ -174,11 +176,15 @@ func (s String) RShift(Value) Value {
 }
 
 func (s String) String() string {
-	return s.value
+	return `"` + s.value + `"`
+}
+
+func (s String) AsString() String {
+	return s
 }
 
 func (s String) Number() Number {
-	n, err := NewNumberFromString(s.String())
+	n, err := NewNumberFromString(s.value) // beware that `.String()` may decorate the value!!
 	if err != nil {
 		panic(err) // TODO :-/
 	}
@@ -230,11 +236,6 @@ func (n Number) Add(other Value) Value {
 }
 
 func (n Number) Sub(other Value) Value {
-	switch v := other.(type) {
-	case Number:
-		return Number{value: n.value.Sub(v.value)}
-	}
-
 	if v, ok := other.(Numberer); ok {
 		return Number{
 			value: n.value.Sub(v.Number().value),
@@ -438,6 +439,10 @@ func (n Number) String() string {
 	return n.value.String()
 }
 
+func (n Number) AsString() String {
+	return NewString(n.String())
+}
+
 func (n Number) Number() Number {
 	return n
 }
@@ -459,6 +464,18 @@ func NewBool(b bool) Bool {
 	return Bool{value: b}
 }
 
+// TODO: another option would be to return a Value and hence allow Undefined when neither True nor False is provided.
+func NewBoolFromString(s string) (Bool, error) {
+	switch s {
+	case "True":
+		return True, nil
+	case "False":
+		return False, nil
+	default:
+		return False, errors.Errorf("'%s' cannot be converted to a Bool", s)
+	}
+}
+
 func (Bool) kind() entryKind {
 	return valueEntryKind
 }
@@ -467,9 +484,10 @@ func (Bool) kind() entryKind {
 func (b Bool) Equal(other Bool) bool {
 	return b.value == other.value
 }
+
 func (b Bool) EqualTo(other Value) Bool {
-	if v, ok := other.(Bool); ok {
-		return NewBool(b.value == v.value)
+	if v, ok := other.(Booler); ok {
+		return NewBool(b.value == v.Bool().value)
 	}
 	return False
 }
@@ -500,15 +518,21 @@ func (b Bool) Bool() Bool {
 	return b
 }
 
-func (b Bool) String() string { // TODO: return String rather than string?
+func (b Bool) String() string {
 	if b.value {
-		return "true"
+		return "True"
 	}
-	return "false"
+	return "False"
 }
 
-var False = NewBool(false)
-var True = NewBool(true)
+func (b Bool) AsString() String {
+	return NewString(b.String())
+}
+
+var (
+	False = NewBool(false)
+	True  = NewBool(true)
+)
 
 type Undefined struct {
 	reason string // optional
@@ -604,4 +628,8 @@ func (u Undefined) String() string {
 		return "undefined"
 	}
 	return "undefined: " + u.reason
+}
+
+func (u Undefined) AsString() String {
+	return NewString(u.String())
 }

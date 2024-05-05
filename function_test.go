@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/seborama/gal/v8"
+
 	"github.com/stretchr/testify/assert"
 )
 

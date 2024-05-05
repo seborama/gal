@@ -15,5 +15,5 @@ func (Variable) kind() entryKind {
 }
 
 func (v Variable) String() string {
-	return string(v.Name)
+	return v.Name
 }

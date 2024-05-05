@@ -1,6 +1,31 @@
 package gal
 
+import (
+	"fmt"
+	"log/slog"
+	"strings"
+)
+
 type entryKind int
+
+func (ek entryKind) String() string {
+	switch ek {
+	case unknownEntryKind:
+		return "unknownEntryKind"
+	case valueEntryKind:
+		return "valueEntryKind"
+	case operatorEntryKind:
+		return "operatorEntryKind"
+	case treeEntryKind:
+		return "treeEntryKind"
+	case functionEntryKind:
+		return "functionEntryKind"
+	case variableEntryKind:
+		return "variableEntryKind"
+	default:
+		return fmt.Sprintf("unknown:%d", ek)
+	}
+}
 
 const (
 	unknownEntryKind entryKind = iota
@@ -90,7 +115,7 @@ func WithFunctions(funcs Functions) treeOption {
 // It accepts optional functional parameters to supply user-defined
 // entities such as functions and variables.
 func (tree Tree) Eval(opts ...treeOption) Value {
-	//config
+	// config
 	cfg := &treeConfig{}
 
 	for _, o := range opts {
@@ -141,15 +166,19 @@ func (tree Tree) Split() []Tree {
 // For instance, a tree representing the expression '2 + 5 * 4 / 2' with an operator precedence
 // of 'multiplicativeOperators' would read the Tree left to right and return a new Tree that
 // represents: '2 + 10' where 10 was calculated (and reduced) from 5 * 4 = 20 / 2 = 10.
+//
+// nolint: gocognit,gocyclo,cyclop
 func (tree Tree) Calc(isOperatorInPrecedenceGroup func(Operator) bool, cfg *treeConfig) Tree {
 	var outTree Tree
 
 	var val entry
-	var op Operator = invalidOperator
+	var op Operator = invalidOperator //nolint: stylecheck
 
 	for i := 0; i < tree.TrunkLen(); i++ {
 		e := tree[i]
+		slog.Debug("Tree.Calc: entry in Tree", "i", i, "kind", e.kind().String())
 		if e == nil {
+			slog.Debug("Tree.Calc: nil entry in Tree")
 			return Tree{
 				NewUndefinedWithReasonf("syntax error: nil value at tree entry #%d - tree: %+v", i, tree),
 			}
@@ -157,6 +186,7 @@ func (tree Tree) Calc(isOperatorInPrecedenceGroup func(Operator) bool, cfg *tree
 
 		switch e.kind() {
 		case valueEntryKind:
+			slog.Debug("Tree.Calc: valueEntryKind", "i", i, "Value", e.(Value).String())
 			if val == nil && op == invalidOperator {
 				val = e
 				continue
@@ -168,9 +198,12 @@ func (tree Tree) Calc(isOperatorInPrecedenceGroup func(Operator) bool, cfg *tree
 				}
 			}
 
+			slog.Debug("Tree.Calc: valueEntryKind - calculate", "i", i, "val", val.(Value).String(), "op", op.String(), "e", e.(Value).String())
 			val = calculate(val.(Value), op, e.(Value))
+			slog.Debug("Tree.Calc: valueEntryKind - calculate", "i", i, "result", val.(Value).String())
 
 		case treeEntryKind:
+			slog.Debug("Tree.Calc: treeEntryKind", "i", i)
 			if val == nil && op != invalidOperator {
 				return Tree{
 					NewUndefinedWithReasonf("syntax error: missing left hand side value for operator '%s'", op.String()),
@@ -184,9 +217,11 @@ func (tree Tree) Calc(isOperatorInPrecedenceGroup func(Operator) bool, cfg *tree
 			}
 
 			val = calculate(val.(Value), op, rhsVal)
+			slog.Debug("Tree.Calc: treeEntryKind - calculate", "i", i, "val", val.(Value).String(), "op", op.String(), "rhsVal", rhsVal.String(), "result", val.(Value).String())
 
 		case operatorEntryKind:
-			op = e.(Operator)
+			slog.Debug("Tree.Calc: operatorEntryKind", "i", i, "Value", e.(Operator).String())
+			op = e.(Operator) //nolint: errcheck
 			if isOperatorInPrecedenceGroup(op) {
 				// same operator precedence: keep operating linearly, do not build a tree
 				continue
@@ -199,7 +234,8 @@ func (tree Tree) Calc(isOperatorInPrecedenceGroup func(Operator) bool, cfg *tree
 			op = invalidOperator
 
 		case functionEntryKind:
-			f := e.(Function)
+			slog.Debug("Tree.Calc: functionEntryKind", "i", i, "name", e.(Function).Name)
+			f := e.(Function) //nolint: errcheck
 			if f.BodyFn == nil {
 				f.BodyFn = cfg.functions.Function(f.Name)
 			}
@@ -210,8 +246,10 @@ func (tree Tree) Calc(isOperatorInPrecedenceGroup func(Operator) bool, cfg *tree
 			}
 
 			val = calculate(val.(Value), op, rhsVal)
+			slog.Debug("Tree.Calc: functionEntryKind - calculate", "i", i, "val", val.(Value).String(), "op", op.String(), "rhsVal", rhsVal.String(), "result", val.(Value).String())
 
 		case variableEntryKind:
+			slog.Debug("Tree.Calc: variableEntryKind", "i", i, "name", e.(Variable).Name)
 			varName := e.(Variable).Name
 			rhsVal, ok := cfg.Variable(varName)
 			if !ok {
@@ -219,6 +257,7 @@ func (tree Tree) Calc(isOperatorInPrecedenceGroup func(Operator) bool, cfg *tree
 					NewUndefinedWithReasonf("syntax error: unknown variable name: '%s'", varName),
 				}
 			}
+			slog.Debug("Tree.Calc: variableEntryKind", "i", i, "value", rhsVal.String())
 
 			if val == nil {
 				val = rhsVal
@@ -226,6 +265,7 @@ func (tree Tree) Calc(isOperatorInPrecedenceGroup func(Operator) bool, cfg *tree
 			}
 
 			val = calculate(val.(Value), op, rhsVal)
+			slog.Debug("Tree.Calc: variableEntryKind - calculate", "i", i, "val", val.(Value).String(), "op", op.String(), "rhsVal", rhsVal.String(), "result", val.(Value).String())
 
 		case unknownEntryKind:
 			return Tree{e}
@@ -274,6 +314,32 @@ func (Tree) kind() entryKind {
 	return treeEntryKind
 }
 
+func (tree Tree) String(indents ...string) string {
+	indent := strings.Join(indents, "")
+
+	res := ""
+	for _, e := range tree {
+		switch e.kind() {
+		case unknownEntryKind:
+			res += fmt.Sprintf(indent+"unknownEntryKind %T\n", e)
+		case valueEntryKind:
+			res += fmt.Sprintf(indent+"Value %T %s\n", e, e.(Value).String())
+		case operatorEntryKind:
+			res += fmt.Sprintf(indent+"Operator %s\n", e.(Operator).String())
+		case treeEntryKind:
+			res += fmt.Sprintf(indent+"Tree {\n%s}\n", e.(Tree).String("   "))
+		case functionEntryKind:
+			res += fmt.Sprintf(indent+"Function %s\n", e.(Function).Name)
+		case variableEntryKind:
+			res += fmt.Sprintf(indent+"Variable %s\n", e.(Variable).Name)
+		default:
+			res += fmt.Sprintf(indent+"undefined %T %s\n", e, e.kind().String())
+		}
+	}
+	return res
+}
+
+// nolint: gocognit,gocyclo,cyclop
 func calculate(lhs Value, op Operator, rhs Value) Value {
 	var outVal Value
 

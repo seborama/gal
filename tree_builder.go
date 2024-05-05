@@ -12,6 +12,7 @@ func NewTreeBuilder() *TreeBuilder {
 	return &TreeBuilder{}
 }
 
+// nolint: gocognit,gocyclo,cyclop
 func (tb TreeBuilder) FromExpr(expr string) (Tree, error) {
 	tree := Tree{}
 
@@ -31,6 +32,13 @@ func (tb TreeBuilder) FromExpr(expr string) (Tree, error) {
 
 		case stringType:
 			v := NewString(part)
+			tree = append(tree, v)
+
+		case boolType:
+			v, err := NewBoolFromString(part)
+			if err != nil {
+				return nil, err
+			}
 			tree = append(tree, v)
 
 		case operatorType:
@@ -76,7 +84,7 @@ func (tb TreeBuilder) FromExpr(expr string) (Tree, error) {
 			}
 
 		case functionType:
-			fname, l, _ := readFunctionName(part)          // ignore err: we already parsed the function name when in extractPart()
+			fname, l, _ := readFunctionName(part)          //nolint: errcheck // ignore err: we already parsed the function name when in extractPart()
 			v, err := tb.FromExpr(part[l+1 : len(part)-1]) // exclude leading '(' and trailing ')'
 			if err != nil {
 				return nil, err
@@ -120,6 +128,8 @@ func (tb TreeBuilder) FromExpr(expr string) (Tree, error) {
 
 // returns the part extracted as string, the type extracted, the cursor position
 // after extraction or an error.
+//
+// nolint: gocognit,gocyclo,cyclop
 func extractPart(expr string) (string, exprType, int, error) {
 	// left trim blanks
 	pos := 0
@@ -142,6 +152,15 @@ func extractPart(expr string) (string, exprType, int, error) {
 			return "", unknownType, 0, err
 		}
 		return s, stringType, pos + l, nil
+	}
+
+	// read part - "boolean"
+	{ // make s, l and ok local scope
+		s, l, ok := readBool(expr[pos:])
+		if ok {
+			// it's a bool
+			return s, boolType, pos + l, nil
+		}
 	}
 
 	// read part - :variable:
@@ -193,7 +212,7 @@ func readString(expr string) (string, int, error) {
 	escapes := 0
 
 	for i, r := range expr[1:] {
-		to += 1
+		to++
 		if expr[i] == '\\' {
 			escapes += 1
 			continue
@@ -201,6 +220,7 @@ func readString(expr string) (string, int, error) {
 		if r == '"' && (escapes == 0 || escapes&1 == 0) {
 			break
 		}
+		// TODO: perhaps we should collapse the `\`, here?
 
 		escapes = 0
 	}
@@ -216,7 +236,7 @@ func readVariable(expr string) (string, int, error) {
 	to := 1 // keep leading ':'
 
 	for _, r := range expr[1:] {
-		to += 1
+		to++
 		if r == ':' {
 			break
 		}
@@ -232,6 +252,37 @@ func readVariable(expr string) (string, int, error) {
 	return expr[:to], to, nil
 }
 
+// the bool is an `ok` type bool, it is set to true if we successfull read a Bool
+func readBool(expr string) (string, int, bool) {
+	to := 0
+
+readString:
+	for _, r := range expr {
+		to++
+		switch {
+		case r >= 'a' && r <= 'z',
+			r >= 'A' && r <= 'Z':
+			continue
+		case isBlankSpace(r):
+			// we read a potential bool
+			to-- // eject the space character we just read
+			break readString
+		default:
+			// not a bool
+			return "", 0, false
+		}
+	}
+
+	switch expr[:to] {
+	case "True", "False":
+		// it's a Bool
+		return expr[:to], to, true
+	default:
+		// it isn't a Bool
+		return "", 0, false
+	}
+}
+
 var errFunctionNameWithoutParens = errors.New("function with Parenthesis")
 
 func readFunctionName(expr string) (string, int, error) {
@@ -244,7 +295,7 @@ func readFunctionName(expr string) (string, int, error) {
 		if isBlankSpace(r) {
 			return expr[:to], to, errFunctionNameWithoutParens
 		}
-		to += 1
+		to++
 	}
 
 	return "", 0, errors.Errorf("syntax error: missing '(' for function name '%s'", expr[:to])
@@ -267,7 +318,7 @@ func readFunctionArguments(expr string) (string, int, error) {
 			continue
 		}
 
-		to += 1
+		to++
 		if r == '(' {
 			bktCount++
 			continue
@@ -322,7 +373,7 @@ func squashPlusMinusChain(expr string) (string, int) {
 		if r == '-' {
 			outcomeSign = -outcomeSign
 		}
-		to += 1
+		to++
 	}
 
 	sign := "-"
@@ -358,7 +409,6 @@ func readOperator(s string) (string, int) {
 		strings.HasPrefix(s, Minus.String()),
 		strings.HasPrefix(s, Divide.String()),
 		strings.HasPrefix(s, Multiply.String()),
-		strings.HasPrefix(s, Power.String()),
 		strings.HasPrefix(s, Modulus.String()),
 		strings.HasPrefix(s, GreaterThan.String()),
 		strings.HasPrefix(s, LessThan.String()):

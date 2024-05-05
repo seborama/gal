@@ -4,8 +4,9 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/seborama/gal/v8"
 	"github.com/stretchr/testify/require"
+
+	"github.com/seborama/gal/v8"
 )
 
 func TestTreeBuilder_FromExpr_VariousOperators(t *testing.T) {

@@ -103,7 +103,7 @@ func PiLong(args ...Value) Value {
 		return NewUndefinedWithReasonf("pi() requires no argument, got %d", len(args))
 	}
 
-	pi, _ := NewNumberFromString(Pi51199)
+	pi, _ := NewNumberFromString(Pi51199) //nolint: errcheck
 
 	return pi
 }

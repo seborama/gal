@@ -1,5 +1,7 @@
 package gal
 
+import "fmt"
+
 type exprType int
 
 const (
@@ -10,6 +12,7 @@ const (
 	stringType
 	variableType
 	functionType
+	boolType
 )
 
 type Value interface {
@@ -33,6 +36,7 @@ type Value interface {
 	Or(Value) Bool
 	// Helpers
 	Stringer
+	fmt.Stringer
 	entry
 }
 
