@@ -134,6 +134,16 @@ func TestEval_Boolean(t *testing.T) {
 	expr = `True Or False`
 	val = gal.Parse(expr).Eval()
 	assert.Equal(t, gal.True.String(), val.String())
+
+	expr = `True Or (False)`
+	val = gal.Parse(expr).Eval()
+	assert.Equal(t, gal.True.String(), val.String())
+
+	// in this expression, the `()` are attached to `Or` which makes `Or()` a user-defined
+	// function, rather than the `Or` operator.
+	expr = `True Or(False)`
+	val = gal.Parse(expr).Eval()
+	assert.Equal(t, `undefined: unknown function 'Or'`, val.String())
 }
 
 func TestWithVariablesAndFunctions(t *testing.T) {

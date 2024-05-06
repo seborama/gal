@@ -76,7 +76,7 @@ func (m MultiValue) AsString() String {
 
 func (m MultiValue) Get(i int) Value {
 	if i > len(m.values) {
-		return NewUndefinedWithReasonf(fmt.Sprintf("out of bounds: trying to get arg #%d on MultiValue that has %d arguments", i, len(m.values)))
+		return NewUndefinedWithReasonf("out of bounds: trying to get arg #%d on MultiValue that has %d arguments", i, len(m.values))
 	}
 
 	return m.values[i]
@@ -400,7 +400,7 @@ func (n Number) Trunc(precision int32) Number {
 
 func (n Number) Factorial() Value {
 	if !n.value.IsInteger() || n.value.IsNegative() {
-		return NewUndefinedWithReasonf(fmt.Sprintf("Factorial: requires a positive integer, cannot accept %s", n.String()))
+		return NewUndefinedWithReasonf("Factorial: requires a positive integer, cannot accept %s", n.String())
 	}
 
 	res := decimal.NewFromInt(1)

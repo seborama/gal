@@ -174,7 +174,13 @@ func (tree Tree) Calc(isOperatorInPrecedenceGroup func(Operator) bool, cfg *tree
 	var val entry
 	var op Operator = invalidOperator //nolint: stylecheck
 
+	slog.Debug("Tree.Calc: start walking Tree", "tree", tree.String())
 	for i := 0; i < tree.TrunkLen(); i++ {
+		if v, ok := val.(Undefined); ok {
+			slog.Debug("Tree.Calc: val is Undefined", "i", i, "val", v.String())
+			return Tree{v}
+		}
+
 		e := tree[i]
 		slog.Debug("Tree.Calc: entry in Tree", "i", i, "kind", e.kind().String())
 		if e == nil {
@@ -211,6 +217,10 @@ func (tree Tree) Calc(isOperatorInPrecedenceGroup func(Operator) bool, cfg *tree
 			}
 
 			rhsVal := e.(Tree).Eval(WithFunctions(cfg.functions), WithVariables(cfg.variables))
+			if v, ok := rhsVal.(Undefined); ok {
+				slog.Debug("Tree.Calc: val is Undefined", "i", i, "val", v.String())
+				return Tree{v}
+			}
 			if val == nil {
 				val = rhsVal
 				continue
@@ -230,6 +240,7 @@ func (tree Tree) Calc(isOperatorInPrecedenceGroup func(Operator) bool, cfg *tree
 				outTree = append(outTree, val)
 			}
 			outTree = append(outTree, op)
+			// just found and process the current operator - now, reset val and op and start again from fresh
 			val = nil
 			op = invalidOperator
 
@@ -239,14 +250,20 @@ func (tree Tree) Calc(isOperatorInPrecedenceGroup func(Operator) bool, cfg *tree
 			if f.BodyFn == nil {
 				f.BodyFn = cfg.functions.Function(f.Name)
 			}
+
 			rhsVal := f.Eval(WithFunctions(cfg.functions), WithVariables(cfg.variables))
+			if v, ok := rhsVal.(Undefined); ok {
+				slog.Debug("Tree.Calc: val is Undefined", "i", i, "val", v.String())
+				return Tree{v}
+			}
 			if val == nil {
 				val = rhsVal
 				continue
 			}
 
+			lhsVal := val
 			val = calculate(val.(Value), op, rhsVal)
-			slog.Debug("Tree.Calc: functionEntryKind - calculate", "i", i, "val", val.(Value).String(), "op", op.String(), "rhsVal", rhsVal.String(), "result", val.(Value).String())
+			slog.Debug("Tree.Calc: functionEntryKind - calculate", "i", i, "lhsVal", lhsVal.(Value).String(), "op", op.String(), "rhsVal", rhsVal.String(), "result", val.(Value).String())
 
 		case variableEntryKind:
 			slog.Debug("Tree.Calc: variableEntryKind", "i", i, "name", e.(Variable).Name)
@@ -268,11 +285,13 @@ func (tree Tree) Calc(isOperatorInPrecedenceGroup func(Operator) bool, cfg *tree
 			slog.Debug("Tree.Calc: variableEntryKind - calculate", "i", i, "val", val.(Value).String(), "op", op.String(), "rhsVal", rhsVal.String(), "result", val.(Value).String())
 
 		case unknownEntryKind:
+			slog.Debug("Tree.Calc: unknownEntryKind", "i", i, "val", val, "op", op.String(), "e", e)
 			return Tree{e}
 
 		default:
+			slog.Debug("Tree.Calc: default case", "i", i, "val", val, "op", op.String(), "e", e)
 			return Tree{
-				NewUndefinedWithReasonf("internal error: unknown entry kind: '%v'", e.kind()),
+				NewUndefinedWithReasonf("internal error: unknown entry kind: '%s'", e.kind().String()),
 			}
 		}
 	}

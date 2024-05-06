@@ -130,6 +130,10 @@ In addition to boolean expressions, sepcial contants `True` and `False` may be u
 
 Do not double-quote them, or they will become plain strings!
 
+## MultiValue
+
+This is container `Value`. It can contain zero or any number of `Value`'s. Currently, this is only truly useful with functions, mostly because it is yet undecided how to define what operations would mean on a `MultiValue`.
+
 ## Supported operations
 
 * Operators: `+` `-` `*` `/` `%` `**` `<<` `>>` `<` `<=` `==` `!=` `>` `>=` `And` `&&` `Or` `||`
@@ -144,6 +148,7 @@ Do not double-quote them, or they will become plain strings!
         * Go classifies bit shift operators with the higher `*`.
         * `&&` is synonymous of `And`.
         * `||` is synonymous of `Or`.
+        * Worded operators such as `And` and `Or` are **case-sensitive** and must be followed by a blank character. `True Or (False)` is a Bool expression with the `Or` operator but `True Or(False)` is an invalid expression attempting to call a user-defined function called `Or()`.
 * Types: String, Number, Bool, MultiValue
 * Associativity with parentheses: `(` and `)`
 * Functions:
