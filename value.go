@@ -21,6 +21,10 @@ type Booler interface {
 	Bool() Bool
 }
 
+type Evaler interface {
+	Eval() Value
+}
+
 // TODO: we may also want to create ToString() and ToBool()
 func ToNumber(val Value) Number {
 	// TODO: we could also try to convert Bool to Number since we could add NewNumberFromBool() to deal with Bool's
@@ -189,6 +193,15 @@ func (s String) Number() Number {
 	}
 
 	return n
+}
+
+func (s String) Eval() Value {
+	tree, err := NewTreeBuilder().FromExpr(s.value)
+	if err != nil {
+		return s
+	}
+
+	return tree.Eval()
 }
 
 type Number struct {

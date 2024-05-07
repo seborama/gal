@@ -152,7 +152,7 @@ This is container `Value`. It can contain zero or any number of `Value`'s. Curre
 * Types: String, Number, Bool, MultiValue
 * Associativity with parentheses: `(` and `)`
 * Functions:
-    * Built-in: pi, cos, floor, sin, sqrt, trunc, and more (see `function.go`: `Eval()`)
+    * Built-in: pi, cos, floor, sin, sqrt, trunc, **eval**, and more (see `function.go`: `Eval()`)
     * User-defined, injected via `WithFunctions()`
 * Variables, defined as `:variable_name:` and injected via `WithVariables()`
 

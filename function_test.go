@@ -7,6 +7,7 @@ import (
 	"github.com/seborama/gal/v8"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestPi(t *testing.T) {
@@ -75,4 +76,12 @@ func TestLog(t *testing.T) {
 
 	val = gal.Log(gal.NewNumber(10_000_000), gal.NewNumber(0))
 	assert.Equal(t, "7", val.String())
+}
+
+func TestFunctionEval(t *testing.T) {
+	expr := `eval("7+22")*2`
+	tree, err := gal.NewTreeBuilder().FromExpr(expr)
+	require.NoError(t, err)
+
+	assert.Equal(t, "58", tree.Eval().String())
 }

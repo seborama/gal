@@ -64,6 +64,7 @@ var builtInFunctions = map[string]FunctionalValue{
 	"trunc":     Trunc,
 	"ln":        Ln,
 	"log":       Log,
+	"eval":      Eval,
 }
 
 // BuiltInFunction returns a built-in function body if known.
@@ -240,4 +241,18 @@ func Trunc(args ...Value) Value {
 	}
 
 	return NewUndefinedWithReasonf("trunc(): invalid argument #1 '%s'", argVal.String())
+}
+
+func Eval(args ...Value) Value {
+	if len(args) != 1 {
+		return NewUndefinedWithReasonf("eval() requires 1 argument1, got %d: '%v'", len(args), args)
+	}
+
+	argVal := args[0]
+
+	if v, ok := argVal.(Evaler); ok {
+		return v.Eval()
+	}
+
+	return argVal
 }
