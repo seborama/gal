@@ -182,6 +182,10 @@ func (s String) String() string {
 	return `"` + s.value + `"`
 }
 
+func (s String) RawString() string {
+	return s.value
+}
+
 func (s String) AsString() String {
 	return s
 }
@@ -209,7 +213,13 @@ type Number struct {
 	value decimal.Decimal
 }
 
-func NewNumber(i int64) Number {
+func NewNumber(i int64, exp int32) Number {
+	d := decimal.New(i, exp)
+
+	return Number{value: d}
+}
+
+func NewNumberFromInt(i int64) Number {
 	d := decimal.NewFromInt(i)
 
 	return Number{value: d}

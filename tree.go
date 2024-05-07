@@ -78,19 +78,41 @@ func (f Functions) Function(name string) FunctionalValue {
 	return nil
 }
 
+// Object holds user-defined objects that can carry properties and functions that may be
+// referenced within a gal expression during evaluation.
+type Object any
+
+// Objects is a collection of Object's in the form of a map which keys are the name of the
+// object and values are the actual Object's.
+type Objects map[string]Object
+
 type treeConfig struct {
 	variables Variables
 	functions Functions
+	objects   Objects
 }
 
 // Variable returns the value of the variable specified by name.
 func (tc treeConfig) Variable(name string) (Value, bool) {
-	if tc.variables == nil {
+	splits := strings.Split(name, ".")
+	if len(splits) > 1 {
+		// TODO: add recursive handling i.e. obj.prop1.prop2? how about obj.func1().prop?
+		if tc.objects != nil {
+			obj, ok := tc.objects[splits[0]]
+			if ok {
+				return ObjectGetProperty(obj, splits[1])
+			}
+		}
 		return nil, false
 	}
 
-	val, ok := tc.variables[name]
-	return val, ok
+	if tc.variables != nil {
+		val, ok := tc.variables[name]
+		if ok {
+			return val, ok
+		}
+	}
+	return nil, false
 }
 
 type treeOption func(*treeConfig)
@@ -108,6 +130,16 @@ func WithVariables(vars Variables) treeOption {
 func WithFunctions(funcs Functions) treeOption {
 	return func(cfg *treeConfig) {
 		cfg.functions = funcs
+	}
+}
+
+// WithObjects is a functional parameter for Tree evaluation.
+// It provides user-defined Objects.
+// These objects can carry both properties and methods that can be accessed
+// by gal in place of variables and functions.
+func WithObjects(objects Objects) treeOption {
+	return func(cfg *treeConfig) {
+		cfg.objects = objects
 	}
 }
 
@@ -323,7 +355,7 @@ func (tree Tree) cleansePlusMinusTreeStart() Tree {
 	case Plus:
 		return outTree[1:]
 	case Minus:
-		return append(Tree{NewNumber(-1), Multiply}, outTree[1:]...)
+		return append(Tree{NewNumberFromInt(-1), Multiply}, outTree[1:]...)
 	}
 
 	panic("point never reached")

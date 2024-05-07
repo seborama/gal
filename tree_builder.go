@@ -84,7 +84,7 @@ func (tb TreeBuilder) FromExpr(expr string) (Tree, error) {
 			}
 
 		case functionType:
-			fname, l, _ := readFunctionName(part)          //nolint: errcheck // ignore err: we already parsed the function name when in extractPart()
+			fname, l, _ := readNamedExpressionType(part)   //nolint: errcheck // ignore err: we already parsed the function name when in extractPart()
 			v, err := tb.FromExpr(part[l+1 : len(part)-1]) // exclude leading '(' and trailing ')'
 			if err != nil {
 				return nil, err
@@ -119,7 +119,7 @@ func (tb TreeBuilder) FromExpr(expr string) (Tree, error) {
 		case Plus:
 			return tree[1:], nil
 		case Minus:
-			return append(Tree{NewNumber(-1), Multiply}, tree[1:]...), nil
+			return append(Tree{NewNumberFromInt(-1), Multiply}, tree[1:]...), nil
 		}
 	}
 
@@ -155,6 +155,9 @@ func extractPart(expr string) (string, exprType, int, error) {
 	}
 
 	// read part - "boolean"
+	// TODO: we can probably merge this with the logic that goes for functions
+	// ...and call it something like "textual expression type" which can be
+	// ...functions, variables, object properties, object functions or constants
 	{ // make s, l and ok local scope
 		s, l, ok := readBool(expr[pos:])
 		if ok {
@@ -172,16 +175,24 @@ func extractPart(expr string) (string, exprType, int, error) {
 		return s, variableType, pos + l, nil
 	}
 
-	// read part - function(...)
+	// read part - function(...) / constant / (brackets...) / object.property / object.function()
 	// conceptually, parenthesis grouping is a special case of anonymous identity function
+	// NOTE: name expression types that contain a '.' are reserved for Object's only.
 	if expr[pos] == '(' || (expr[pos] >= 'a' && expr[pos] <= 'z') || (expr[pos] >= 'A' && expr[pos] <= 'Z') {
-		fname, lf, err := readFunctionName(expr[pos:])
+		fname, lf, err := readNamedExpressionType(expr[pos:])
 		switch {
 		case errors.Is(err, errFunctionNameWithoutParens):
+			if strings.Contains(fname, ".") {
+				// object property found: act like a variable (TODO: could create a new objectPropertyType)
+				return fname, variableType, pos + lf, nil
+			}
 			// allow to continue so we can check alphanumerical operator names such as "And", "Or", etc
+			// TODO: before we try for alphanum operators, we will need to check if we have a defined constant
+			// e.g. Phi (golden ratio), etc user-defined or built-in
 		case err != nil:
 			return "", unknownType, 0, err
 		default:
+			// TODO: if name contains `.` it's an object function - could create a new objectFunctionType
 			fargs, la, err := readFunctionArguments(expr[pos+lf:])
 			if err != nil {
 				return "", unknownType, 0, err
@@ -285,7 +296,7 @@ readString:
 
 var errFunctionNameWithoutParens = errors.New("function with Parenthesis")
 
-func readFunctionName(expr string) (string, int, error) {
+func readNamedExpressionType(expr string) (string, int, error) {
 	to := 0 // this could be an anonymous identity function (i.e. simple case of parenthesis grouping)
 
 	for _, r := range expr {
@@ -293,12 +304,12 @@ func readFunctionName(expr string) (string, int, error) {
 			return expr[:to], to, nil
 		}
 		if isBlankSpace(r) {
-			return expr[:to], to, errFunctionNameWithoutParens
+			break
 		}
 		to++
 	}
 
-	return "", 0, errors.Errorf("syntax error: missing '(' for function name '%s'", expr[:to])
+	return expr[:to], to, errFunctionNameWithoutParens
 }
 
 func readFunctionArguments(expr string) (string, int, error) {

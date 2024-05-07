@@ -12,43 +12,43 @@ import (
 func TestEval(t *testing.T) {
 	expr := `-1 + 2 * 3 / 2 + 3 ** 2 -8`
 	val := gal.Parse(expr).Eval()
-	assert.Equal(t, gal.NewNumber(3).String(), val.String())
+	assert.Equal(t, gal.NewNumberFromInt(3).String(), val.String())
 
 	expr = `-"123"+"100"`
 	val = gal.Parse(expr).Eval()
-	assert.Equal(t, gal.NewNumber(-23).String(), val.String())
+	assert.Equal(t, gal.NewNumberFromInt(-23).String(), val.String())
 
 	expr = `1-2+7<<4+5`
 	val = gal.Parse(expr).Eval()
-	assert.Equal(t, gal.NewNumber((1-2+7)<<(4+5)).String(), val.String())
+	assert.Equal(t, gal.NewNumberFromInt((1-2+7)<<(4+5)).String(), val.String())
 
 	expr = `-1-2-7<<4+5`
 	val = gal.Parse(expr).Eval()
-	assert.Equal(t, gal.NewNumber((-1-2-7)<<(4+5)).String(), val.String())
+	assert.Equal(t, gal.NewNumberFromInt((-1-2-7)<<(4+5)).String(), val.String())
 
 	expr = `-100*2*7+1>>2+3`
 	val = gal.Parse(expr).Eval()
-	assert.Equal(t, gal.NewNumber((-100*2*7+1)>>(2+3)).String(), val.String())
+	assert.Equal(t, gal.NewNumberFromInt((-100*2*7+1)>>(2+3)).String(), val.String())
 
 	expr = `100*2*7+1>>2+3`
 	val = gal.Parse(expr).Eval()
-	assert.Equal(t, gal.NewNumber((100*2*7+1)>>(2+3)).String(), val.String())
+	assert.Equal(t, gal.NewNumberFromInt((100*2*7+1)>>(2+3)).String(), val.String())
 
 	expr = `2+Factorial(4)-5`
 	val = gal.Parse(expr).Eval()
-	assert.Equal(t, gal.NewNumber(21).String(), val.String())
+	assert.Equal(t, gal.NewNumberFromInt(21).String(), val.String())
 }
 
 func TestTreeBuilder_FromExpr_Variables(t *testing.T) {
 	vars := gal.Variables{
-		":var1:": gal.NewNumber(4), // TODO: remove the need to surround with `:`?
-		":var2:": gal.NewNumber(3),
+		":var1:": gal.NewNumberFromInt(4), // TODO: remove the need to surround with `:`?
+		":var2:": gal.NewNumberFromInt(3),
 	}
 
 	expr := `2 + :var1: * :var2: - 5`
 
 	got := gal.Parse(expr).Eval(gal.WithVariables(vars))
-	expected := gal.NewNumber(9)
+	expected := gal.NewNumberFromInt(9)
 
 	if !cmp.Equal(expected, got) {
 		t.Error(cmp.Diff(expected, got))
@@ -162,7 +162,7 @@ func TestWithVariablesAndFunctions(t *testing.T) {
 				return gal.NewUndefinedWithReasonf("double(): syntax error - argument must be a number-like value, got '%v'", args[0])
 			}
 
-			return value.Number().Multiply(gal.NewNumber(2))
+			return value.Number().Multiply(gal.NewNumberFromInt(2))
 		},
 		"triple": func(args ...gal.Value) gal.Value {
 			if len(args) != 1 {
@@ -174,20 +174,20 @@ func TestWithVariablesAndFunctions(t *testing.T) {
 				return gal.NewUndefinedWithReasonf("triple(): syntax error - argument must be a number-like value, got '%v'", args[0])
 			}
 
-			return value.Number().Multiply(gal.NewNumber(3))
+			return value.Number().Multiply(gal.NewNumberFromInt(3))
 		},
 	}
 
 	vars := gal.Variables{
-		":val1:": gal.NewNumber(4),
-		":val2:": gal.NewNumber(5),
+		":val1:": gal.NewNumberFromInt(4),
+		":val2:": gal.NewNumberFromInt(5),
 	}
 
 	got := parsedExpr.Eval(
 		gal.WithVariables(vars),
 		gal.WithFunctions(funcs),
 	)
-	expected := gal.NewNumber(23)
+	expected := gal.NewNumberFromInt(23)
 
 	if !cmp.Equal(expected, got) {
 		t.Error(cmp.Diff(expected, got))
@@ -199,25 +199,25 @@ func TestWithVariablesAndFunctions(t *testing.T) {
 		"double": func(args ...gal.Value) gal.Value {
 			// should first validate argument count here
 			value := args[0].(gal.Numberer) // should check type assertion is ok here
-			return value.Number().Divide(gal.NewNumber(2))
+			return value.Number().Divide(gal.NewNumberFromInt(2))
 		},
 		"triple": func(args ...gal.Value) gal.Value {
 			// should first validate argument count here
 			value := args[0].(gal.Numberer) // should check type assertion is ok here
-			return value.Number().Divide(gal.NewNumber(3))
+			return value.Number().Divide(gal.NewNumberFromInt(3))
 		},
 	}
 
 	vars = gal.Variables{
-		":val1:": gal.NewNumber(2),
-		":val2:": gal.NewNumber(6),
+		":val1:": gal.NewNumberFromInt(2),
+		":val2:": gal.NewNumberFromInt(6),
 	}
 
 	got = parsedExpr.Eval(
 		gal.WithVariables(vars),
 		gal.WithFunctions(funcs),
 	)
-	expected = gal.NewNumber(3)
+	expected = gal.NewNumberFromInt(3)
 
 	if !cmp.Equal(expected, got) {
 		t.Error(cmp.Diff(expected, got))
@@ -240,7 +240,7 @@ func TestNestedFunctions(t *testing.T) {
 				return gal.NewUndefinedWithReasonf("double(): syntax error - argument must be a number-like value, got '%v'", args[0])
 			}
 
-			return value.Number().Multiply(gal.NewNumber(2))
+			return value.Number().Multiply(gal.NewNumberFromInt(2))
 		},
 		"triple": func(args ...gal.Value) gal.Value {
 			if len(args) != 1 {
@@ -252,14 +252,14 @@ func TestNestedFunctions(t *testing.T) {
 				return gal.NewUndefinedWithReasonf("triple(): syntax error - argument must be a number-like value, got '%v'", args[0])
 			}
 
-			return value.Number().Multiply(gal.NewNumber(3))
+			return value.Number().Multiply(gal.NewNumberFromInt(3))
 		},
 	}
 
 	got := parsedExpr.Eval(
 		gal.WithFunctions(funcs),
 	)
-	expected := gal.NewNumber(42)
+	expected := gal.NewNumberFromInt(42)
 	assert.Equal(t, expected.String(), got.String())
 }
 
@@ -279,7 +279,7 @@ func TestMultiValueFunctions(t *testing.T) {
 				return gal.NewUndefinedWithReasonf("double(): syntax error - argument must be a number-like value, got '%v'", args[0])
 			}
 
-			return value.Number().Multiply(gal.NewNumber(2))
+			return value.Number().Multiply(gal.NewNumberFromInt(2))
 		},
 		"triple": func(args ...gal.Value) gal.Value {
 			if len(args) != 1 {
@@ -291,7 +291,7 @@ func TestMultiValueFunctions(t *testing.T) {
 				return gal.NewUndefinedWithReasonf("triple(): syntax error - argument must be a number-like value, got '%v'", args[0])
 			}
 
-			return value.Number().Multiply(gal.NewNumber(3))
+			return value.Number().Multiply(gal.NewNumberFromInt(3))
 		},
 		"div": func(args ...gal.Value) gal.Value {
 			// returns the division of value1 by value2 as the interger portion and the remainder
@@ -330,7 +330,7 @@ func TestMultiValueFunctions(t *testing.T) {
 	got := gal.Parse(expr).Eval(
 		gal.WithFunctions(funcs),
 	)
-	expected := gal.NewNumber(7)
+	expected := gal.NewNumberFromInt(7)
 	assert.Equal(t, expected.String(), got.String())
 }
 
@@ -357,4 +357,21 @@ func TestFunctionsAndStringsWithSpaces(t *testing.T) {
 		}),
 	)
 	assert.Equal(t, `"ab cdef gh"`, got.String())
+}
+
+func TestObjects(t *testing.T) {
+	expr := `aCar.MaxSpeed - aCar.Speed`
+	parsedExpr := gal.Parse(expr)
+
+	got := parsedExpr.Eval(
+		gal.WithObjects(map[string]gal.Object{
+			"aCar": Car{
+				Make:     "Lotus Esprit",
+				Mileage:  gal.NewNumberFromInt(2000),
+				Speed:    100,
+				MaxSpeed: 250,
+			},
+		}),
+	)
+	assert.Equal(t, "150", got.String())
 }

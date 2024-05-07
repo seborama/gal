@@ -16,21 +16,21 @@ func TestTreeBuilder_FromExpr_VariousOperators(t *testing.T) {
 	require.NoError(t, err)
 
 	expectedTree := gal.Tree{
-		gal.NewNumber(-1),
+		gal.NewNumberFromInt(-1),
 		gal.Multiply,
-		gal.NewNumber(10),
+		gal.NewNumberFromInt(10),
 		gal.Plus,
-		gal.NewNumber(2),
+		gal.NewNumberFromInt(2),
 		gal.Multiply,
-		gal.NewNumber(7),
+		gal.NewNumberFromInt(7),
 		gal.Divide,
-		gal.NewNumber(2),
+		gal.NewNumberFromInt(2),
 		gal.Plus,
-		gal.NewNumber(5),
+		gal.NewNumberFromInt(5),
 		gal.Power,
-		gal.NewNumber(4),
+		gal.NewNumberFromInt(4),
 		gal.Minus,
-		gal.NewNumber(8),
+		gal.NewNumberFromInt(8),
 	}
 
 	if !cmp.Equal(expectedTree, tree) {
@@ -47,25 +47,25 @@ func TestTreeBuilder_FromExpr_PlusMinus_String(t *testing.T) {
 	expectedTree := gal.Tree{
 		gal.NewString(`-3 + -4`),
 		gal.Minus,
-		gal.NewNumber(3),
+		gal.NewNumberFromInt(3),
 		gal.Plus,
-		gal.NewNumber(4),
+		gal.NewNumberFromInt(4),
 		gal.Divide,
 		gal.Tree{
-			gal.NewNumber(1),
+			gal.NewNumberFromInt(1),
 			gal.Plus,
-			gal.NewNumber(2),
+			gal.NewNumberFromInt(2),
 			gal.Plus,
-			gal.NewNumber(3),
+			gal.NewNumberFromInt(3),
 			gal.Plus,
-			gal.NewNumber(4),
+			gal.NewNumberFromInt(4),
 		},
 		gal.Plus,
 		gal.NewFunction(
 			"tan",
 			gal.Tan,
 			gal.Tree{
-				gal.NewNumber(10),
+				gal.NewNumberFromInt(10),
 			},
 		),
 	}
@@ -79,7 +79,7 @@ func TestTreeBuilder_FromExpr_Functions(t *testing.T) {
 	expr := `trunc(tan(10 + sin(cos(3 + f(1+2 3 ")4((")))) 6)`
 
 	funcs := gal.Functions{
-		"f": func(...gal.Value) gal.Value { return gal.NewNumber(123) },
+		"f": func(...gal.Value) gal.Value { return gal.NewNumberFromInt(123) },
 	}
 
 	got := gal.Parse(expr)
@@ -93,7 +93,7 @@ func TestTreeBuilder_FromExpr_Functions(t *testing.T) {
 					"tan",
 					gal.Tan,
 					gal.Tree{
-						gal.NewNumber(10),
+						gal.NewNumberFromInt(10),
 						gal.Plus,
 						gal.NewFunction(
 							"sin",
@@ -103,18 +103,18 @@ func TestTreeBuilder_FromExpr_Functions(t *testing.T) {
 									"cos",
 									gal.Cos,
 									gal.Tree{
-										gal.NewNumber(3),
+										gal.NewNumberFromInt(3),
 										gal.Plus,
 										gal.NewFunction(
 											"f",
 											nil,
 											gal.Tree{
-												gal.NewNumber(1),
+												gal.NewNumberFromInt(1),
 												gal.Plus,
-												gal.NewNumber(2),
+												gal.NewNumberFromInt(2),
 											},
 											gal.Tree{
-												gal.NewNumber(3),
+												gal.NewNumberFromInt(3),
 											},
 											gal.Tree{
 												gal.NewString(")4(("),
@@ -128,7 +128,7 @@ func TestTreeBuilder_FromExpr_Functions(t *testing.T) {
 				),
 			},
 			gal.Tree{
-				gal.NewNumber(6),
+				gal.NewNumberFromInt(6),
 			},
 		),
 	}
