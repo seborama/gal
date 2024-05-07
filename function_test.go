@@ -68,8 +68,11 @@ func TestLn(t *testing.T) {
 
 func TestLog(t *testing.T) {
 	val := gal.Log(gal.NewNumber(123456), gal.NewNumber(5))
-	assert.Equal(t, "5.09152", val.String())
+	assert.Equal(t, "5.09151", val.String())
 
 	val = gal.Log(gal.NewNumber(-123456), gal.NewNumber(5))
 	assert.Equal(t, "undefined: Log:cannot calculate natural logarithm for negative decimals", val.String())
+
+	val = gal.Log(gal.NewNumber(10_000_000), gal.NewNumber(0))
+	assert.Equal(t, "7", val.String())
 }

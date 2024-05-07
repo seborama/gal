@@ -266,7 +266,6 @@ func TestNestedFunctions(t *testing.T) {
 // If renaming this test, also update the README.md file, where it is mentioned.
 func TestMultiValueFunctions(t *testing.T) {
 	expr := `sum(div(triple(7) double(4)))`
-	parsedExpr := gal.Parse(expr)
 
 	// step 1: define funcs and vars and Eval the expression
 	funcs := gal.Functions{
@@ -297,7 +296,7 @@ func TestMultiValueFunctions(t *testing.T) {
 		"div": func(args ...gal.Value) gal.Value {
 			// returns the division of value1 by value2 as the interger portion and the remainder
 			if len(args) != 2 {
-				return gal.NewUndefinedWithReasonf("mult() requires two arguments, got %d", len(args))
+				return gal.NewUndefinedWithReasonf("div() requires two arguments, got %d", len(args))
 			}
 
 			dividend := args[0].(gal.Numberer).Number()
@@ -328,7 +327,7 @@ func TestMultiValueFunctions(t *testing.T) {
 		},
 	}
 
-	got := parsedExpr.Eval(
+	got := gal.Parse(expr).Eval(
 		gal.WithFunctions(funcs),
 	)
 	expected := gal.NewNumber(7)

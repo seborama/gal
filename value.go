@@ -371,18 +371,18 @@ func (n Number) Ln(precision int32) Value {
 }
 
 func (n Number) Log(precision int32) Value {
-	res1, err := n.value.Ln(precision)
+	res, err := n.value.Ln(precision + 1)
 	if err != nil {
 		return NewUndefinedWithReasonf("Log:" + err.Error())
 	}
 
-	res10, err := decimal.New(10, 0).Ln(precision)
+	res10, err := decimal.New(10, 0).Ln(precision + 1)
 	if err != nil {
 		return NewUndefinedWithReasonf("Log:" + err.Error())
 	}
 
 	return Number{
-		value: res1.Div(res10).Truncate(precision),
+		value: res.Div(res10).Truncate(precision),
 	}
 }
 
