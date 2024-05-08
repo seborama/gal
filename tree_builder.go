@@ -188,7 +188,7 @@ func extractPart(expr string) (string, exprType, int, error) {
 			}
 			// allow to continue so we can check alphanumerical operator names such as "And", "Or", etc
 			// TODO: before we try for alphanum operators, we will need to check if we have a defined constant
-			// e.g. Phi (golden ratio), etc user-defined or built-in
+			// e.g. Phi (golden ratio), etc user-defined or built-in (True, False)
 		case err != nil:
 			return "", unknownType, 0, err
 		default:
@@ -210,7 +210,7 @@ func extractPart(expr string) (string, exprType, int, error) {
 	}
 
 	// read part - number
-	// TODO: complex numbers are not supported - could be "native" or via function or perhaps even a MultiValue?
+	// TODO: complex numbers are not supported - could be "native" or via function or perhaps even a specialised MultiValue?
 	s, l, err := readNumber(expr[pos:])
 	if err != nil {
 		return "", unknownType, 0, err
@@ -231,7 +231,7 @@ func readString(expr string) (string, int, error) {
 		if r == '"' && (escapes == 0 || escapes&1 == 0) {
 			break
 		}
-		// TODO: perhaps we should collapse the `\`, here?
+		// TODO: perhaps we should collapse the `\`'s, here?
 
 		escapes = 0
 	}

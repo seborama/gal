@@ -25,14 +25,54 @@ type Evaler interface {
 	Eval() Value
 }
 
-// TODO: we may also want to create ToString() and ToBool()
+func ToValue(value any) Value {
+	v, _ := toValue(value)
+	return v
+}
+func toValue(value any) (Value, bool) {
+	switch typedValue := value.(type) {
+	case int:
+		return NewNumberFromInt(int64(typedValue)), true
+	case int32:
+		return NewNumberFromInt(int64(typedValue)), true
+	case int64:
+		return NewNumberFromInt(typedValue), true
+	case uint:
+		return NewNumberFromInt(int64(typedValue)), true
+	case uint32:
+		return NewNumberFromInt(int64(typedValue)), true
+	case uint64:
+		n, err := NewNumberFromString(fmt.Sprintf("%d", typedValue))
+		if err != nil {
+			return NewUndefinedWithReasonf("value '%d' cannot be converted to a Number", typedValue), false
+		}
+		return n, true
+	case float32: // this will commonly suffer from floating point issues
+		return NewNumberFromFloat(float64(typedValue)), true
+	case float64:
+		return NewNumberFromFloat(typedValue), true
+	case string:
+		return NewString(typedValue), true
+	case bool:
+		return NewBool(typedValue), true
+	default:
+		return NewUndefinedWithReasonf("type '%T', does not resolve to a gal.Value", typedValue), false
+	}
+}
+
 func ToNumber(val Value) Number {
-	// TODO: we could also try to convert Bool to Number since we could add NewNumberFromBool() to deal with Bool's
 	return val.(Numberer).Number() // may panic
 }
 
+func ToString(val Value) String {
+	return val.AsString()
+}
+
+func ToBool(val Value) Bool {
+	return val.(Booler).Bool() // may panic
+}
+
 // MultiValue is a container of zero or more Value's.
-// TODO: impose a minimum of 1 value?
 // For the time being, it is only usable and useful with functions.
 // Functions can accept a MultiValue, and also return a MultiValue.
 // This allows a function to effectively return multiple values as a MultiValue.
@@ -57,12 +97,17 @@ func (MultiValue) kind() entryKind {
 // Equal satisfies the external Equaler interface such as in testify assertions and the cmp package
 // Note that the current implementation defines equality as values matching and in order they appear.
 func (m MultiValue) Equal(other MultiValue) bool {
+	if m.Size() != other.Size() {
+		return false
+	}
+
 	for i := range m.values {
 		// TODO: add test to confirm this is correct!
 		if m.values[i].NotEqualTo(other.values[i]) == False {
 			return false
 		}
 	}
+
 	return true
 }
 
@@ -488,6 +533,13 @@ func (n Number) String() string {
 	return n.value.String()
 }
 
+func (n Number) Bool() Bool {
+	if n.value.IsZero() {
+		return False
+	}
+	return True
+}
+
 func (n Number) AsString() String {
 	return NewString(n.String())
 }
@@ -572,6 +624,13 @@ func (b Bool) String() string {
 		return "True"
 	}
 	return "False"
+}
+
+func (b Bool) Number() Number {
+	if b.value {
+		return NewNumberFromInt(1)
+	}
+	return NewNumberFromInt(0)
 }
 
 func (b Bool) AsString() String {

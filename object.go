@@ -48,8 +48,6 @@ func ObjectGetProperty(obj Object, name string) (Value, bool) {
 			if vValue, ok := vValueI.(Value); ok {
 				return vValue, true
 			} else {
-				// TODO: this could be useful in value.go to autosense a type into its gal.Value equivalent!
-				// It'd make it easier to write a Function.
 				switch vValueIType := vValueI.(type) {
 				case int:
 					return NewNumberFromInt(int64(vValueIType)), true
