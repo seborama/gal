@@ -66,12 +66,25 @@ type Variables map[string]Value
 type Functions map[string]FunctionalValue
 
 // Function returns the function definition of the function of the specified name.
-func (f Functions) Function(name string) FunctionalValue {
-	if f == nil {
+func (tc treeConfig) Function(name string) FunctionalValue {
+	splits := strings.Split(name, ".")
+	if len(splits) > 1 {
+		// TODO: add recursive handling i.e. obj1.obj2.func1()?
+		if tc.objects != nil {
+			obj, ok := tc.objects[splits[0]]
+			if ok {
+				fv, _ := ObjectGetMethod(obj, splits[1])
+				return fv
+			}
+		}
 		return nil
 	}
 
-	if val, ok := f[name]; ok {
+	if tc.functions == nil {
+		return nil
+	}
+
+	if val, ok := tc.functions[name]; ok {
 		return val
 	}
 
@@ -174,6 +187,10 @@ func (tree Tree) Eval(opts ...treeOption) Value {
 // Split divides a Tree trunk at points where two consecutive entries are present without
 // an operator in between.
 func (tree Tree) Split() []Tree {
+	if len(tree) == 0 {
+		return []Tree{}
+	}
+
 	var forest []Tree
 
 	partStart := 0
@@ -248,7 +265,7 @@ func (tree Tree) Calc(isOperatorInPrecedenceGroup func(Operator) bool, cfg *tree
 				}
 			}
 
-			rhsVal := e.(Tree).Eval(WithFunctions(cfg.functions), WithVariables(cfg.variables))
+			rhsVal := e.(Tree).Eval(WithFunctions(cfg.functions), WithVariables(cfg.variables), WithObjects(cfg.objects))
 			if v, ok := rhsVal.(Undefined); ok {
 				slog.Debug("Tree.Calc: val is Undefined", "i", i, "val", v.String())
 				return Tree{v}
@@ -280,10 +297,10 @@ func (tree Tree) Calc(isOperatorInPrecedenceGroup func(Operator) bool, cfg *tree
 			slog.Debug("Tree.Calc: functionEntryKind", "i", i, "name", e.(Function).Name)
 			f := e.(Function) //nolint: errcheck
 			if f.BodyFn == nil {
-				f.BodyFn = cfg.functions.Function(f.Name)
+				f.BodyFn = cfg.Function(f.Name)
 			}
 
-			rhsVal := f.Eval(WithFunctions(cfg.functions), WithVariables(cfg.variables))
+			rhsVal := f.Eval(WithFunctions(cfg.functions), WithVariables(cfg.variables), WithObjects(cfg.objects))
 			if v, ok := rhsVal.(Undefined); ok {
 				slog.Debug("Tree.Calc: val is Undefined", "i", i, "val", v.String())
 				return Tree{v}

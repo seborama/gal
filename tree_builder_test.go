@@ -1,7 +1,6 @@
 package gal_test
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -42,7 +41,6 @@ func TestTreeBuilder_FromExpr_PlusMinus_String(t *testing.T) {
 	expr := `"-3 + -4" + -3 --4 / ( 1 + 2+3+4) +tan(10)`
 	tree, err := gal.NewTreeBuilder().FromExpr(expr)
 	require.NoError(t, err)
-	fmt.Println(tree.Eval())
 
 	expectedTree := gal.Tree{
 		gal.NewString(`-3 + -4`),

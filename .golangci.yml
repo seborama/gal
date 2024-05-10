@@ -207,7 +207,7 @@ linters-settings:
   gocognit:
     # Minimal code complexity to report
     # Default: 30 (but we recommend 10-20)
-    min-complexity: 15
+    min-complexity: 20
 
   gocritic:
     # Which checks should be enabled; can't be combined with 'disabled-checks'.
@@ -300,7 +300,7 @@ linters-settings:
   gocyclo:
     # Minimal code complexity to report.
     # Default: 30 (but we recommend 10-20)
-    min-complexity: 15
+    min-complexity: 20
 
   godot:
     # Comments to be checked: `declarations`, `toplevel`, or `all`.

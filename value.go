@@ -29,35 +29,13 @@ func ToValue(value any) Value {
 	v, _ := toValue(value)
 	return v
 }
+
 func toValue(value any) (Value, bool) {
-	switch typedValue := value.(type) {
-	case int:
-		return NewNumberFromInt(int64(typedValue)), true
-	case int32:
-		return NewNumberFromInt(int64(typedValue)), true
-	case int64:
-		return NewNumberFromInt(typedValue), true
-	case uint:
-		return NewNumberFromInt(int64(typedValue)), true
-	case uint32:
-		return NewNumberFromInt(int64(typedValue)), true
-	case uint64:
-		n, err := NewNumberFromString(fmt.Sprintf("%d", typedValue))
-		if err != nil {
-			return NewUndefinedWithReasonf("value '%d' cannot be converted to a Number", typedValue), false
-		}
-		return n, true
-	case float32: // this will commonly suffer from floating point issues
-		return NewNumberFromFloat(float64(typedValue)), true
-	case float64:
-		return NewNumberFromFloat(typedValue), true
-	case string:
-		return NewString(typedValue), true
-	case bool:
-		return NewBool(typedValue), true
-	default:
-		return NewUndefinedWithReasonf("type '%T', does not resolve to a gal.Value", typedValue), false
+	v, err := goAnyToGalType(value)
+	if err != nil {
+		return NewUndefinedWithReasonf("value type %T - %s", value, err.Error()), false
 	}
+	return v, true
 }
 
 func ToNumber(val Value) Number {
@@ -77,8 +55,8 @@ func ToBool(val Value) Bool {
 // Functions can accept a MultiValue, and also return a MultiValue.
 // This allows a function to effectively return multiple values as a MultiValue.
 // TODO: we could add a syntax to instantiate a MultiValue within an expression.
-// TODO: ... perhaps along the lines of [[v1 v2 ...]] or simply a built-in function such as
-// TODO: ... MultiValue(...) - nothing stops the user from creating their own for now :-)
+// ...   perhaps along the lines of [[v1 v2 ...]] or simply a built-in function such as
+// ...   MultiValue(...) - nothing stops the user from creating their own for now :-)
 //
 // TODO: implement other methods such as Add, LessThan, etc (if meaningful)
 type MultiValue struct {

@@ -126,7 +126,7 @@ Escapes are supported:
 
 ## Bools
 
-In addition to boolean expressions, sepcial contants `True` and `False` may be used.
+In addition to boolean expressions, special contants `True` and `False` may be used.
 
 Do not double-quote them, or they will become plain strings!
 
@@ -148,7 +148,7 @@ This is container `Value`. It can contain zero or any number of `Value`'s. Curre
         * Go classifies bit shift operators with the higher `*`.
         * `&&` is synonymous of `And`.
         * `||` is synonymous of `Or`.
-        * Worded operators such as `And` and `Or` are **case-sensitive** and must be followed by a blank character. `True Or (False)` is a Bool expression with the `Or` operator but `True Or(False)` is an invalid expression attempting to call a user-defined function called `Or()`.
+        * Worded operators such as `And` and `Or` are **case-sensitive** and must be followed by a blank character. `True Or (False)` is a Bool expression with the `Or` operator but `True Or(False)` is an expression attempting to call a user-defined function called `Or()`.
 * Types: String, Number, Bool, MultiValue
 * Associativity with parentheses: `(` and `)`
 * Functions:
@@ -157,6 +157,8 @@ This is container `Value`. It can contain zero or any number of `Value`'s. Curre
 * Variables, defined as `:variable_name:` and injected via `WithVariables()`
 
 ## Functions
+
+(See also Objects)
 
 A function is defined as a Go type: `type FunctionalValue func(...Value) Value`
 
@@ -172,11 +174,51 @@ This allows parsing the expression once with `Parse` and run `Tree`.`Eval` multi
 
 ## Variables
 
+(See also Objects)
+
 Variable names are case-sensitive.
 
 Values are passed as a `map[string]Value` using `WithVariables` when calling `Eval` from `Tree`.
 
 This allows parsing the expression once with `Parse` and run `Tree`.`Eval` multiple times with different variable values.
+
+## Objects
+
+Objects are Go `struct`'s which **properties** act as **gal variables** and **methods** as **gal functions**.
+
+Object definitions are passed as a `map[string]Object` using `WithObjects` when calling `Eval` from `Tree`.
+
+This allows parsing the expression once with `Parse` and run `Tree`.`Eval` multiple times with different instances of an object.
+
+Object methods generally follow the same rules as **gal Functions**:
+- methods can optionally accept one or more arguments
+- methods must return a single value (which can be a `MultiValue` to emulate multiple return values)
+- arguments and return value are preferred to be of `gal.Value` type.
+  However, **gal** will attempt to convert Go types to `gal.Value` types on best endeavour:
+  - A method signature of `MyMethod(arg1 int64) bool` will translate the supplied `gal.Value`'s and attempt to map them to `int64` and `bool` using `gal.Numberer` and `gal.Booler`.
+  - Type conversion may lead to a panic when the type cannot be interpreted.
+
+Example:
+
+`type Car struct` has several properties and methods - one of which is `func (c *Car) CurrentSpeed() gal.Value`.
+
+```go
+	expr := `aCar.MaxSpeed - aCar.CurrentSpeed()`
+	parsedExpr := gal.Parse(expr)
+
+	got := parsedExpr.Eval(
+		gal.WithObjects(map[string]gal.Object{
+			"aCar": Car{
+				Make:     "Lotus Esprit",
+				Mileage:  gal.NewNumberFromInt(2000),
+				Speed:    100,
+				MaxSpeed: 250,
+			},
+		}),
+	)
+    // result: 150 == 250 - 100
+
+```
 
 ## High level design
 

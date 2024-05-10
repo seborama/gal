@@ -183,7 +183,8 @@ func extractPart(expr string) (string, exprType, int, error) {
 		switch {
 		case errors.Is(err, errFunctionNameWithoutParens):
 			if strings.Contains(fname, ".") {
-				// object property found: act like a variable (TODO: could create a new objectPropertyType)
+				// object property found: act like a variable
+				// TODO: could create a new objectPropertyType
 				return fname, variableType, pos + lf, nil
 			}
 			// allow to continue so we can check alphanumerical operator names such as "And", "Or", etc

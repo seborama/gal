@@ -359,7 +359,7 @@ func TestFunctionsAndStringsWithSpaces(t *testing.T) {
 	assert.Equal(t, `"ab cdef gh"`, got.String())
 }
 
-func TestObjects(t *testing.T) {
+func TestObjects_Properties(t *testing.T) {
 	expr := `aCar.MaxSpeed - aCar.Speed`
 	parsedExpr := gal.Parse(expr)
 
@@ -374,4 +374,75 @@ func TestObjects(t *testing.T) {
 		}),
 	)
 	assert.Equal(t, "150", got.String())
+}
+
+func TestObjects_Methods(t *testing.T) {
+	expr := `aCar.MaxSpeed - aCar.CurrentSpeed()`
+	parsedExpr := gal.Parse(expr)
+
+	got := parsedExpr.Eval(
+		gal.WithObjects(map[string]gal.Object{
+			"aCar": &Car{
+				Make:     "Lotus Esprit",
+				Mileage:  gal.NewNumberFromInt(2000),
+				Speed:    100,
+				MaxSpeed: 250,
+			},
+		}),
+	)
+	assert.Equal(t, "150", got.String())
+}
+
+func TestObjects_Methods_WithSubTree(t *testing.T) {
+	expr := `2 * (aCar.MaxSpeed - aCar.CurrentSpeed())`
+	parsedExpr := gal.Parse(expr)
+
+	got := parsedExpr.Eval(
+		gal.WithObjects(map[string]gal.Object{
+			"aCar": &Car{
+				Make:     "Lotus Esprit",
+				Mileage:  gal.NewNumberFromInt(2000),
+				Speed:    100,
+				MaxSpeed: 250,
+			},
+		}),
+	)
+	assert.Equal(t, "300", got.String())
+}
+
+func TestObjects_Methods_WithArgsSubTree(t *testing.T) {
+	expr := `2 * (aCar.MaxSpeed - aCar.TillMaxSpeed(aCar.CurrentSpeed()))`
+	parsedExpr := gal.Parse(expr)
+
+	got := parsedExpr.Eval(
+		gal.WithObjects(map[string]gal.Object{
+			"aCar": &Car{
+				Make:     "Lotus Esprit",
+				Mileage:  gal.NewNumberFromInt(2000),
+				Speed:    100,
+				MaxSpeed: 250,
+			},
+		}),
+	)
+	assert.Equal(t, "200", got.String())
+}
+
+func TestObjects_MethodReceiver(t *testing.T) {
+	expr := `aCar.MaxSpeed - aCar.CurrentSpeed()`
+	parsedExpr := gal.Parse(expr)
+
+	got := parsedExpr.Eval(
+		gal.WithObjects(map[string]gal.Object{
+			"aCar": Car{
+				Make:     "Lotus Esprit",
+				Mileage:  gal.NewNumberFromInt(2000),
+				Speed:    100,
+				MaxSpeed: 250,
+			},
+		}),
+	)
+	// Note: in this test, WithObjects is called with a `Car`, not a `*Car`.
+	// However, Car.CurrentSpeed has a *Car receiver, hence from a Go perspective, the method
+	// exists on *Car but it does NOT exist on Car!
+	assert.Equal(t, "undefined: type 'gal_test.Car' does not have a method 'CurrentSpeed' (check if it has a pointer receiver)", got.String())
 }
