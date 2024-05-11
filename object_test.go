@@ -11,18 +11,24 @@ import (
 )
 
 func TestObjectGetProperty(t *testing.T) {
+	var nilCar *Car
+
+	val, ok := gal.ObjectGetProperty(nilCar, "Mileage")
+	require.False(t, ok)
+	assert.Equal(t, "undefined: object interface is nil, not a Go value or invalid", val.String())
+
+	zeroCar := &Car{}
+
+	val, ok = gal.ObjectGetProperty(zeroCar, "Mileage")
+	require.True(t, ok)
+	assert.Equal(t, "0", val.String())
+
 	myCar := &Car{
 		Make:     "Lotus",
 		Mileage:  gal.NewNumberFromInt(100),
 		Speed:    50.345,
 		MaxSpeed: 250,
 	}
-
-	var nilCar *Car
-
-	val, ok := gal.ObjectGetProperty(nilCar, "Mileage")
-	require.False(t, ok)
-	assert.Equal(t, "undefined: object is nil, not a Go value or invalid", val.String())
 
 	val, ok = gal.ObjectGetProperty(myCar, "Make")
 	require.True(t, ok)
@@ -61,8 +67,8 @@ func TestObjectGetMethod(t *testing.T) {
 	var nilCar *Car
 
 	val, ok := gal.ObjectGetMethod(nilCar, "Ignite")
-	require.False(t, ok)
-	assert.Equal(t, "undefined: object is nil for type '*gal_test.Car' or does not have a method 'Ignite' (check if it has a pointer receiver)", val().String())
+	require.True(t, ok)
+	assert.Equal(t, gal.True, val())
 
 	val, ok = gal.ObjectGetMethod(myCar, "DoesNotExist!")
 	require.False(t, ok)

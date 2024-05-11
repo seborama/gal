@@ -17,7 +17,7 @@ func ObjectGetProperty(obj Object, name string) (Value, bool) { //nolint: gocogn
 
 	// Use the reflect.ValueOf function to get the value of the struct
 	v := reflect.ValueOf(obj)
-	if v.IsZero() || !v.IsValid() {
+	if !v.IsValid() {
 		return NewUndefinedWithReasonf("object is nil, not a Go value or invalid"), false
 	}
 
@@ -26,12 +26,12 @@ func ObjectGetProperty(obj Object, name string) (Value, bool) { //nolint: gocogn
 
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
-		if v.IsZero() || !v.IsValid() {
+		if !v.IsValid() {
 			return NewUndefinedWithReasonf("object interface is nil, not a Go value or invalid"), false
 		}
 
 		t = t.Elem()
-		if v.IsZero() || !v.IsValid() {
+		if !v.IsValid() {
 			return NewUndefinedWithReasonf("object interface is nil, not a Go value or invalid"), false
 		}
 	}
@@ -61,9 +61,9 @@ func ObjectGetMethod(obj Object, name string) (FunctionalValue, bool) { //nolint
 	}
 
 	value := reflect.ValueOf(obj)
-	if value.IsZero() || !value.IsValid() {
+	if !value.IsValid() {
 		return func(...Value) Value {
-			return NewUndefinedWithReasonf("object is nil for type '%T' or does not have a method '%s' (check if it has a pointer receiver)", obj, name)
+			return NewUndefinedWithReasonf("object type '%T' is not valid", obj)
 		}, false
 	}
 
