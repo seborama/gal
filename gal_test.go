@@ -376,6 +376,29 @@ func TestObjects_Properties(t *testing.T) {
 	assert.Equal(t, "150", got.String())
 }
 
+func TestObjects_Properties_TwoObjects(t *testing.T) {
+	expr := `Road.Type == "Highway"
+	And Car.IsRunning()
+	And Car.Speed < 100
+	And Car.Speed <= Car.MaxSpeed`
+	parsedExpr := gal.Parse(expr)
+
+	got := parsedExpr.Eval(
+		gal.WithObjects(map[string]gal.Object{
+			"Car": &Car{
+				Make:     "Lotus Esprit",
+				Mileage:  gal.NewNumberFromInt(2000),
+				Speed:    80,
+				MaxSpeed: 250,
+			},
+			"Road": &Road{
+				Type: "Highway",
+			},
+		}),
+	)
+	assert.Equal(t, gal.True, got)
+}
+
 func TestObjects_Methods(t *testing.T) {
 	expr := `aCar.MaxSpeed - aCar.CurrentSpeed()`
 	parsedExpr := gal.Parse(expr)

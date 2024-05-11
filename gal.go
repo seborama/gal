@@ -40,7 +40,7 @@ type Value interface {
 	entry
 }
 
-// Example: Parse("blah").Eval(WithVariables(...), WithFunctions(...))
+// Example: Parse("blah").Eval(WithVariables(...), WithFunctions(...), WithObjects(...))
 // This allows to parse an expression and then use the resulting Tree for multiple
 // evaluations with different variables provided.
 func Parse(expr string) Tree {
