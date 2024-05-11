@@ -1,12 +1,12 @@
 # Go Eval
 
 <p align="center">
-  <a href="https://pkg.go.dev/github.com/seborama/gal/v8">
+  <a href="https://pkg.go.dev/github.com/seborama/gal/v9">
     <img src="https://img.shields.io/badge/godoc-reference-blue.svg" alt="gal">
   </a>
 
-  <a href="https://goreportcard.com/report/github.com/seborama/gal/v8">
-    <img src="https://goreportcard.com/badge/github.com/seborama/gal/v8" alt="gal">
+  <a href="https://goreportcard.com/report/github.com/seborama/gal/v9">
+    <img src="https://goreportcard.com/badge/github.com/seborama/gal/v9" alt="gal">
   </a>
 </p>
 

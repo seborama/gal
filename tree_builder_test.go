@@ -6,7 +6,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
 
-	"github.com/seborama/gal/v8"
+	"github.com/seborama/gal/v9"
 )
 
 func TestTreeBuilder_FromExpr_VariousOperators(t *testing.T) {

@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/seborama/gal/v8"
+	"github.com/seborama/gal/v9"
 )
 
 type Car struct {
