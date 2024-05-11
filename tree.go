@@ -66,31 +66,66 @@ type Variables map[string]Value
 type Functions map[string]FunctionalValue
 
 // Function returns the function definition of the function of the specified name.
-func (f Functions) Function(name string) FunctionalValue {
-	if f == nil {
+func (tc treeConfig) Function(name string) FunctionalValue {
+	splits := strings.Split(name, ".")
+	if len(splits) > 1 {
+		// TODO: add recursive handling i.e. obj1.obj2.func1()?
+		if tc.objects != nil {
+			obj, ok := tc.objects[splits[0]]
+			if ok {
+				fv, _ := ObjectGetMethod(obj, splits[1])
+				return fv
+			}
+		}
 		return nil
 	}
 
-	if val, ok := f[name]; ok {
+	if tc.functions == nil {
+		return nil
+	}
+
+	if val, ok := tc.functions[name]; ok {
 		return val
 	}
 
 	return nil
 }
 
+// Object holds user-defined objects that can carry properties and functions that may be
+// referenced within a gal expression during evaluation.
+type Object any
+
+// Objects is a collection of Object's in the form of a map which keys are the name of the
+// object and values are the actual Object's.
+type Objects map[string]Object
+
 type treeConfig struct {
 	variables Variables
 	functions Functions
+	objects   Objects
 }
 
 // Variable returns the value of the variable specified by name.
 func (tc treeConfig) Variable(name string) (Value, bool) {
-	if tc.variables == nil {
+	splits := strings.Split(name, ".")
+	if len(splits) > 1 {
+		// TODO: add recursive handling i.e. obj.prop1.prop2? how about obj.func1().prop?
+		if tc.objects != nil {
+			obj, ok := tc.objects[splits[0]]
+			if ok {
+				return ObjectGetProperty(obj, splits[1])
+			}
+		}
 		return nil, false
 	}
 
-	val, ok := tc.variables[name]
-	return val, ok
+	if tc.variables != nil {
+		val, ok := tc.variables[name]
+		if ok {
+			return val, ok
+		}
+	}
+	return nil, false
 }
 
 type treeOption func(*treeConfig)
@@ -108,6 +143,16 @@ func WithVariables(vars Variables) treeOption {
 func WithFunctions(funcs Functions) treeOption {
 	return func(cfg *treeConfig) {
 		cfg.functions = funcs
+	}
+}
+
+// WithObjects is a functional parameter for Tree evaluation.
+// It provides user-defined Objects.
+// These objects can carry both properties and methods that can be accessed
+// by gal in place of variables and functions.
+func WithObjects(objects Objects) treeOption {
+	return func(cfg *treeConfig) {
+		cfg.objects = objects
 	}
 }
 
@@ -142,6 +187,10 @@ func (tree Tree) Eval(opts ...treeOption) Value {
 // Split divides a Tree trunk at points where two consecutive entries are present without
 // an operator in between.
 func (tree Tree) Split() []Tree {
+	if len(tree) == 0 {
+		return []Tree{}
+	}
+
 	var forest []Tree
 
 	partStart := 0
@@ -216,7 +265,7 @@ func (tree Tree) Calc(isOperatorInPrecedenceGroup func(Operator) bool, cfg *tree
 				}
 			}
 
-			rhsVal := e.(Tree).Eval(WithFunctions(cfg.functions), WithVariables(cfg.variables))
+			rhsVal := e.(Tree).Eval(WithFunctions(cfg.functions), WithVariables(cfg.variables), WithObjects(cfg.objects))
 			if v, ok := rhsVal.(Undefined); ok {
 				slog.Debug("Tree.Calc: val is Undefined", "i", i, "val", v.String())
 				return Tree{v}
@@ -248,10 +297,10 @@ func (tree Tree) Calc(isOperatorInPrecedenceGroup func(Operator) bool, cfg *tree
 			slog.Debug("Tree.Calc: functionEntryKind", "i", i, "name", e.(Function).Name)
 			f := e.(Function) //nolint: errcheck
 			if f.BodyFn == nil {
-				f.BodyFn = cfg.functions.Function(f.Name)
+				f.BodyFn = cfg.Function(f.Name)
 			}
 
-			rhsVal := f.Eval(WithFunctions(cfg.functions), WithVariables(cfg.variables))
+			rhsVal := f.Eval(WithFunctions(cfg.functions), WithVariables(cfg.variables), WithObjects(cfg.objects))
 			if v, ok := rhsVal.(Undefined); ok {
 				slog.Debug("Tree.Calc: val is Undefined", "i", i, "val", v.String())
 				return Tree{v}
@@ -323,7 +372,7 @@ func (tree Tree) cleansePlusMinusTreeStart() Tree {
 	case Plus:
 		return outTree[1:]
 	case Minus:
-		return append(Tree{NewNumber(-1), Multiply}, outTree[1:]...)
+		return append(Tree{NewNumberFromInt(-1), Multiply}, outTree[1:]...)
 	}
 
 	panic("point never reached")

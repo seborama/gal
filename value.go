@@ -25,20 +25,38 @@ type Evaler interface {
 	Eval() Value
 }
 
-// TODO: we may also want to create ToString() and ToBool()
+func ToValue(value any) Value {
+	v, _ := toValue(value)
+	return v
+}
+
+func toValue(value any) (Value, bool) {
+	v, err := goAnyToGalType(value)
+	if err != nil {
+		return NewUndefinedWithReasonf("value type %T - %s", value, err.Error()), false
+	}
+	return v, true
+}
+
 func ToNumber(val Value) Number {
-	// TODO: we could also try to convert Bool to Number since we could add NewNumberFromBool() to deal with Bool's
 	return val.(Numberer).Number() // may panic
 }
 
+func ToString(val Value) String {
+	return val.AsString()
+}
+
+func ToBool(val Value) Bool {
+	return val.(Booler).Bool() // may panic
+}
+
 // MultiValue is a container of zero or more Value's.
-// TODO: impose a minimum of 1 value?
 // For the time being, it is only usable and useful with functions.
 // Functions can accept a MultiValue, and also return a MultiValue.
 // This allows a function to effectively return multiple values as a MultiValue.
 // TODO: we could add a syntax to instantiate a MultiValue within an expression.
-// TODO: ... perhaps along the lines of [[v1 v2 ...]] or simply a built-in function such as
-// TODO: ... MultiValue(...) - nothing stops the user from creating their own for now :-)
+// ...   perhaps along the lines of [[v1 v2 ...]] or simply a built-in function such as
+// ...   MultiValue(...) - nothing stops the user from creating their own for now :-)
 //
 // TODO: implement other methods such as Add, LessThan, etc (if meaningful)
 type MultiValue struct {
@@ -57,12 +75,17 @@ func (MultiValue) kind() entryKind {
 // Equal satisfies the external Equaler interface such as in testify assertions and the cmp package
 // Note that the current implementation defines equality as values matching and in order they appear.
 func (m MultiValue) Equal(other MultiValue) bool {
+	if m.Size() != other.Size() {
+		return false
+	}
+
 	for i := range m.values {
 		// TODO: add test to confirm this is correct!
 		if m.values[i].NotEqualTo(other.values[i]) == False {
 			return false
 		}
 	}
+
 	return true
 }
 
@@ -182,6 +205,10 @@ func (s String) String() string {
 	return `"` + s.value + `"`
 }
 
+func (s String) RawString() string {
+	return s.value
+}
+
 func (s String) AsString() String {
 	return s
 }
@@ -209,7 +236,13 @@ type Number struct {
 	value decimal.Decimal
 }
 
-func NewNumber(i int64) Number {
+func NewNumber(i int64, exp int32) Number {
+	d := decimal.New(i, exp)
+
+	return Number{value: d}
+}
+
+func NewNumberFromInt(i int64) Number {
 	d := decimal.NewFromInt(i)
 
 	return Number{value: d}
@@ -478,6 +511,13 @@ func (n Number) String() string {
 	return n.value.String()
 }
 
+func (n Number) Bool() Bool {
+	if n.value.IsZero() {
+		return False
+	}
+	return True
+}
+
 func (n Number) AsString() String {
 	return NewString(n.String())
 }
@@ -562,6 +602,13 @@ func (b Bool) String() string {
 		return "True"
 	}
 	return "False"
+}
+
+func (b Bool) Number() Number {
+	if b.value {
+		return NewNumberFromInt(1)
+	}
+	return NewNumberFromInt(0)
 }
 
 func (b Bool) AsString() String {

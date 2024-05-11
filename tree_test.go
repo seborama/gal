@@ -21,13 +21,13 @@ func TestTree_FullLen(t *testing.T) {
 		"simple tree": {
 			tree: gal.Tree{
 				gal.Plus,
-				gal.NewNumber(-4),
+				gal.NewNumberFromInt(-4),
 			},
 			wantLen: 2,
 		},
 		"semi-complex tree": {
 			tree: gal.Tree{
-				gal.NewNumber(-4),
+				gal.NewNumberFromInt(-4),
 				gal.Plus,
 				gal.Tree{},
 			},
@@ -35,22 +35,22 @@ func TestTree_FullLen(t *testing.T) {
 		},
 		"complex tree": {
 			tree: gal.Tree{
-				gal.NewNumber(-4),
+				gal.NewNumberFromInt(-4),
 				gal.Plus,
 				gal.Tree{
-					gal.NewNumber(-4),
+					gal.NewNumberFromInt(-4),
 					gal.Plus,
 					gal.Tree{
-						gal.NewNumber(-4),
+						gal.NewNumberFromInt(-4),
 						gal.Plus,
 						gal.Tree{
-							gal.NewNumber(-4),
+							gal.NewNumberFromInt(-4),
 							gal.Plus,
 							gal.Tree{
-								gal.NewNumber(-4),
+								gal.NewNumberFromInt(-4),
 								gal.Plus,
 								gal.Tree{
-									gal.NewNumber(-4),
+									gal.NewNumberFromInt(-4),
 								},
 							},
 						},
@@ -80,134 +80,134 @@ func TestTree_Eval_Expressions(t *testing.T) {
 		"starts with *": {
 			tree: gal.Tree{
 				gal.Multiply,
-				gal.NewNumber(-4),
+				gal.NewNumberFromInt(-4),
 			},
 			want: gal.NewUndefinedWithReasonf("syntax error: missing left hand side value for operator '*'"),
 		},
 		"starts with + -4": {
 			tree: gal.Tree{
 				gal.Plus,
-				gal.NewNumber(-4),
+				gal.NewNumberFromInt(-4),
 			},
-			want: gal.NewNumber(-4),
+			want: gal.NewNumberFromInt(-4),
 		},
 		"starts with - -4": {
 			tree: gal.Tree{
 				gal.Minus,
-				gal.NewNumber(-4),
+				gal.NewNumberFromInt(-4),
 			},
-			want: gal.NewNumber(4),
+			want: gal.NewNumberFromInt(4),
 		},
 		"chained * and /": {
 			tree: gal.Tree{
-				gal.NewNumber(3),
+				gal.NewNumberFromInt(3),
 				gal.Multiply,
-				gal.NewNumber(4),
+				gal.NewNumberFromInt(4),
 				gal.Divide,
-				gal.NewNumber(2),
+				gal.NewNumberFromInt(2),
 				gal.Divide,
-				gal.NewNumber(3),
+				gal.NewNumberFromInt(3),
 				gal.Multiply,
-				gal.NewNumber(4),
+				gal.NewNumberFromInt(4),
 			},
-			want: gal.NewNumber(8),
+			want: gal.NewNumberFromInt(8),
 		},
 		"chained and tree'ed * and /": {
 			tree: gal.Tree{
 				gal.Tree{
 					gal.Tree{
 						gal.Tree{
-							gal.NewNumber(3),
+							gal.NewNumberFromInt(3),
 						},
 					},
 					gal.Multiply,
 					gal.Tree{
-						gal.NewNumber(4),
+						gal.NewNumberFromInt(4),
 					},
 				},
 				gal.Divide,
 				gal.Tree{
-					gal.NewNumber(2),
+					gal.NewNumberFromInt(2),
 				},
 				gal.Divide,
 				gal.Tree{
-					gal.NewNumber(3),
+					gal.NewNumberFromInt(3),
 				},
 				gal.Multiply,
 				gal.Tree{
-					gal.NewNumber(4),
+					gal.NewNumberFromInt(4),
 				},
 			},
-			want: gal.NewNumber(8),
+			want: gal.NewNumberFromInt(8),
 		},
 		"rich tree": {
 			tree: gal.Tree{
-				gal.NewNumber(3),
+				gal.NewNumberFromInt(3),
 				gal.Minus,
-				gal.NewNumber(4),
+				gal.NewNumberFromInt(4),
 				gal.Multiply,
 				gal.Tree{
 					gal.Minus,
-					gal.NewNumber(2),
+					gal.NewNumberFromInt(2),
 				},
 				gal.Minus,
-				gal.NewNumber(5),
+				gal.NewNumberFromInt(5),
 			},
-			want: gal.NewNumber(6),
+			want: gal.NewNumberFromInt(6),
 		},
 		"multiple levels of decreasing operator precedence": {
 			tree: gal.Tree{
-				gal.NewNumber(10),
+				gal.NewNumberFromInt(10),
 				gal.Power,
-				gal.NewNumber(2),
+				gal.NewNumberFromInt(2),
 				gal.Multiply,
-				gal.NewNumber(4),
+				gal.NewNumberFromInt(4),
 				gal.Plus,
-				gal.NewNumber(3),
+				gal.NewNumberFromInt(3),
 			},
-			want: gal.NewNumber(403),
+			want: gal.NewNumberFromInt(403),
 		},
 		"multiple levels of operator precedence": {
 			tree: gal.Tree{
-				gal.NewNumber(10),
+				gal.NewNumberFromInt(10),
 				gal.Plus,
-				gal.NewNumber(5),
+				gal.NewNumberFromInt(5),
 				gal.Multiply,
-				gal.NewNumber(4),
+				gal.NewNumberFromInt(4),
 				gal.Power,
-				gal.NewNumber(3),
+				gal.NewNumberFromInt(3),
 				gal.Multiply,
-				gal.NewNumber(2),
+				gal.NewNumberFromInt(2),
 				gal.Plus,
-				gal.NewNumber(6),
+				gal.NewNumberFromInt(6),
 				gal.Multiply,
-				gal.NewNumber(7),
+				gal.NewNumberFromInt(7),
 			},
-			want: gal.NewNumber(692),
+			want: gal.NewNumberFromInt(692),
 		},
 		"rich sub-trees": {
 			tree: gal.Tree{
-				gal.NewNumber(10),
+				gal.NewNumberFromInt(10),
 				gal.Plus,
 				gal.Tree{
-					gal.NewNumber(5),
+					gal.NewNumberFromInt(5),
 					gal.Multiply,
 					gal.Tree{
 						gal.Minus,
-						gal.NewNumber(4),
+						gal.NewNumberFromInt(4),
 						gal.Modulus,
 						gal.Tree{
 							gal.Minus,
-							gal.NewNumber(3),
+							gal.NewNumberFromInt(3),
 						},
 					},
 				},
 			},
-			want: gal.NewNumber(5),
+			want: gal.NewNumberFromInt(5),
 		},
 		"function": {
 			tree: gal.Tree{
-				gal.NewNumber(10),
+				gal.NewNumberFromInt(10),
 				gal.Plus,
 				gal.NewFunction(
 					"trunc",
@@ -217,12 +217,12 @@ func TestTree_Eval_Expressions(t *testing.T) {
 							"sqrt",
 							gal.Sqrt,
 							gal.Tree{
-								gal.NewNumber(10),
+								gal.NewNumberFromInt(10),
 							},
 						),
 					},
 					gal.Tree{
-						gal.NewNumber(6),
+						gal.NewNumberFromInt(6),
 					},
 				),
 			},

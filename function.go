@@ -71,6 +71,10 @@ var builtInFunctions = map[string]FunctionalValue{
 // It returns `nil` when no built-in function exists by the specified name.
 // This signals the Evaluator to attempt to find a user defined function.
 func BuiltInFunction(name string) FunctionalValue {
+	if builtInFunctions == nil {
+		return nil
+	}
+
 	// note: for now function names are arbitrarily case-insensitive
 	lowerName := strings.ToLower(name)
 
@@ -80,15 +84,6 @@ func BuiltInFunction(name string) FunctionalValue {
 	}
 
 	return nil
-}
-
-// UserDefinedFunction is a helper function that returns the definition of the
-// provided function name from the supplied userFunctions.
-func UserDefinedFunction(name string, userFunctions Functions) FunctionalValue {
-	// note: for now function names are arbitrarily case-insensitive
-	lowerName := strings.ToLower(name)
-
-	return userFunctions.Function(lowerName)
 }
 
 // Pi returns the Value of math.Pi.

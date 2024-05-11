@@ -21,16 +21,16 @@ func TestPiLong(t *testing.T) {
 }
 
 func TestFactorial(t *testing.T) {
-	val := gal.Factorial(gal.NewNumber(0))
-	assert.Equal(t, gal.NewNumber(1).String(), val.String())
+	val := gal.Factorial(gal.NewNumberFromInt(0))
+	assert.Equal(t, gal.NewNumberFromInt(1).String(), val.String())
 
-	val = gal.Factorial(gal.NewNumber(1))
-	assert.Equal(t, gal.NewNumber(1).String(), val.String())
+	val = gal.Factorial(gal.NewNumberFromInt(1))
+	assert.Equal(t, gal.NewNumberFromInt(1).String(), val.String())
 
-	val = gal.Factorial(gal.NewNumber(10))
-	assert.Equal(t, gal.NewNumber(3_628_800).String(), val.String())
+	val = gal.Factorial(gal.NewNumberFromInt(10))
+	assert.Equal(t, gal.NewNumberFromInt(3_628_800).String(), val.String())
 
-	val = gal.Factorial(gal.NewNumber(-10))
+	val = gal.Factorial(gal.NewNumberFromInt(-10))
 	assert.Equal(t, "undefined: Factorial: requires a positive integer, cannot accept -10", val.String())
 }
 
@@ -60,21 +60,21 @@ func TestFloor(t *testing.T) {
 }
 
 func TestLn(t *testing.T) {
-	val := gal.Ln(gal.NewNumber(123456), gal.NewNumber(5))
+	val := gal.Ln(gal.NewNumberFromInt(123456), gal.NewNumberFromInt(5))
 	assert.Equal(t, "11.72364", val.String())
 
-	val = gal.Ln(gal.NewNumber(-123456), gal.NewNumber(5))
+	val = gal.Ln(gal.NewNumberFromInt(-123456), gal.NewNumberFromInt(5))
 	assert.Equal(t, "undefined: Ln:cannot calculate natural logarithm for negative decimals", val.String())
 }
 
 func TestLog(t *testing.T) {
-	val := gal.Log(gal.NewNumber(123456), gal.NewNumber(5))
+	val := gal.Log(gal.NewNumberFromInt(123456), gal.NewNumberFromInt(5))
 	assert.Equal(t, "5.09151", val.String())
 
-	val = gal.Log(gal.NewNumber(-123456), gal.NewNumber(5))
+	val = gal.Log(gal.NewNumberFromInt(-123456), gal.NewNumberFromInt(5))
 	assert.Equal(t, "undefined: Log:cannot calculate natural logarithm for negative decimals", val.String())
 
-	val = gal.Log(gal.NewNumber(10_000_000), gal.NewNumber(0))
+	val = gal.Log(gal.NewNumberFromInt(10_000_000), gal.NewNumberFromInt(0))
 	assert.Equal(t, "7", val.String())
 }
 
