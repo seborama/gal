@@ -63,7 +63,7 @@ func ObjectGetMethod(obj Object, name string) (FunctionalValue, bool) { //nolint
 	value := reflect.ValueOf(obj)
 	if value.IsZero() || !value.IsValid() {
 		return func(...Value) Value {
-			return NewUndefinedWithReasonf("object is nil for type '%T' or does not have a method '%s'", obj, name)
+			return NewUndefinedWithReasonf("object is nil for type '%T' or does not have a method '%s' (check if it has a pointer receiver)", obj, name)
 		}, false
 	}
 
