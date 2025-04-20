@@ -84,6 +84,7 @@ func (tb TreeBuilder) FromExpr(expr string) (Tree, error) {
 			}
 
 		case functionType:
+			// TODO: why are we calling `readNamedExpressionType` here again?
 			fname, l, _ := readNamedExpressionType(part)   //nolint: errcheck // ignore err: we already parsed the function name when in extractPart()
 			v, err := tb.FromExpr(part[l+1 : len(part)-1]) // exclude leading '(' and trailing ')'
 			if err != nil {
@@ -155,15 +156,9 @@ func extractPart(expr string) (string, exprType, int, error) {
 	}
 
 	// read part - "boolean"
-	// TODO: we can probably merge this with the logic that goes for functions
-	// ...and call it something like "textual expression type" which can be
-	// ...functions, variables, object properties, object functions or constants
-	{ // make s, l and ok local scope
-		s, l, ok := readBool(expr[pos:])
-		if ok {
-			// it's a bool
-			return s, boolType, pos + l, nil
-		}
+	if s, l, ok := readBool(expr[pos:]); ok {
+		// it's a bool
+		return s, boolType, pos + l, nil
 	}
 
 	// read part - :variable:
@@ -175,9 +170,9 @@ func extractPart(expr string) (string, exprType, int, error) {
 		return s, variableType, pos + l, nil
 	}
 
-	// read part - function(...) / constant / (brackets...) / object.property / object.function()
+	// read part - function(...) / (brackets...) / object.property / object.function()
 	// conceptually, parenthesis grouping is a special case of anonymous identity function
-	// NOTE: name expression types that contain a '.' are reserved for Object's only.
+	// NOTE: named expression types that contain a '.' are reserved for Object's only.
 	if expr[pos] == '(' || (expr[pos] >= 'a' && expr[pos] <= 'z') || (expr[pos] >= 'A' && expr[pos] <= 'Z') {
 		fname, lf, err := readNamedExpressionType(expr[pos:])
 		switch {
@@ -189,7 +184,8 @@ func extractPart(expr string) (string, exprType, int, error) {
 			}
 			// allow to continue so we can check alphanumerical operator names such as "And", "Or", etc
 			// TODO: before we try for alphanum operators, we will need to check if we have a defined constant
-			// e.g. Phi (golden ratio), etc user-defined or built-in (True, False)
+			// ...   e.g. Phi (golden ratio), etc user-defined or built-in (True, False)
+			// ...   This should probably be done where readBool currently is.
 		case err != nil:
 			return "", unknownType, 0, err
 		default:
@@ -297,6 +293,8 @@ readString:
 
 var errFunctionNameWithoutParens = errors.New("function with Parenthesis")
 
+// 'name(...)' is a function call
+// '()' is associative parenthesis grouping
 func readNamedExpressionType(expr string) (string, int, error) {
 	to := 0 // this could be an anonymous identity function (i.e. simple case of parenthesis grouping)
 

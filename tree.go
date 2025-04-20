@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+
+	"github.com/samber/lo"
 )
 
 type entryKind int
@@ -91,10 +93,6 @@ func (tc treeConfig) Function(name string) FunctionalValue {
 	return nil
 }
 
-// Object holds user-defined objects that can carry properties and functions that may be
-// referenced within a gal expression during evaluation.
-type Object any
-
 // Objects is a collection of Object's in the form of a map which keys are the name of the
 // object and values are the actual Object's.
 type Objects map[string]Object
@@ -181,6 +179,7 @@ func (tree Tree) Eval(opts ...treeOption) Value {
 
 	// TODO: refactor this
 	// perhaps add Tree.Value() which tests that only one entry is left and that it is a Value
+	// (maybe MultiValue can help too?)
 	return workingTree[0].(Value)
 }
 
@@ -319,6 +318,11 @@ func (tree Tree) Calc(isOperatorInPrecedenceGroup func(Operator) bool, cfg *tree
 			varName := e.(Variable).Name
 			rhsVal, ok := cfg.Variable(varName)
 			if !ok {
+				if rhsVal != nil {
+					return Tree{
+						NewUndefinedWithReasonf("syntax error: unknown variable name: '%s' - %s", varName, rhsVal.String()),
+					}
+				}
 				return Tree{
 					NewUndefinedWithReasonf("syntax error: unknown variable name: '%s'", varName),
 				}
@@ -397,11 +401,14 @@ func (tree Tree) String(indents ...string) string {
 		case treeEntryKind:
 			res += fmt.Sprintf(indent+"Tree {\n%s}\n", e.(Tree).String("   "))
 		case functionEntryKind:
-			res += fmt.Sprintf(indent+"Function %s\n", e.(Function).Name)
+			args := lo.Map(e.(Function).Args, func(item Tree, index int) string {
+				return strings.TrimRight(item.String(), "\n")
+			})
+			res += fmt.Sprintf(indent+"Function %s(%s)\n", e.(Function).Name, strings.Join(args, ", "))
 		case variableEntryKind:
 			res += fmt.Sprintf(indent+"Variable %s\n", e.(Variable).Name)
 		default:
-			res += fmt.Sprintf(indent+"undefined %T %s\n", e, e.kind().String())
+			res += fmt.Sprintf(indent+"TODO: unsupported - %T %s\n", e, e.kind().String())
 		}
 	}
 	return res

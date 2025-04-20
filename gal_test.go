@@ -6,7 +6,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/seborama/gal/v9"
+	"github.com/seborama/gal/v10"
 )
 
 func TestEval(t *testing.T) {
@@ -468,4 +468,40 @@ func TestObjects_MethodReceiver(t *testing.T) {
 	// However, Car.CurrentSpeed has a *Car receiver, hence from a Go perspective, the method
 	// exists on *Car but it does NOT exist on Car!
 	assert.Equal(t, "undefined: type 'gal_test.Car' does not have a method 'CurrentSpeed' (check if it has a pointer receiver)", got.String())
+}
+
+func TestObjects_Collections(t *testing.T) {
+	expr := `aCar.Tyres[0].Age - aCar.Drivers["Bob"].Age`
+	parsedExpr := gal.Parse(expr)
+
+	got := parsedExpr.Eval(
+		gal.WithObjects(map[string]gal.Object{
+			"aCar": &Car{
+				Make:            "Lotus Esprit",
+				Mileage:         gal.NewNumberFromInt(2000),
+				Speed:           100,
+				MaxSpeed:        250,
+				ComplexProperty: 0,
+				Tyres: []Tyre{
+					{
+						Location: "Front-Left",
+						Age:      5,
+					},
+					{
+						Location: "Front-Right",
+						Age:      1,
+					},
+				},
+				Drivers: map[string]Driver{
+					"Bob": {
+						Age: 32,
+					},
+					"Alice": {
+						Age: 37,
+					},
+				},
+			},
+		}),
+	)
+	assert.Equal(t, "-27", got.String())
 }

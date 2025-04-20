@@ -1,12 +1,14 @@
 package gal_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/seborama/gal/v9"
+	"github.com/seborama/gal/v10"
 )
 
 func TestTreeBuilder_FromExpr_VariousOperators(t *testing.T) {
@@ -127,6 +129,116 @@ func TestTreeBuilder_FromExpr_Functions(t *testing.T) {
 			},
 			gal.Tree{
 				gal.NewNumberFromInt(6),
+			},
+		),
+	}
+
+	if !cmp.Equal(expectedTree, got) {
+		t.Error(cmp.Diff(expectedTree, got))
+		t.FailNow()
+	}
+
+	gotVal := got.Eval(gal.WithFunctions(funcs))
+	expectedVal := gal.NewNumberFromFloat(5.323784)
+
+	if !cmp.Equal(expectedVal, gotVal) {
+		t.Error(cmp.Diff(expectedVal, gotVal))
+	}
+}
+
+func TestTreeBuilder_FromExpr_Objects(t *testing.T) {
+	expr := `aCar.MaxSpeed - aCar.CurrentSpeed()`
+
+	got := gal.Parse(expr)
+
+	expectedTree := gal.Tree{
+		gal.NewVariable(
+			"aCar.MaxSpeed",
+		),
+		gal.Minus,
+		gal.Function{
+			"aCar.CurrentSpeed",
+			nil,
+			[]gal.Tree{},
+		},
+	}
+
+	if !cmp.Equal(expectedTree, got) {
+		t.Error(cmp.Diff(expectedTree, got))
+		t.FailNow()
+	}
+}
+
+func TestTreeBuilder_FromExpr_Dot_Accessor_Function(t *testing.T) {
+	expr := `aCar.CurrentSpeed().Add(50)+100`
+
+	got := gal.Parse(expr)
+
+	expectedTree := gal.Tree{
+		// TODO: TBC
+	}
+
+	if !cmp.Equal(expectedTree, got) {
+		t.Error(cmp.Diff(expectedTree, got))
+		t.FailNow()
+	}
+
+	gotVal := got.Eval(
+		gal.WithObjects(map[string]gal.Object{
+			"aCar": &Car{
+				Speed: 80,
+			},
+		}),
+	)
+	assert.Equal(t, gal.NewNumberFromInt(230), gotVal)
+}
+
+func TestTreeBuilder_FromExpr_Dot_Accessor_Property(t *testing.T) {
+	expr := `aCar.CurrentSpeed3().Speed`
+
+	got := gal.Parse(expr)
+
+	fmt.Printf("%#v\n", got)
+	expectedTree := gal.Tree{
+		//TODO: TBC
+	}
+
+	if !cmp.Equal(expectedTree, got) {
+		t.Error(cmp.Diff(expectedTree, got))
+		t.FailNow()
+	}
+
+	gotVal := got.Eval(
+		gal.WithObjects(map[string]gal.Object{
+			"aCar": &Car{
+				Speed: 100,
+			},
+		}),
+	)
+	assert.Equal(t, gal.NewNumberFromInt(100), gotVal)
+}
+
+func TestTreeBuilder_FromExpr_Arrays(t *testing.T) {
+	expr := `f(1 2 3)[1]`
+
+	funcs := gal.Functions{
+		"f": func(args ...gal.Value) gal.Value { return gal.NewMultiValue(args...) },
+	}
+
+	got := gal.Parse(expr)
+
+	expectedTree := gal.Tree{
+		gal.NewFunction(
+			"f",
+			nil,
+			gal.Tree{
+				gal.NewNumberFromInt(1),
+			},
+			gal.Tree{
+				gal.NewNumberFromInt(2),
+			},
+			gal.Tree{
+				gal.NewNumberFromInt(3),
 			},
 		),
 	}

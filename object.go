@@ -2,12 +2,17 @@ package gal
 
 import (
 	"fmt"
+	"log/slog"
 	"reflect"
 	"strconv"
 
 	"github.com/pkg/errors"
 	"github.com/samber/lo"
 )
+
+// Object holds user-defined objects that can carry properties and functions that may be
+// referenced within a gal expression during evaluation.
+type Object any
 
 // TODO: implement support for nested structs?
 func ObjectGetProperty(obj Object, name string) (Value, bool) { //nolint: gocognit, gocyclo, cyclop
@@ -44,6 +49,20 @@ func ObjectGetProperty(obj Object, name string) (Value, bool) { //nolint: gocogn
 	vValue := v.FieldByName(name)
 	if !vValue.IsValid() {
 		return NewUndefinedWithReasonf("property '%T:%s' does not exist on object", obj, name), false
+	}
+
+	slog.Debug("ObjectGetProperty", "vValue.Kind", vValue.Kind().String(), "name", name, "vValue", vValue)
+	if vValue.Kind() == reflect.Struct {
+		// TODO: do not hard-code "Age", enable a means to continue parsing the name.
+		// ...   NOTE: it may be needed to create a wrapper over ObjectGetProperty and ObjectGetMethod that
+		// ...   can continue iterating thought the '.' separated parts of the name and depending on the presence
+		// ...   of () at the end of the part, call ObjectGetProperty or ObjectGetMethod accordingly
+		// ...   NOTE: Instead of using functionEntryKind / variableEntryKind, we might want use objectEntryKind.
+		// ...   This would allow a more universal parsing of expressions like:
+		// ...   aCar.Tyres[2],Vertices(4).Length.InInches()
+		// ...   This should also remove some burden away from gal's core TreeBuild and Tree and provide
+		// ...   decoupling / separation of concerns between them and the evalution of "object" expressions.
+		return ObjectGetProperty(vValue.Interface(), "Age")
 	}
 
 	galValue, err := goAnyToGalType(vValue.Interface())
@@ -168,6 +187,8 @@ func goAnyToGalType(value any) (Value, error) {
 	case bool:
 		return NewBool(typedValue), nil
 	default:
+		t := reflect.TypeOf(value)
+		slog.Debug("goAnyToGalType", "t.Kind", t.Kind().String())
 		return nil, errors.Errorf("type '%T' cannot be mapped to gal.Value", typedValue)
 	}
 }
