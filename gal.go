@@ -13,6 +13,8 @@ const (
 	variableType
 	functionType
 	boolType
+	objectAccessorTypeVariableType
+	objectAccessorTypeFunctionType
 )
 
 type Value interface {

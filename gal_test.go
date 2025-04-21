@@ -115,6 +115,10 @@ func TestEval_Boolean(t *testing.T) {
 	val = gal.Parse(expr).Eval()
 	assert.Equal(t, gal.False.String(), val.String())
 
+	// TODO: it should be easy to add support for "If" blocks.
+	// ...   It could be in the form of am extension to the Bool type.
+	// ...   Or, we could introduce a new built-in function "If" that returns a type that has methods Then() and Else()
+	// ...   Or, it could be a built-in Object "If" that has methods Then() and Else()
 	expr = `( 123 == 123 && 12 <= 45 ) Or ( "a" != "b" )`
 	val = gal.Parse(expr).Eval()
 	assert.Equal(t, gal.True.String(), val.String())
@@ -376,6 +380,32 @@ func TestObjects_Properties(t *testing.T) {
 	assert.Equal(t, "150", got.String())
 }
 
+// TODO: this is an idea for a future feature.
+// func TestObjects_ChainedProperties(t *testing.T) {
+//	expr := `aCar.Stereo.Brand`
+//	parsedExpr := gal.Parse(expr)
+
+//	expectedTree := gal.Tree{}
+
+//	assert.Equal(t, expectedTree, parsedExpr)
+
+//	got := parsedExpr.Eval(
+//		gal.WithObjects(map[string]gal.Object{
+//			"aCar": Car{
+//				Make:     "Lotus Esprit",
+//				Mileage:  gal.NewNumberFromInt(2000),
+//				Speed:    100,
+//				MaxSpeed: 250,
+//				Stereo: CarStereo{
+//					Brand:      "Mitsubishi",
+//					MaxWattage: 120,
+//				},
+//			},
+//		}),
+//	)
+//	assert.Equal(t, "Mitsubishi", got.String())
+// }
+
 func TestObjects_Properties_TwoObjects(t *testing.T) {
 	expr := `Road.Type == "Highway"
 	And Car.IsRunning()
@@ -470,38 +500,39 @@ func TestObjects_MethodReceiver(t *testing.T) {
 	assert.Equal(t, "undefined: type 'gal_test.Car' does not have a method 'CurrentSpeed' (check if it has a pointer receiver)", got.String())
 }
 
-func TestObjects_Collections(t *testing.T) {
-	expr := `aCar.Tyres[0].Age - aCar.Drivers["Bob"].Age`
-	parsedExpr := gal.Parse(expr)
+// TODO: this is an idea for a future feature.
+// func TestObjects_Collections(t *testing.T) {
+//	expr := `aCar.Tyres[0].Age - aCar.Drivers["Bob"].Age`
+//	parsedExpr := gal.Parse(expr)
 
-	got := parsedExpr.Eval(
-		gal.WithObjects(map[string]gal.Object{
-			"aCar": &Car{
-				Make:            "Lotus Esprit",
-				Mileage:         gal.NewNumberFromInt(2000),
-				Speed:           100,
-				MaxSpeed:        250,
-				ComplexProperty: 0,
-				Tyres: []Tyre{
-					{
-						Location: "Front-Left",
-						Age:      5,
-					},
-					{
-						Location: "Front-Right",
-						Age:      1,
-					},
-				},
-				Drivers: map[string]Driver{
-					"Bob": {
-						Age: 32,
-					},
-					"Alice": {
-						Age: 37,
-					},
-				},
-			},
-		}),
-	)
-	assert.Equal(t, "-27", got.String())
-}
+//	got := parsedExpr.Eval(
+//		gal.WithObjects(map[string]gal.Object{
+//			"aCar": &Car{
+//				Make:            "Lotus Esprit",
+//				Mileage:         gal.NewNumberFromInt(2000),
+//				Speed:           100,
+//				MaxSpeed:        250,
+//				ComplexProperty: 0,
+//				Tyres: []Tyre{
+//					{
+//						Location: "Front-Left",
+//						Age:      5,
+//					},
+//					{
+//						Location: "Front-Right",
+//						Age:      1,
+//					},
+//				},
+//				Drivers: map[string]Driver{
+//					"Bob": {
+//						Age: 32,
+//					},
+//					"Alice": {
+//						Age: 37,
+//					},
+//				},
+//			},
+//		}),
+//	)
+//	assert.Equal(t, "-27", got.String())
+// }

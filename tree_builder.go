@@ -12,10 +12,10 @@ func NewTreeBuilder() *TreeBuilder {
 	return &TreeBuilder{}
 }
 
-// nolint: gocognit,gocyclo,cyclop
 func (tb TreeBuilder) FromExpr(expr string) (Tree, error) {
 	tree := Tree{}
 
+	//nolint:errcheck // life's too short to check for type assertion success here
 	for idx := 0; idx < len(expr); {
 		part, ptype, length, err := extractPart(expr[idx:])
 		if err != nil {
@@ -85,8 +85,8 @@ func (tb TreeBuilder) FromExpr(expr string) (Tree, error) {
 
 		case functionType:
 			// TODO: why are we calling `readNamedExpressionType` here again?
-			fname, l, _ := readNamedExpressionType(part)   //nolint: errcheck // ignore err: we already parsed the function name when in extractPart()
-			v, err := tb.FromExpr(part[l+1 : len(part)-1]) // exclude leading '(' and trailing ')'
+			fname, l, _ := readNamedExpressionType(part)   //nolint:errcheck // ignore err: we already parsed the function name when in extractPart()
+			v, err := tb.FromExpr(part[l+1 : len(part)-1]) // parse the function's argument: exclude leading '(' and trailing ')'
 			if err != nil {
 				return nil, err
 			}
@@ -103,8 +103,26 @@ func (tb TreeBuilder) FromExpr(expr string) (Tree, error) {
 			v := NewVariable(part)
 			tree = append(tree, v)
 
+		case objectAccessorTypeVariableType:
+			// TODO: implement
+
+		case objectAccessorTypeFunctionType:
+			v, err := tb.FromExpr(part[1:]) // skip the "."
+			if err != nil {
+				return nil, err
+			}
+			if len(v) != 1 {
+				return nil, errors.Errorf("syntax error: invalid object accessor function: '%s'", part)
+			}
+			m := v[0].(Function)
+			if m.BodyFn != nil {
+				// NOTE: this could be supported but it would turn the object into a prototype model e.g. like JavaScript
+				return nil, errors.Errorf("internal error: invalid object accessor function: '%s' - BodyFn is not empty: this indicates the object's method was confused for a build-in function", part)
+			}
+			tree = append(tree, Dot[Function]{Member: m})
+
 		case blankType:
-			// only returned when the entire expression is blank or only contains blanks.
+			// only returned when the entire expression is empty or only contains blanks.
 			return tree, nil
 
 		default:
@@ -129,8 +147,6 @@ func (tb TreeBuilder) FromExpr(expr string) (Tree, error) {
 
 // returns the part extracted as string, the type extracted, the cursor position
 // after extraction or an error.
-//
-// nolint: gocognit,gocyclo,cyclop
 func extractPart(expr string) (string, exprType, int, error) {
 	// left trim blanks
 	pos := 0
@@ -157,7 +173,6 @@ func extractPart(expr string) (string, exprType, int, error) {
 
 	// read part - "boolean"
 	if s, l, ok := readBool(expr[pos:]); ok {
-		// it's a bool
 		return s, boolType, pos + l, nil
 	}
 
@@ -170,7 +185,7 @@ func extractPart(expr string) (string, exprType, int, error) {
 		return s, variableType, pos + l, nil
 	}
 
-	// read part - function(...) / (brackets...) / object.property / object.function()
+	// read part - function(...) / (associative group...) / object.property / object.function()
 	// conceptually, parenthesis grouping is a special case of anonymous identity function
 	// NOTE: named expression types that contain a '.' are reserved for Object's only.
 	if expr[pos] == '(' || (expr[pos] >= 'a' && expr[pos] <= 'z') || (expr[pos] >= 'A' && expr[pos] <= 'Z') {
@@ -195,6 +210,32 @@ func extractPart(expr string) (string, exprType, int, error) {
 				return "", unknownType, 0, err
 			}
 			return fname + fargs, functionType, pos + lf + la, nil
+		}
+	}
+
+	// read part - object accessor (Dot operator)
+	if expr[pos] == '.' {
+		// TODO: we should probably only read up until the first '(' (as we do now) OR the first '.'
+		fname, lf, err := readNamedExpressionType(expr[pos:])
+		switch {
+		case errors.Is(err, errFunctionNameWithoutParens):
+			if strings.Contains(fname, ".") {
+				// object property found: act like a variable
+				// TODO: could create a new objectPropertyType
+				return fname, objectAccessorTypeVariableType, pos + lf, nil
+			}
+			// allow to continue so we can check alphanumerical operator names such as "And", "Or", etc
+			// TODO: before we try for alphanum operators, we will need to check if we have a defined constant
+			// ... e.g. Phi (golden ratio), etc user-defined or built-in (True, False)
+		case err != nil:
+			return "", unknownType, 0, err
+		default:
+			// TODO: if name contains `.` it's an object function - could create a new objectFunctionType
+			fargs, la, err := readFunctionArguments(expr[pos+lf:])
+			if err != nil {
+				return "", unknownType, 0, err
+			}
+			return fname + fargs, objectAccessorTypeFunctionType, pos + lf + la, nil
 		}
 	}
 

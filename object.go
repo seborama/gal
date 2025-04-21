@@ -10,14 +10,24 @@ import (
 	"github.com/samber/lo"
 )
 
+type Member interface{ Function | Variable }
+
+type Dot[T Member] struct {
+	Member T // must be a Method (i.e. Function) or a Property name (i.e. Variable)
+}
+
+func (Dot[T]) kind() entryKind {
+	return objectAccessorEntryKind
+}
+
 // Object holds user-defined objects that can carry properties and functions that may be
 // referenced within a gal expression during evaluation.
 type Object any
 
 // TODO: implement support for nested structs?
-func ObjectGetProperty(obj Object, name string) (Value, bool) { //nolint: gocognit, gocyclo, cyclop
+func ObjectGetProperty(obj Object, name string) (Value, bool) {
 	if obj == nil {
-		return NewUndefinedWithReasonf("object is nil"), false
+		return NewUndefinedWithReasonf("object is nil for type '%T'", obj), false
 	}
 
 	// Use the reflect.ValueOf function to get the value of the struct
@@ -52,18 +62,6 @@ func ObjectGetProperty(obj Object, name string) (Value, bool) { //nolint: gocogn
 	}
 
 	slog.Debug("ObjectGetProperty", "vValue.Kind", vValue.Kind().String(), "name", name, "vValue", vValue)
-	if vValue.Kind() == reflect.Struct {
-		// TODO: do not hard-code "Age", enable a means to continue parsing the name.
-		// ...   NOTE: it may be needed to create a wrapper over ObjectGetProperty and ObjectGetMethod that
-		// ...   can continue iterating thought the '.' separated parts of the name and depending on the presence
-		// ...   of () at the end of the part, call ObjectGetProperty or ObjectGetMethod accordingly
-		// ...   NOTE: Instead of using functionEntryKind / variableEntryKind, we might want use objectEntryKind.
-		// ...   This would allow a more universal parsing of expressions like:
-		// ...   aCar.Tyres[2],Vertices(4).Length.InInches()
-		// ...   This should also remove some burden away from gal's core TreeBuild and Tree and provide
-		// ...   decoupling / separation of concerns between them and the evalution of "object" expressions.
-		return ObjectGetProperty(vValue.Interface(), "Age")
-	}
 
 	galValue, err := goAnyToGalType(vValue.Interface())
 	if err != nil {
@@ -72,7 +70,7 @@ func ObjectGetProperty(obj Object, name string) (Value, bool) { //nolint: gocogn
 	return galValue, true
 }
 
-func ObjectGetMethod(obj Object, name string) (FunctionalValue, bool) { //nolint: cyclop
+func ObjectGetMethod(obj Object, name string) (FunctionalValue, bool) {
 	if obj == nil {
 		return func(...Value) Value {
 			return NewUndefinedWithReasonf("object is nil for type '%T'", obj)
@@ -101,9 +99,11 @@ func ObjectGetMethod(obj Object, name string) (FunctionalValue, bool) { //nolint
 			return NewUndefinedWithReasonf("invalid function call - object::%T:%s - wants %d args, received %d instead", obj, name, numParams, len(args))
 		}
 
+		//nolint:gosec // ignoring overflow conversion
 		callArgs := lo.Map(args, func(item Value, index int) reflect.Value {
 			paramType := methodType.In(index)
 
+			//nolint:errcheck // life's too short to check for type assertion success here
 			switch paramType.Kind() {
 			// TODO: continue with more "case"'s
 			case reflect.Int:
@@ -158,6 +158,8 @@ func ObjectGetMethod(obj Object, name string) (FunctionalValue, bool) { //nolint
 }
 
 // attempt to convert a Go 'any' type to an equivalent gal.Value
+//
+//nolint:gosec // ignoring overflow conversion
 func goAnyToGalType(value any) (Value, error) {
 	switch typedValue := value.(type) {
 	case Value:

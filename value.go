@@ -39,6 +39,7 @@ func toValue(value any) (Value, bool) {
 }
 
 func ToNumber(val Value) Number {
+	//nolint:errcheck // life's too short to check for type assertion success here
 	return val.(Numberer).Number() // may panic
 }
 
@@ -47,6 +48,7 @@ func ToString(val Value) String {
 }
 
 func ToBool(val Value) Bool {
+	//nolint:errcheck // life's too short to check for type assertion success here
 	return val.(Booler).Bool() // may panic
 }
 

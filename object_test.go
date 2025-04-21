@@ -131,16 +131,18 @@ type Car struct {
 	ComplexProperty complex128
 	Tyres           []Tyre
 	Drivers         map[string]Driver
+	Stereo          CarStereo
 }
 
 func (c *Car) Ignite() gal.Value {
 	return gal.True
 }
 
-func (c Car) Shutdown() gal.Value { //nolint: gocritic
+func (c Car) Shutdown() gal.Value { //nolint:gocritic
 	return gal.True
 }
 
+//nolint:gocritic // this is done on purpose as part of the test requirements.
 func (c Car) IsRunning() bool {
 	return true
 }
@@ -151,6 +153,16 @@ func (c *Car) CurrentSpeed() gal.Value {
 
 func (c *Car) CurrentSpeed2() float32 {
 	return c.Speed
+}
+
+func (c *Car) CurrentSpeed3() fancyType {
+	return fancyType{
+		Speed: c.Speed,
+	}
+}
+
+func (c *Car) GetMaxSpeed() gal.Value {
+	return gal.NewNumberFromFloat(float64(c.MaxSpeed))
 }
 
 func (c *Car) SetSpeed(speed gal.Number) {
@@ -186,6 +198,11 @@ func (c *Car) String() string {
 
 type Road struct {
 	Type string
+}
+
+type CarStereo struct {
+	Brand      string
+	MaxWattage int
 }
 
 func TestValueAsObject(t *testing.T) {
