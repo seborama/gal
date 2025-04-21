@@ -1,0 +1,261 @@
+version: "2"
+run:
+  concurrency: 4
+  go: "1.24"
+  modules-download-mode: readonly
+  issues-exit-code: 2
+  allow-parallel-runners: false
+output:
+  path-prefix: ""
+linters:
+  default: none
+  enable:
+    - bodyclose
+    - containedctx
+    - contextcheck
+    - dogsled
+    - dupl
+    - durationcheck
+    - err113
+    - errcheck
+    - errchkjson
+    - gocritic
+    - godot
+    - gosec
+    - govet
+    - ineffassign
+    - maintidx
+    - nestif
+    - nilerr
+    - nolintlint
+    - predeclared
+    - rowserrcheck
+    - sqlclosecheck
+    - staticcheck
+    - tagliatelle
+    - thelper
+    - unconvert
+    - unparam
+    - unused
+  settings:
+    cyclop:
+      max-complexity: 15
+      package-average: 3.5
+    dogsled:
+      max-blank-identifiers: 3
+    errcheck:
+      disable-default-exclusions: true
+      check-type-assertions: true
+      check-blank: true
+    errchkjson:
+      check-error-free-encoding: true
+      report-no-exported: true
+    gocognit:
+      min-complexity: 20
+    gocritic:
+      enabled-checks:
+        - hugeParam
+        - nestingReduce
+        - rangeExprCopy
+        - rangeValCopy
+        - ruleguard
+        - tooManyResultsChecker
+        - truncateCmp
+        - unnamedResult
+      settings:
+        rangeExprCopy:
+          skipTestFuncs: false
+        rangeValCopy:
+          skipTestFuncs: false
+        tooManyResultsChecker:
+          maxResults: 10
+        truncateCmp:
+          skipArchDependent: false
+        underef:
+          skipRecvDeref: false
+        unnamedResult:
+          checkExported: true
+    gocyclo:
+      min-complexity: 20
+    godot:
+      scope: all
+      exclude:
+        - '^fixme:'
+        - '^todo:'
+      period: false
+    gosec:
+      severity: medium
+      confidence: medium
+      config:
+        G101:
+          entropy_threshold: "80.0"
+          ignore_entropy: false
+          pattern: (?i)example
+          per_char_threshold: "3.0"
+          truncate: "32"
+        G104:
+          fmt:
+            - Fscanf
+        G111:
+          pattern: custom\.Dir\(\)
+        G301: "0750"
+        G302: "0600"
+        G306: "0600"
+        global:
+          '#nosec': '#my-custom-nosec'
+          audit: true
+          nosec: true
+          show-ignored: true
+    govet:
+      enable-all: true
+    ireturn:
+      allow:
+        - anon
+        - error
+        - empty
+        - stdlib
+        - (or|er)$
+    nestif:
+      min-complexity: 4
+    nilnil:
+      checked-types:
+        - ptr
+        - func
+        - iface
+        - map
+        - chan
+    staticcheck:
+      checks:
+        - -ST1003
+        - -ST1016
+        - all
+      initialisms:
+        - ACL
+        - API
+        - ASCII
+        - CPU
+        - CSS
+        - DNS
+        - EOF
+        - GUID
+        - HTML
+        - HTTP
+        - HTTPS
+        - ID
+        - IP
+        - JSON
+        - QPS
+        - RAM
+        - RPC
+        - SLA
+        - SMTP
+        - SQL
+        - SSH
+        - TCP
+        - TLS
+        - TTL
+        - UDP
+        - UI
+        - GID
+        - UID
+        - UUID
+        - URI
+        - URL
+        - UTF8
+        - VM
+        - XML
+        - XMPP
+        - XSRF
+        - XSS
+        - SIP
+        - RTP
+        - AMQP
+        - DB
+        - TS
+      dot-import-whitelist:
+        - fmt
+      http-status-code-whitelist:
+        - "200"
+        - "400"
+        - "404"
+        - "500"
+    tagliatelle:
+      case:
+        rules:
+          avro: snake
+          bson: camel
+          json: camel
+          mapstructure: kebab
+          xml: camel
+          yaml: camel
+        use-field-name: true
+    unparam:
+      check-exported: true
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - linters:
+          - cyclop
+          - dupl
+          - err113
+          - errcheck
+          - gocognit
+          - gocyclo
+          - gosec
+        path: _test\.go
+      - path: _test\.go
+        text: 'fieldalignment:'
+      - linters:
+          - gosec
+        path: internal/hmac/
+        text: weak cryptographic primitive
+      - linters:
+          - staticcheck
+        text: 'SA9003:'
+      - linters:
+          - lll
+        source: '^//go:generate '
+      - linters:
+          - cyclop
+        path: (.+)_test\.go
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+severity:
+  default: warning
+  rules:
+    - linters:
+        - dupl
+      severity: info
+formatters:
+  enable:
+    - gofmt
+    - gofumpt
+    - goimports
+  settings:
+    gci:
+      sections:
+        - standard
+        - default
+        - prefix(github.com/seborama)
+    gofumpt:
+      extra-rules: true
+    goimports:
+      local-prefixes:
+        - github.com/seborama
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+

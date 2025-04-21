@@ -1,6 +1,6 @@
-module github.com/seborama/gal/v9
+module github.com/seborama/gal/v10
 
-go 1.21
+go 1.24
 
 require github.com/shopspring/decimal v1.4.0
 

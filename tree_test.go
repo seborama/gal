@@ -6,7 +6,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/seborama/gal/v9"
+	"github.com/seborama/gal/v10"
 )
 
 func TestTree_FullLen(t *testing.T) {
@@ -240,7 +240,7 @@ func TestTree_Eval_Expressions(t *testing.T) {
 				if _, ok := val.(gal.Undefined); ok {
 					t.Log("Value:", val.String())
 				}
-				t.Errorf(cmp.Diff(tc.want, val))
+				t.Error(cmp.Diff(tc.want, val))
 			}
 		})
 	}

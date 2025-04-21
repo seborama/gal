@@ -2,6 +2,7 @@ package gal
 
 import (
 	"fmt"
+	"log/slog"
 	"reflect"
 	"strconv"
 
@@ -9,10 +10,24 @@ import (
 	"github.com/samber/lo"
 )
 
+type Member interface{ Function | Variable }
+
+type Dot[T Member] struct {
+	Member T // must be a Method (i.e. Function) or a Property name (i.e. Variable)
+}
+
+func (Dot[T]) kind() entryKind {
+	return objectAccessorEntryKind
+}
+
+// Object holds user-defined objects that can carry properties and functions that may be
+// referenced within a gal expression during evaluation.
+type Object any
+
 // TODO: implement support for nested structs?
-func ObjectGetProperty(obj Object, name string) (Value, bool) { //nolint: gocognit, gocyclo, cyclop
+func ObjectGetProperty(obj Object, name string) (Value, bool) {
 	if obj == nil {
-		return NewUndefinedWithReasonf("object is nil"), false
+		return NewUndefinedWithReasonf("object is nil for type '%T'", obj), false
 	}
 
 	// Use the reflect.ValueOf function to get the value of the struct
@@ -46,6 +61,8 @@ func ObjectGetProperty(obj Object, name string) (Value, bool) { //nolint: gocogn
 		return NewUndefinedWithReasonf("property '%T:%s' does not exist on object", obj, name), false
 	}
 
+	slog.Debug("ObjectGetProperty", "vValue.Kind", vValue.Kind().String(), "name", name, "vValue", vValue)
+
 	galValue, err := goAnyToGalType(vValue.Interface())
 	if err != nil {
 		return NewUndefinedWithReasonf("object::%T:%s - %s", obj, name, err.Error()), false
@@ -53,7 +70,7 @@ func ObjectGetProperty(obj Object, name string) (Value, bool) { //nolint: gocogn
 	return galValue, true
 }
 
-func ObjectGetMethod(obj Object, name string) (FunctionalValue, bool) { //nolint: cyclop
+func ObjectGetMethod(obj Object, name string) (FunctionalValue, bool) {
 	if obj == nil {
 		return func(...Value) Value {
 			return NewUndefinedWithReasonf("object is nil for type '%T'", obj)
@@ -82,9 +99,11 @@ func ObjectGetMethod(obj Object, name string) (FunctionalValue, bool) { //nolint
 			return NewUndefinedWithReasonf("invalid function call - object::%T:%s - wants %d args, received %d instead", obj, name, numParams, len(args))
 		}
 
+		//nolint:gosec // ignoring overflow conversion
 		callArgs := lo.Map(args, func(item Value, index int) reflect.Value {
 			paramType := methodType.In(index)
 
+			//nolint:errcheck // life's too short to check for type assertion success here
 			switch paramType.Kind() {
 			// TODO: continue with more "case"'s
 			case reflect.Int:
@@ -139,6 +158,8 @@ func ObjectGetMethod(obj Object, name string) (FunctionalValue, bool) { //nolint
 }
 
 // attempt to convert a Go 'any' type to an equivalent gal.Value
+//
+//nolint:gosec // ignoring overflow conversion
 func goAnyToGalType(value any) (Value, error) {
 	switch typedValue := value.(type) {
 	case Value:
@@ -168,6 +189,8 @@ func goAnyToGalType(value any) (Value, error) {
 	case bool:
 		return NewBool(typedValue), nil
 	default:
+		t := reflect.TypeOf(value)
+		slog.Debug("goAnyToGalType", "t.Kind", t.Kind().String())
 		return nil, errors.Errorf("type '%T' cannot be mapped to gal.Value", typedValue)
 	}
 }

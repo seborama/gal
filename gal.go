@@ -13,6 +13,8 @@ const (
 	variableType
 	functionType
 	boolType
+	objectAccessorTypeVariableType
+	objectAccessorTypeFunctionType
 )
 
 type Value interface {
@@ -49,7 +51,7 @@ func Parse(expr string) Tree {
 	tree, err := treeBuilder.FromExpr(expr)
 	if err != nil {
 		return Tree{
-			NewUndefinedWithReasonf(err.Error()),
+			NewUndefinedWithReasonf("%s", err.Error()),
 		}
 	}
 

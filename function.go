@@ -101,7 +101,7 @@ func PiLong(args ...Value) Value {
 		return NewUndefinedWithReasonf("pi() requires no argument, got %d", len(args))
 	}
 
-	pi, _ := NewNumberFromString(Pi51199) //nolint: errcheck
+	pi, _ := NewNumberFromString(Pi51199) //nolint:errcheck
 
 	return pi
 }
@@ -168,7 +168,7 @@ func Ln(args ...Value) Value {
 
 	if v, ok := args[0].(Numberer); ok {
 		if p, ok := args[1].(Numberer); ok {
-			return v.Number().Ln(int32(p.Number().value.IntPart()))
+			return v.Number().Ln(int32(p.Number().value.IntPart())) //nolint:gosec
 		}
 	}
 
@@ -183,7 +183,7 @@ func Log(args ...Value) Value {
 
 	if v, ok := args[0].(Numberer); ok {
 		if p, ok := args[1].(Numberer); ok {
-			return v.Number().Log(int32(p.Number().value.IntPart()))
+			return v.Number().Log(int32(p.Number().value.IntPart())) //nolint:gosec // ignoring overflow conversion
 		}
 	}
 
@@ -232,7 +232,7 @@ func Trunc(args ...Value) Value {
 	}
 
 	if v, ok := argVal.(Numberer); ok {
-		return v.Number().Trunc(int32(precision.Number().value.IntPart()))
+		return v.Number().Trunc(int32(precision.Number().value.IntPart())) //nolint:gosec // ignoring overflow conversion
 	}
 
 	return NewUndefinedWithReasonf("trunc(): invalid argument #1 '%s'", argVal.String())

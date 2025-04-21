@@ -39,6 +39,7 @@ func toValue(value any) (Value, bool) {
 }
 
 func ToNumber(val Value) Number {
+	//nolint:errcheck // life's too short to check for type assertion success here
 	return val.(Numberer).Number() // may panic
 }
 
@@ -47,6 +48,7 @@ func ToString(val Value) String {
 }
 
 func ToBool(val Value) Bool {
+	//nolint:errcheck // life's too short to check for type assertion success here
 	return val.(Booler).Bool() // may panic
 }
 
@@ -194,11 +196,11 @@ func (s String) Multiply(other Value) Value {
 }
 
 func (s String) LShift(Value) Value {
-	return Undefined{} // TODO: could eject characters on the left-wise
+	return Undefined{} // TODO: could eject characters on the left hand side
 }
 
 func (s String) RShift(Value) Value {
-	return Undefined{} // TODO: could eject characters on the right-wise
+	return Undefined{} // TODO: could eject characters on the right hand side
 }
 
 func (s String) String() string {
@@ -393,7 +395,7 @@ func (n Number) Sqrt() Value {
 		new(big.Float).Sqrt(n.value.BigFloat()).String(),
 	)
 	if err != nil {
-		return NewUndefinedWithReasonf("Sqrt:" + err.Error())
+		return NewUndefinedWithReasonf("Sqrt:%s", err.Error())
 	}
 
 	return n
@@ -408,7 +410,7 @@ func (n Number) Tan() Number {
 func (n Number) Ln(precision int32) Value {
 	res, err := n.value.Ln(precision)
 	if err != nil {
-		return NewUndefinedWithReasonf("Ln:" + err.Error())
+		return NewUndefinedWithReasonf("Ln:%s", err.Error())
 	}
 
 	return Number{
@@ -419,12 +421,12 @@ func (n Number) Ln(precision int32) Value {
 func (n Number) Log(precision int32) Value {
 	res, err := n.value.Ln(precision + 1)
 	if err != nil {
-		return NewUndefinedWithReasonf("Log:" + err.Error())
+		return NewUndefinedWithReasonf("Log:%s", err.Error())
 	}
 
 	res10, err := decimal.New(10, 0).Ln(precision + 1)
 	if err != nil {
-		return NewUndefinedWithReasonf("Log:" + err.Error())
+		return NewUndefinedWithReasonf("Log:%s", err.Error())
 	}
 
 	return Number{
@@ -628,7 +630,7 @@ func NewUndefined() Undefined {
 	return Undefined{}
 }
 
-func NewUndefinedWithReasonf(format string, a ...interface{}) Undefined {
+func NewUndefinedWithReasonf(format string, a ...any) Undefined {
 	return Undefined{
 		reason: fmt.Sprintf(format, a...),
 	}

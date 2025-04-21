@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+
+	"github.com/samber/lo"
 )
 
 type entryKind int
@@ -22,6 +24,8 @@ func (ek entryKind) String() string {
 		return "functionEntryKind"
 	case variableEntryKind:
 		return "variableEntryKind"
+	case objectAccessorEntryKind:
+		return "objectAccessorEntryKind"
 	default:
 		return fmt.Sprintf("unknown:%d", ek)
 	}
@@ -34,6 +38,7 @@ const (
 	treeEntryKind
 	functionEntryKind
 	variableEntryKind
+	objectAccessorEntryKind
 )
 
 type entry interface {
@@ -91,10 +96,6 @@ func (tc treeConfig) Function(name string) FunctionalValue {
 	return nil
 }
 
-// Object holds user-defined objects that can carry properties and functions that may be
-// referenced within a gal expression during evaluation.
-type Object any
-
 // Objects is a collection of Object's in the form of a map which keys are the name of the
 // object and values are the actual Object's.
 type Objects map[string]Object
@@ -106,6 +107,17 @@ type treeConfig struct {
 }
 
 // Variable returns the value of the variable specified by name.
+// TODO: add support for arrays and maps via `[...]`
+// ...   NOTE: it may be more adequate to create a new `[]` operator.
+// ...   This would also permit its use on any Value, including those returned from function calls.
+// ...   We would likely need to create new types (unless MultiValue can work for this).
+// ...   An awkward and visually less elegant option would be builtin functions such as GetIndex() (for arrays) and GetKey (for maps).
+// ...................................................................
+// ...................................................................
+// ...   Perhaps this indicates that it's time to drop gal.Value   ...
+// ...   and use native Go types and reflection?!?!                ...
+// ...................................................................
+// ...................................................................
 func (tc treeConfig) Variable(name string) (Value, bool) {
 	splits := strings.Split(name, ".")
 	if len(splits) > 1 {
@@ -181,6 +193,8 @@ func (tree Tree) Eval(opts ...treeOption) Value {
 
 	// TODO: refactor this
 	// perhaps add Tree.Value() which tests that only one entry is left and that it is a Value
+	// (maybe MultiValue can help too?)
+	//nolint:errcheck // life's too short to check for type assertion success here
 	return workingTree[0].(Value)
 }
 
@@ -216,14 +230,17 @@ func (tree Tree) Split() []Tree {
 // of 'multiplicativeOperators' would read the Tree left to right and return a new Tree that
 // represents: '2 + 10' where 10 was calculated (and reduced) from 5 * 4 = 20 / 2 = 10.
 //
-// nolint: gocognit,gocyclo,cyclop
+//nolint:maintidx
 func (tree Tree) Calc(isOperatorInPrecedenceGroup func(Operator) bool, cfg *treeConfig) Tree {
-	var outTree Tree
-
-	var val entry
-	var op Operator = invalidOperator //nolint: stylecheck
+	var (
+		outTree Tree
+		val     entry
+		op      = invalidOperator
+	)
 
 	slog.Debug("Tree.Calc: start walking Tree", "tree", tree.String())
+
+	//nolint:errcheck // life's too short to check for type assertion success here
 	for i := 0; i < tree.TrunkLen(); i++ {
 		if v, ok := val.(Undefined); ok {
 			slog.Debug("Tree.Calc: val is Undefined", "i", i, "val", v.String())
@@ -280,7 +297,7 @@ func (tree Tree) Calc(isOperatorInPrecedenceGroup func(Operator) bool, cfg *tree
 
 		case operatorEntryKind:
 			slog.Debug("Tree.Calc: operatorEntryKind", "i", i, "Value", e.(Operator).String())
-			op = e.(Operator) //nolint: errcheck
+			op = e.(Operator) //nolint:errcheck
 			if isOperatorInPrecedenceGroup(op) {
 				// same operator precedence: keep operating linearly, do not build a tree
 				continue
@@ -295,7 +312,7 @@ func (tree Tree) Calc(isOperatorInPrecedenceGroup func(Operator) bool, cfg *tree
 
 		case functionEntryKind:
 			slog.Debug("Tree.Calc: functionEntryKind", "i", i, "name", e.(Function).Name)
-			f := e.(Function) //nolint: errcheck
+			f := e.(Function) //nolint:errcheck
 			if f.BodyFn == nil {
 				f.BodyFn = cfg.Function(f.Name)
 			}
@@ -319,6 +336,11 @@ func (tree Tree) Calc(isOperatorInPrecedenceGroup func(Operator) bool, cfg *tree
 			varName := e.(Variable).Name
 			rhsVal, ok := cfg.Variable(varName)
 			if !ok {
+				if rhsVal != nil {
+					return Tree{
+						NewUndefinedWithReasonf("syntax error: unknown variable name: '%s' - %s", varName, rhsVal.String()),
+					}
+				}
 				return Tree{
 					NewUndefinedWithReasonf("syntax error: unknown variable name: '%s'", varName),
 				}
@@ -332,6 +354,53 @@ func (tree Tree) Calc(isOperatorInPrecedenceGroup func(Operator) bool, cfg *tree
 
 			val = calculate(val.(Value), op, rhsVal)
 			slog.Debug("Tree.Calc: variableEntryKind - calculate", "i", i, "val", val.(Value).String(), "op", op.String(), "rhsVal", rhsVal.String(), "result", val.(Value).String())
+
+		case objectAccessorEntryKind:
+			switch a := e.(type) {
+			case Dot[Function]:
+				slog.Debug("Tree.Calc: objectAccessorEntryKind Dot[Function]", "i", i, "member_name", a.Member.Name)
+				f := a.Member
+				if f.BodyFn != nil {
+					return Tree{
+						// NOTE: this could be supported but it would turn the object into a prototype model e.g. like JavaScript
+						NewUndefinedWithReasonf("internal error: objectAccessorEntryKind Dot[Function] for '%s': BodyFn is not empty: this indicates the object's method was confused for a build-in function", f.Name),
+					}
+				}
+				// as this is an object function accessor, we need to get the object first: it is the LHS currently held in val
+				vVal, ok := val.(Value)
+				if !ok {
+					return Tree{
+						NewUndefinedWithReasonf("syntax error: object accessor called on non-object: [object: '%s'] [member: '%s']", val.kind().String(), f.Name),
+					}
+				}
+				// now, we can get the method from the object
+				if vFv, ok := ObjectGetMethod(vVal, f.Name); ok {
+					f.BodyFn = vFv
+					rhsVal := f.Eval(WithFunctions(cfg.functions), WithVariables(cfg.variables), WithObjects(cfg.objects))
+					if v, ok := rhsVal.(Undefined); ok {
+						slog.Debug("Tree.Calc: val is Undefined", "i", i, "val", v.String())
+						return Tree{v}
+					}
+					val = rhsVal
+					continue
+				} else {
+					return Tree{
+						NewUndefinedWithReasonf("syntax error: object accessor function called on unknown or non-function member: [object: '%s'] [member: '%s']", val.kind().String(), f.Name),
+					}
+				}
+
+			case Dot[Variable]:
+				slog.Debug("Tree.Calc: objectAccessorEntryKind Dot[Variable]", "i", i, "member_name", a.Member.Name)
+				v := a.Member
+				// TODO: implement this
+				_ = v
+
+			default:
+				slog.Debug("Tree.Calc: objectAccessorEntryKind Dot[unknown]", "i", i, "entry_string", a.kind().String())
+				return Tree{
+					NewUndefinedWithReasonf("internal error: unknown objectAccessorEntryKind Dot kind: '%s'", e.kind().String()),
+				}
+			}
 
 		case unknownEntryKind:
 			slog.Debug("Tree.Calc: unknownEntryKind", "i", i, "val", val, "op", op.String(), "e", e)
@@ -387,6 +456,7 @@ func (tree Tree) String(indents ...string) string {
 
 	res := ""
 	for _, e := range tree {
+		//nolint:errcheck // life's too short to check for type assertion success here
 		switch e.kind() {
 		case unknownEntryKind:
 			res += fmt.Sprintf(indent+"unknownEntryKind %T\n", e)
@@ -397,17 +467,34 @@ func (tree Tree) String(indents ...string) string {
 		case treeEntryKind:
 			res += fmt.Sprintf(indent+"Tree {\n%s}\n", e.(Tree).String("   "))
 		case functionEntryKind:
-			res += fmt.Sprintf(indent+"Function %s\n", e.(Function).Name)
+			args := lo.Map(e.(Function).Args, func(item Tree, index int) string {
+				return strings.TrimRight(item.String(), "\n")
+			})
+			res += fmt.Sprintf(indent+"Function %s(%s)\n", e.(Function).Name, strings.Join(args, ", "))
 		case variableEntryKind:
 			res += fmt.Sprintf(indent+"Variable %s\n", e.(Variable).Name)
+		case objectAccessorEntryKind:
+			switch a := e.(type) {
+			case Dot[Function]:
+				fn := a.Member
+				args := lo.Map(fn.Args, func(item Tree, index int) string {
+					return strings.TrimRight(item.String(), "\n")
+				})
+				res += fmt.Sprintf(indent+"ObjectAccessor %s(%s)\n", fn.Name, strings.Join(args, ", "))
+			case Dot[Variable]:
+				v := a.Member
+				res += fmt.Sprintf(indent+"ObjectAccessor %s\n", v.Name)
+			default:
+				res += fmt.Sprintf(indent+"TODO: unsupported - %s %T %s\n", e, a, a.kind().String())
+			}
 		default:
-			res += fmt.Sprintf(indent+"undefined %T %s\n", e, e.kind().String())
+			res += fmt.Sprintf(indent+"TODO: unsupported - %T %s\n", e, e.kind().String())
 		}
 	}
-	return res
+
+	return strings.TrimRight(res, "\n")
 }
 
-// nolint: gocognit,gocyclo,cyclop
 func calculate(lhs Value, op Operator, rhs Value) Value {
 	var outVal Value
 
