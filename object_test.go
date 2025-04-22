@@ -62,6 +62,7 @@ func TestObjectGetMethod(t *testing.T) {
 		Mileage:  gal.NewNumberFromInt(100),
 		Speed:    50.345,
 		MaxSpeed: 250,
+		Thinger:  Thing{},
 	}
 
 	var nilCar *Car
@@ -112,6 +113,20 @@ func TestObjectGetMethod(t *testing.T) {
 	require.True(t, ok)
 	got = val(gal.NewString("blah"))
 	assert.Equal(t, "undefined: invalid function call - object::*gal_test.Car:SetSpeed4 - invalid argument type passed to function - reflect: Call using gal.String as type gal_test.fancyType", got.String())
+
+	// test with an interface: GetThinger() returns a Thinger interface...
+	val, ok = gal.ObjectGetMethod(myCar, "GetThinger")
+	require.True(t, ok)
+	// ...then we extract the Object from the val (struct, *struct and
+	// interface are wrapped in a gal.ObjectValue)...
+	got2 := val().(gal.ObjectValue).Object
+	// ...and get its "Thing" method...
+	val2, ok := gal.ObjectGetMethod(got2, "Thing")
+	require.True(t, ok)
+	// ...and call it...
+	got3 := val2()
+	// ...and check the result.
+	assert.Equal(t, "it's a thing!", got3.(gal.Stringer).AsString().RawString())
 }
 
 type Tyre struct {
@@ -123,6 +138,16 @@ type Driver struct {
 	Age int
 }
 
+type Thinger interface {
+	Thing() gal.Value
+}
+
+type Thing struct{}
+
+func (t Thing) Thing() gal.Value {
+	return gal.NewString("it's a thing!")
+}
+
 type Car struct {
 	Make            string
 	Mileage         gal.Number
@@ -132,6 +157,11 @@ type Car struct {
 	Tyres           []Tyre
 	Drivers         map[string]Driver
 	Stereo          CarStereo
+	Thinger         Thinger
+}
+
+func (c *Car) GetThinger() Thinger {
+	return c.Thinger
 }
 
 func (c *Car) Ignite() gal.Value {
