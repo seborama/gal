@@ -10,11 +10,11 @@ const (
 	numericalType
 	operatorType
 	stringType
+	boolType
 	variableType
 	functionType
-	boolType
-	objectAccessorTypeVariableType
-	objectAccessorTypeFunctionType
+	objectAccessorByVariableType
+	objectAccessorByFunctionType
 )
 
 type Value interface {

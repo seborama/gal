@@ -103,10 +103,10 @@ func (tb TreeBuilder) FromExpr(expr string) (Tree, error) {
 			v := NewVariable(part)
 			tree = append(tree, v)
 
-		case objectAccessorTypeVariableType:
+		case objectAccessorByVariableType:
 			// TODO: implement
 
-		case objectAccessorTypeFunctionType:
+		case objectAccessorByFunctionType:
 			v, err := tb.FromExpr(part[1:]) // skip the "."
 			if err != nil {
 				return nil, err
@@ -214,6 +214,14 @@ func extractPart(expr string) (string, exprType, int, error) {
 	}
 
 	// read part - object accessor (Dot operator)
+	//
+	// NOTE: object accessors are second degree to variables and functions
+	// First, the obj.someFunction() or obj.someProperty is evaluated and returned
+	// respectively as functionType or variableType.
+	// Once this extraction has taken part, the dot accessor comes into place.
+	// The dot operator can also be used after any gal.entry that returns a function or variable.
+	// For example "Pi().Add(10).Sub(5)" is a valid expression because "Pi()" returns a gal.Value and
+	// hence a Go object (be it struct or interface).
 	if expr[pos] == '.' {
 		// TODO: we should probably only read up until the first '(' (as we do now) OR the first '.'
 		fname, lf, err := readNamedExpressionType(expr[pos:])
@@ -222,7 +230,7 @@ func extractPart(expr string) (string, exprType, int, error) {
 			if strings.Contains(fname, ".") {
 				// object property found: act like a variable
 				// TODO: could create a new objectPropertyType
-				return fname, objectAccessorTypeVariableType, pos + lf, nil
+				return fname, objectAccessorByVariableType, pos + lf, nil
 			}
 			// allow to continue so we can check alphanumerical operator names such as "And", "Or", etc
 			// TODO: before we try for alphanum operators, we will need to check if we have a defined constant
@@ -235,7 +243,7 @@ func extractPart(expr string) (string, exprType, int, error) {
 			if err != nil {
 				return "", unknownType, 0, err
 			}
-			return fname + fargs, objectAccessorTypeFunctionType, pos + lf + la, nil
+			return fname + fargs, objectAccessorByFunctionType, pos + lf + la, nil
 		}
 	}
 
@@ -332,7 +340,7 @@ readString:
 	}
 }
 
-var errFunctionNameWithoutParens = errors.New("function with Parenthesis")
+var errFunctionNameWithoutParens = errors.New("function without Parenthesis")
 
 // 'name(...)' is a function call
 // '()' is associative parenthesis grouping

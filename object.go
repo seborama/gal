@@ -56,14 +56,14 @@ func ObjectGetProperty(obj Object, name string) (Value, bool) {
 		return NewUndefinedWithReasonf("object is '%s' but only 'struct' and '*struct' are currently supported", t.Kind()), false
 	}
 
-	vValue := v.FieldByName(name)
-	if !vValue.IsValid() {
+	fieldReflectValue := v.FieldByName(name)
+	if !fieldReflectValue.IsValid() {
 		return NewUndefinedWithReasonf("property '%T:%s' does not exist on object", obj, name), false
 	}
 
-	slog.Debug("ObjectGetProperty", "vValue.Kind", vValue.Kind().String(), "name", name, "vValue", vValue)
+	slog.Debug("ObjectGetProperty", "vValue.Kind", fieldReflectValue.Kind().String(), "name", name, "vValue", fieldReflectValue)
 
-	galValue, err := goAnyToGalType(vValue.Interface())
+	galValue, err := goAnyToGalType(fieldReflectValue.Interface())
 	if err != nil {
 		return NewUndefinedWithReasonf("object::%T:%s - %s", obj, name, err.Error()), false
 	}
@@ -84,22 +84,22 @@ func ObjectGetMethod(obj Object, name string) (FunctionalValue, bool) {
 		}, false
 	}
 
-	methodValue := value.MethodByName(name)
-	if !methodValue.IsValid() {
+	methodReflectValue := value.MethodByName(name)
+	if !methodReflectValue.IsValid() {
 		return func(...Value) Value {
 			return NewUndefinedWithReasonf("type '%T' does not have a method '%s' (check if it has a pointer receiver)", obj, name)
 		}, false
 	}
 
-	methodType := methodValue.Type()
+	methodType := methodReflectValue.Type()
 	numParams := methodType.NumIn()
 
-	var fn FunctionalValue = func(args ...Value) (retValue Value) {
+	var closureFn FunctionalValue = func(args ...Value) (retValue Value) {
 		if len(args) != numParams {
 			return NewUndefinedWithReasonf("invalid function call - object::%T:%s - wants %d args, received %d instead", obj, name, numParams, len(args))
 		}
 
-		//nolint:gosec // ignoring overflow conversion
+		//nolint:gosec // ignoring mem overflow conversion
 		callArgs := lo.Map(args, func(item Value, index int) reflect.Value {
 			paramType := methodType.In(index)
 
@@ -142,7 +142,7 @@ func ObjectGetMethod(obj Object, name string) (FunctionalValue, bool) {
 			}
 		}()
 
-		out := methodValue.Call(callArgs)
+		out := methodReflectValue.Call(callArgs)
 		if len(out) != 1 {
 			return NewUndefinedWithReasonf("invalid function call - object::%T:%s - must return 1 value, returned %d instead", obj, name, len(out))
 		}
@@ -154,7 +154,7 @@ func ObjectGetMethod(obj Object, name string) (FunctionalValue, bool) {
 		return
 	}
 
-	return fn, true
+	return closureFn, true
 }
 
 // attempt to convert a Go 'any' type to an equivalent gal.Value
