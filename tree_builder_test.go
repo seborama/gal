@@ -35,6 +35,7 @@ func TestTreeBuilder_FromExpr_VariousOperators(t *testing.T) {
 
 	if !cmp.Equal(expectedTree, tree) {
 		t.Error(cmp.Diff(expectedTree, tree))
+		t.FailNow()
 	}
 }
 
@@ -71,6 +72,7 @@ func TestTreeBuilder_FromExpr_PlusMinus_String(t *testing.T) {
 
 	if !cmp.Equal(expectedTree, tree) {
 		t.Error(cmp.Diff(expectedTree, tree))
+		t.FailNow()
 	}
 }
 
@@ -134,6 +136,7 @@ func TestTreeBuilder_FromExpr_Functions(t *testing.T) {
 
 	if !cmp.Equal(expectedTree, got) {
 		t.Error(cmp.Diff(expectedTree, got))
+		t.FailNow()
 	}
 
 	gotVal := got.Eval(gal.WithFunctions(funcs))
@@ -141,6 +144,7 @@ func TestTreeBuilder_FromExpr_Functions(t *testing.T) {
 
 	if !cmp.Equal(expectedVal, gotVal) {
 		t.Error(cmp.Diff(expectedVal, gotVal))
+		t.FailNow()
 	}
 }
 
@@ -163,6 +167,7 @@ func TestTreeBuilder_FromExpr_Objects(t *testing.T) {
 
 	if !cmp.Equal(expectedTree, got) {
 		t.Error(cmp.Diff(expectedTree, got))
+		t.FailNow()
 	}
 }
 
@@ -242,6 +247,7 @@ func TestTreeBuilder_FromExpr_Dot_Accessor_Function(t *testing.T) {
 
 	if !cmp.Equal(expectedTree, got) {
 		t.Error(cmp.Diff(expectedTree, got))
+		t.FailNow()
 	}
 
 	gotVal := got.Eval(
@@ -255,39 +261,38 @@ func TestTreeBuilder_FromExpr_Dot_Accessor_Function(t *testing.T) {
 	assert.Equal(t, gal.NewNumberFromInt(180), gotVal)
 }
 
-// TODO: this is an idea for a future feature
-// func TestTreeBuilder_FromExpr_Dot_Accessor_Property(t *testing.T) {
-//	expr := `aCar.CurrentSpeed3().Speed`
+func TestTreeBuilder_FromExpr_Dot_Accessor_Property(t *testing.T) {
+	expr := `aCar.CurrentSpeed3().Speed`
 
-//	got := gal.Parse(expr)
+	got := gal.Parse(expr)
 
-//	fmt.Printf("%#v\n", got)
-//	expectedTree := gal.Tree{
-//		gal.Function{
-//			Name:   "aCar.CurrentSpeed3",
-//			BodyFn: nil,
-//			Args:   []gal.Tree{},
-//		}, // returns a "fancyType" (see object_test.go)
-//		gal.Dot[gal.Variable]{
-//			Member: gal.NewVariable(
-//				"Speed",
-//			),
-//		},
-//	}
+	expectedTree := gal.Tree{
+		gal.Function{
+			Name:   "aCar.CurrentSpeed3",
+			BodyFn: nil,
+			Args:   []gal.Tree{},
+		}, // returns a "fancyType" (see object_test.go)
+		gal.Dot[gal.Variable]{
+			Member: gal.NewVariable(
+				"Speed",
+			),
+		},
+	}
 
-//	if !cmp.Equal(expectedTree, got) {
-//		t.Error(cmp.Diff(expectedTree, got))
-//	}
+	if !cmp.Equal(expectedTree, got) {
+		t.Error(cmp.Diff(expectedTree, got))
+		t.FailNow()
+	}
 
-//	gotVal := got.Eval(
-//		gal.WithObjects(map[string]gal.Object{
-//			"aCar": &Car{
-//				Speed: 100,
-//			},
-//		}),
-//	)
-//	assert.Equal(t, gal.NewNumberFromInt(100), gotVal)
-// }
+	gotVal := got.Eval(
+		gal.WithObjects(map[string]gal.Object{
+			"aCar": &Car{
+				Speed: 100,
+			},
+		}),
+	)
+	assert.Equal(t, gal.NewNumberFromFloat(100), gotVal)
+}
 
 // TODO: this is an idea for a future feature
 // func TestTreeBuilder_FromExpr_Arrays(t *testing.T) {
@@ -317,6 +322,7 @@ func TestTreeBuilder_FromExpr_Dot_Accessor_Function(t *testing.T) {
 
 //	if !cmp.Equal(expectedTree, got) {
 //		t.Error(cmp.Diff(expectedTree, got))
+//      t.FailNow()
 //	}
 
 //	gotVal := got.Eval(gal.WithFunctions(funcs))
@@ -324,5 +330,6 @@ func TestTreeBuilder_FromExpr_Dot_Accessor_Function(t *testing.T) {
 
 //	if !cmp.Equal(expectedVal, gotVal) {
 //		t.Error(cmp.Diff(expectedVal, gotVal))
+//      t.FailNow()
 //	}
 // }

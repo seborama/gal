@@ -24,6 +24,11 @@ func (Dot[T]) kind() entryKind {
 // referenced within a gal expression during evaluation.
 type Object any
 
+type ObjectValue struct {
+	Object any
+	Undefined
+}
+
 // TODO: implement support for nested structs?
 func ObjectGetProperty(obj Object, name string) (Value, bool) {
 	if obj == nil {
@@ -149,9 +154,16 @@ func ObjectGetMethod(obj Object, name string) (FunctionalValue, bool) {
 
 		retValue, err := goAnyToGalType(out[0].Interface())
 		if err != nil {
+			// TODO: incomplete code: see ObjectGetProperty to handle `*struct` scenario.
+			if out[0].Type().Kind() == reflect.Struct {
+				// allow support for other struct types to be accessed by Method or Property via an
+				// objectAccessorEntryKind (i.e. Dot[Variable] or Dot[Function]).
+				return ObjectValue{Object: out[0].Interface()}
+			}
+
 			return NewUndefinedWithReasonf("object::%T:%s - %s", obj, name, err.Error())
 		}
-		return
+		return retValue
 	}
 
 	return closureFn, true

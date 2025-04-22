@@ -84,7 +84,6 @@ func (tb TreeBuilder) FromExpr(expr string) (Tree, error) {
 			}
 
 		case functionType:
-			// TODO: why are we calling `readNamedExpressionType` here again?
 			fname, l, _ := readNamedExpressionType(part)   //nolint:errcheck // ignore err: we already parsed the function name when in extractPart()
 			v, err := tb.FromExpr(part[l+1 : len(part)-1]) // parse the function's argument: exclude leading '(' and trailing ')'
 			if err != nil {
@@ -104,7 +103,9 @@ func (tb TreeBuilder) FromExpr(expr string) (Tree, error) {
 			tree = append(tree, v)
 
 		case objectAccessorByVariableType:
-			// TODO: implement
+			tree = append(tree, Dot[Variable]{
+				Member: NewVariable(part[1:]), // skip the "."
+			})
 
 		case objectAccessorByFunctionType:
 			v, err := tb.FromExpr(part[1:]) // skip the "."

@@ -52,6 +52,7 @@ func TestTreeBuilder_FromExpr_Variables(t *testing.T) {
 
 	if !cmp.Equal(expected, got) {
 		t.Error(cmp.Diff(expected, got))
+		t.FailNow()
 	}
 }
 
@@ -63,6 +64,7 @@ func TestTreeBuilder_FromExpr_UnknownVariable(t *testing.T) {
 
 	if !cmp.Equal(expected, got) {
 		t.Error(cmp.Diff(expected, got))
+		t.FailNow()
 	}
 }
 
@@ -195,6 +197,7 @@ func TestWithVariablesAndFunctions(t *testing.T) {
 
 	if !cmp.Equal(expected, got) {
 		t.Error(cmp.Diff(expected, got))
+		t.FailNow()
 	}
 
 	// step 2: re-define funcs and vars and Eval the expression again
@@ -225,6 +228,7 @@ func TestWithVariablesAndFunctions(t *testing.T) {
 
 	if !cmp.Equal(expected, got) {
 		t.Error(cmp.Diff(expected, got))
+		t.FailNow()
 	}
 }
 
