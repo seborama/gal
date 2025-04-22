@@ -175,7 +175,6 @@ func TestTreeBuilder_FromExpr_Dot_Accessor_Function(t *testing.T) {
 	got := gal.Parse(expr)
 
 	expectedTree := gal.Tree{
-		// TODO: we could have gal.Object{Name: "aCar"} or gal.Variable{Name: "aCar"} here, then followed by gal.Function{Name: "CurrentSpeed"}
 		gal.Function{
 			Name:   "aCar.CurrentSpeed",
 			BodyFn: nil,

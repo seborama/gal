@@ -622,6 +622,17 @@ var (
 	True  = NewBool(true)
 )
 
+// Undefined is a special gal.Value that indicates an undefined evaluation outcome.
+//
+// This can be as a first class citizen, when an error occurs
+// (e.g. a '/' operator without the left hand side).
+//
+// All implementors of gal.Value also encapsulate an Undefined value.
+// This ensures a default behaviour as defined by "Undefined"
+// when none is available on the implementor.
+// For instance, Bool does not support RShift() and does not implement it.
+// However, since Bool encapsulates an Undefined value, it will return
+// an Undefined value when RShift() is called on it.
 type Undefined struct {
 	reason string // optional
 }

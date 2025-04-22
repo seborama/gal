@@ -71,6 +71,9 @@ type Variables map[string]Value
 type Functions map[string]FunctionalValue
 
 // Function returns the function definition of the function of the specified name.
+// This method is used to look up object methods and user-defined functions.
+// Built-in functions are not looked up here, they are pre-populated at
+// parsing time by the TreeBuilder.
 func (tc treeConfig) Function(name string) FunctionalValue {
 	splits := strings.Split(name, ".")
 	if len(splits) > 1 {
@@ -306,7 +309,7 @@ func (tree Tree) Calc(isOperatorInPrecedenceGroup func(Operator) bool, cfg *tree
 				outTree = append(outTree, val)
 			}
 			outTree = append(outTree, op)
-			// just found and process the current operator - now, reset val and op and start again from fresh
+			// just found and processed the current operator - now, reset val and op and start again from fresh
 			val = nil
 			op = invalidOperator
 
@@ -314,6 +317,7 @@ func (tree Tree) Calc(isOperatorInPrecedenceGroup func(Operator) bool, cfg *tree
 			slog.Debug("Tree.Calc: functionEntryKind", "i", i, "name", e.(Function).Name)
 			f := e.(Function) //nolint:errcheck
 			if f.BodyFn == nil {
+				// attempt to get body of a user-defined variable or a user-provided object's method.
 				f.BodyFn = cfg.Function(f.Name)
 			}
 
