@@ -382,7 +382,7 @@ func (tree Tree) Calc(isOperatorInPrecedenceGroup func(Operator) bool, cfg *tree
 					f.BodyFn = vFv
 					rhsVal := f.Eval(WithFunctions(cfg.functions), WithVariables(cfg.variables), WithObjects(cfg.objects))
 					if v, ok := rhsVal.(Undefined); ok {
-						slog.Debug("Tree.Calc: val is Undefined", "i", i, "val", v.String())
+						slog.Debug("Tree.Calc: object method's BodyFn is Undefined", "i", i, "val", v.String())
 						return Tree{v}
 					}
 					val = rhsVal
@@ -396,8 +396,32 @@ func (tree Tree) Calc(isOperatorInPrecedenceGroup func(Operator) bool, cfg *tree
 			case Dot[Variable]:
 				slog.Debug("Tree.Calc: objectAccessorEntryKind Dot[Variable]", "i", i, "member_name", a.Member.Name)
 				v := a.Member
-				// TODO: implement this
-				_ = v
+				// as this is an object property accessor, we need to get the object first: it is the LHS currently held in val
+				var vVal any
+				vVal, ok := val.(Value)
+				if !ok {
+					return Tree{
+						NewUndefinedWithReasonf("syntax error: object accessor called on non-object: [object: '%s'] [member: '%s']", val.kind().String(), v.Name),
+					}
+				}
+				// now, we can get the property from the object
+				objVal, ok := vVal.(ObjectValue)
+				if ok {
+					vVal = objVal.Object
+				}
+				if vFv, ok := ObjectGetProperty(vVal, v.Name); ok {
+					rhsVal := vFv
+					if v, ok := rhsVal.(Undefined); ok {
+						slog.Debug("Tree.Calc: object property's value is Undefined", "i", i, "val", v.String())
+						return Tree{v}
+					}
+					val = rhsVal
+					continue
+				} else {
+					return Tree{
+						NewUndefinedWithReasonf("syntax error: object accessor property called on unknown or functional member: [object: '%s'] [member: '%s']", val.kind().String(), v.Name),
+					}
+				}
 
 			default:
 				slog.Debug("Tree.Calc: objectAccessorEntryKind Dot[unknown]", "i", i, "entry_string", a.kind().String())

@@ -241,6 +241,7 @@ func TestTree_Eval_Expressions(t *testing.T) {
 					t.Log("Value:", val.String())
 				}
 				t.Error(cmp.Diff(tc.want, val))
+				t.FailNow()
 			}
 		})
 	}
