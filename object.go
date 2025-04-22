@@ -154,10 +154,17 @@ func ObjectGetMethod(obj Object, name string) (FunctionalValue, bool) {
 
 		retValue, err := goAnyToGalType(out[0].Interface())
 		if err != nil {
-			// TODO: incomplete code: see ObjectGetProperty to handle `*struct` scenario.
-			if out[0].Type().Kind() == reflect.Struct {
-				// allow support for other struct types to be accessed by Method or Property via an
-				// objectAccessorEntryKind (i.e. Dot[Variable] or Dot[Function]).
+			// allow support for other types tobe accessed by Method or Property via
+			//  an objectAccessorEntryKind (i.e. Dot[Variable] or Dot[Function]).
+			t := out[0].Type()
+			switch t.Kind() {
+			case reflect.Interface:
+				if t.NumMethod() > 0 {
+					// allow support for (non-empty) interfaces
+					return ObjectValue{Object: out[0].Interface()}
+				}
+			case reflect.Struct: // TODO: incomplete code: see ObjectGetProperty to handle `*struct` scenario.
+				// allow support for struct types
 				return ObjectValue{Object: out[0].Interface()}
 			}
 

@@ -404,11 +404,14 @@ func (tree Tree) Calc(isOperatorInPrecedenceGroup func(Operator) bool, cfg *tree
 						NewUndefinedWithReasonf("syntax error: object accessor called on non-object: [object: '%s'] [member: '%s']", val.kind().String(), v.Name),
 					}
 				}
-				// now, we can get the property from the object
+				// if the object is a ObjectValue, we need to get the underlying object
+				// ObjectValue is a wrapper for "general" objects (i.e. non-gal.Value objects)
+				// By Object, we mean a Go struct, a pointer to a struct or a Go interface.
 				objVal, ok := vVal.(ObjectValue)
 				if ok {
 					vVal = objVal.Object
 				}
+				// now, we can get the property from the object
 				if vFv, ok := ObjectGetProperty(vVal, v.Name); ok {
 					rhsVal := vFv
 					if v, ok := rhsVal.(Undefined); ok {
