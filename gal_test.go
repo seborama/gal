@@ -371,6 +371,14 @@ func TestObjects_Properties(t *testing.T) {
 	expr := `aCar.MaxSpeed - aCar.Speed`
 	parsedExpr := gal.Parse(expr)
 
+	expectedTree := gal.Tree{
+		gal.NewVariable("aCar.MaxSpeed"),
+		gal.Minus,
+		gal.NewVariable("aCar.Speed"),
+	}
+
+	assert.Equal(t, expectedTree, parsedExpr)
+
 	got := parsedExpr.Eval(
 		gal.WithObjects(map[string]gal.Object{
 			"aCar": Car{
@@ -384,31 +392,37 @@ func TestObjects_Properties(t *testing.T) {
 	assert.Equal(t, "150", got.String())
 }
 
-// TODO: this is an idea for a future feature.
-// func TestObjects_ChainedProperties(t *testing.T) {
-//	expr := `aCar.Stereo.Brand`
-//	parsedExpr := gal.Parse(expr)
+func TestObjects_ChainedProperties(t *testing.T) {
+	expr := `aCar.Stereo.Brand`
+	parsedExpr := gal.Parse(expr)
 
-//	expectedTree := gal.Tree{}
+	expectedTree := gal.Tree{
+		gal.NewVariable("aCar.Stereo"),
+		gal.Dot[gal.Variable]{
+			Member: gal.NewVariable(
+				"Brand",
+			),
+		},
+	}
 
-//	assert.Equal(t, expectedTree, parsedExpr)
+	assert.Equal(t, expectedTree, parsedExpr)
 
-//	got := parsedExpr.Eval(
-//		gal.WithObjects(map[string]gal.Object{
-//			"aCar": Car{
-//				Make:     "Lotus Esprit",
-//				Mileage:  gal.NewNumberFromInt(2000),
-//				Speed:    100,
-//				MaxSpeed: 250,
-//				Stereo: CarStereo{
-//					Brand:      "Mitsubishi",
-//					MaxWattage: 120,
-//				},
-//			},
-//		}),
-//	)
-//	assert.Equal(t, "Mitsubishi", got.String())
-// }
+	got := parsedExpr.Eval(
+		gal.WithObjects(map[string]gal.Object{
+			"aCar": Car{
+				Make:     "Lotus Esprit",
+				Mileage:  gal.NewNumberFromInt(2000),
+				Speed:    100,
+				MaxSpeed: 250,
+				Stereo: CarStereo{
+					Brand:      "Mitsubishi",
+					MaxWattage: 120,
+				},
+			},
+		}),
+	)
+	assert.Equal(t, "Mitsubishi", got.AsString().RawString())
+}
 
 func TestObjects_Properties_TwoObjects(t *testing.T) {
 	expr := `Road.Type == "Highway"
