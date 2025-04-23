@@ -70,8 +70,23 @@ func ObjectGetProperty(obj Object, name string) (Value, bool) {
 
 	galValue, err := goAnyToGalType(fieldReflectValue.Interface())
 	if err != nil {
+		// allow support for other types tobe accessed by Method or Property via
+		//  an objectAccessorEntryKind (i.e. Dot[Variable] or Dot[Function]).
+		t := fieldReflectValue.Type()
+		switch t.Kind() {
+		case reflect.Interface:
+			if t.NumMethod() > 0 {
+				// allow support for (non-empty) interfaces
+				return ObjectValue{Object: fieldReflectValue.Interface()}, true
+			}
+		case reflect.Struct: // TODO: incomplete code: see ObjectGetProperty to handle `*struct` scenario.
+			// allow support for struct types
+			return ObjectValue{Object: fieldReflectValue.Interface()}, true
+		}
+
 		return NewUndefinedWithReasonf("object::%T:%s - %s", obj, name, err.Error()), false
 	}
+
 	return galValue, true
 }
 

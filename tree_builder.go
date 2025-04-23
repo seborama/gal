@@ -348,10 +348,22 @@ var errFunctionNameWithoutParens = errors.New("function without Parenthesis")
 func readNamedExpressionType(expr string) (string, int, error) {
 	to := 0 // this could be an anonymous identity function (i.e. simple case of parenthesis grouping)
 
+	dotCount := 0
+
 	for _, r := range expr {
+		// first: check for indication of function name (i.e. "name() or object.name()")
 		if r == '(' {
 			return expr[:to], to, nil
 		}
+
+		// second: check for indication of object property (i.e. "object.property.")
+		if r == '.' {
+			dotCount++
+			if dotCount == 2 {
+				break // this is an object property, no parenttheses
+			}
+		}
+
 		if isBlankSpace(r) {
 			break
 		}
