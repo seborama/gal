@@ -67,8 +67,24 @@ func (tree Tree) FullLen() int {
 // Variables holds the value of user-defined variables.
 type Variables map[string]Value
 
+func (v Variables) Get(name string) (Value, bool) {
+	if v == nil {
+		return nil, false
+	}
+	obj, ok := v[name]
+	return obj, ok
+}
+
 // Functions holds the definition of user-defined functions.
 type Functions map[string]FunctionalValue
+
+func (f Functions) Get(name string) (FunctionalValue, bool) {
+	if f == nil {
+		return nil, false
+	}
+	obj, ok := f[name]
+	return obj, ok
+}
 
 // Function returns the function definition of the function of the specified name.
 // This method is used to look up object methods and user-defined functions.
@@ -76,32 +92,45 @@ type Functions map[string]FunctionalValue
 // parsing time by the TreeBuilder.
 func (tc treeConfig) Function(name string) FunctionalValue {
 	splits := strings.Split(name, ".")
-	if len(splits) > 1 {
-		// TODO: add recursive handling i.e. obj1.obj2.func1()?
-		if tc.objects != nil {
-			obj, ok := tc.objects[splits[0]]
-			if ok {
-				fv, _ := ObjectGetMethod(obj, splits[1])
-				return fv
-			}
+	if len(splits) == 2 {
+		// look up the method in the user provided objects
+		if obj, ok := tc.objects.Get(splits[0]); ok {
+			fv, _ := ObjectGetMethod(obj, splits[1])
+			return fv
 		}
-		return nil
+		return func(...Value) Value {
+			return NewUndefinedWithReasonf("error: object reference '%s' is not valid: unknown object or unknown method", name)
+		}
 	}
 
-	if tc.functions == nil {
-		return nil
+	if len(splits) >= 2 {
+		return func(...Value) Value {
+			return NewUndefinedWithReasonf("syntax error: object reference '%s' is not valid: too many dot accessors: max 1 permitted", name)
+		}
 	}
 
-	if val, ok := tc.functions[name]; ok {
+	// look up the function in the user-defined functions
+	if val, ok := tc.functions.Get(name); ok {
 		return val
 	}
 
-	return nil
+	return func(...Value) Value {
+		return NewUndefinedWithReasonf("error: unknown user-defined function '%s'", name)
+	}
 }
 
 // Objects is a collection of Object's in the form of a map which keys are the name of the
 // object and values are the actual Object's.
 type Objects map[string]Object
+
+// Get returns the Object of the specified name.
+func (o Objects) Get(name string) (Object, bool) {
+	if o == nil {
+		return nil, false
+	}
+	obj, ok := o[name]
+	return obj, ok
+}
 
 type treeConfig struct {
 	variables Variables
@@ -121,26 +150,27 @@ type treeConfig struct {
 // ...   and use native Go types and reflection?!?!                ...
 // ...................................................................
 // ...................................................................
-func (tc treeConfig) Variable(name string) (Value, bool) {
+func (tc treeConfig) Variable(name string) Value {
 	splits := strings.Split(name, ".")
-	if len(splits) > 1 {
-		// TODO: add recursive handling i.e. obj.prop1.prop2? how about obj.func1().prop?
-		if tc.objects != nil {
-			obj, ok := tc.objects[splits[0]]
-			if ok {
-				return ObjectGetProperty(obj, splits[1])
-			}
+	// look up the variable in the user-defined variables
+	if len(splits) == 2 {
+		// look up the property in the user provided objects
+		if obj, ok := tc.objects.Get(splits[0]); ok {
+			return ObjectGetProperty(obj, splits[1])
 		}
-		return nil, false
+		return NewUndefinedWithReasonf("error: object reference '%s' is not valid: unknown object or unknown property", name)
 	}
 
-	if tc.variables != nil {
-		val, ok := tc.variables[name]
-		if ok {
-			return val, ok
-		}
+	if len(splits) >= 2 {
+		return NewUndefinedWithReasonf("syntax error: object reference '%s' is not valid: too many dot accessors: max 1 permitted", name)
 	}
-	return nil, false
+
+	// look up the variable in the user-defined variables
+	if val, ok := tc.variables.Get(name); ok {
+		return val
+	}
+
+	return NewUndefinedWithReasonf("error: unknown user-defined variable '%s'", name)
 }
 
 type treeOption func(*treeConfig)
@@ -338,17 +368,7 @@ func (tree Tree) Calc(isOperatorInPrecedenceGroup func(Operator) bool, cfg *tree
 		case variableEntryKind:
 			slog.Debug("Tree.Calc: variableEntryKind", "i", i, "name", e.(Variable).Name)
 			varName := e.(Variable).Name
-			rhsVal, ok := cfg.Variable(varName)
-			if !ok {
-				if rhsVal != nil {
-					return Tree{
-						NewUndefinedWithReasonf("syntax error: unknown variable name: '%s' - %s", varName, rhsVal.String()),
-					}
-				}
-				return Tree{
-					NewUndefinedWithReasonf("syntax error: unknown variable name: '%s'", varName),
-				}
-			}
+			rhsVal := cfg.Variable(varName)
 			slog.Debug("Tree.Calc: variableEntryKind", "i", i, "value", rhsVal.String())
 
 			if val == nil {
@@ -412,19 +432,14 @@ func (tree Tree) Calc(isOperatorInPrecedenceGroup func(Operator) bool, cfg *tree
 					vVal = objVal.Object
 				}
 				// now, we can get the property from the object
-				if vFv, ok := ObjectGetProperty(vVal, v.Name); ok {
-					rhsVal := vFv
-					if v, ok := rhsVal.(Undefined); ok {
-						slog.Debug("Tree.Calc: object property's value is Undefined", "i", i, "val", v.String())
-						return Tree{v}
-					}
-					val = rhsVal
-					continue
-				} else {
-					return Tree{
-						NewUndefinedWithReasonf("syntax error: object accessor property called on unknown or functional member: [object: '%s'] [member: '%s']", val.kind().String(), v.Name),
-					}
+				vFv := ObjectGetProperty(vVal, v.Name)
+				rhsVal := vFv
+				if v, ok := rhsVal.(Undefined); ok {
+					slog.Debug("Tree.Calc: object property's value is Undefined", "i", i, "val", v.String())
+					return Tree{v}
 				}
+				val = rhsVal
+				continue
 
 			default:
 				slog.Debug("Tree.Calc: objectAccessorEntryKind Dot[unknown]", "i", i, "entry_string", a.kind().String())

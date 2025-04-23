@@ -195,12 +195,40 @@ func (s String) Multiply(other Value) Value {
 	return NewUndefinedWithReasonf("NaN: %s", other.String())
 }
 
-func (s String) LShift(Value) Value {
-	return Undefined{} // TODO: could eject characters on the left hand side
+// TODO: add test to confirm this is correct!
+func (s String) LShift(other Value) Value {
+	if v, ok := other.(Numberer); ok {
+		if v.Number().value.IsNegative() {
+			return NewUndefinedWithReasonf("invalid negative left shift")
+		}
+		if !v.Number().value.IsInteger() {
+			return NewUndefinedWithReasonf("invalid non-integer left shift")
+		}
+
+		return String{
+			value: s.value[v.Number().value.IntPart():],
+		}
+	}
+
+	return NewUndefinedWithReasonf("NaN: %s", other.String())
 }
 
-func (s String) RShift(Value) Value {
-	return Undefined{} // TODO: could eject characters on the right hand side
+// TODO: add test to confirm this is correct!
+func (s String) RShift(other Value) Value {
+	if v, ok := other.(Numberer); ok {
+		if v.Number().value.IsNegative() {
+			return NewUndefinedWithReasonf("invalid negative left shift")
+		}
+		if !v.Number().value.IsInteger() {
+			return NewUndefinedWithReasonf("invalid non-integer left shift")
+		}
+
+		return String{
+			value: s.value[:int64(len(s.value))-v.Number().value.IntPart()],
+		}
+	}
+
+	return NewUndefinedWithReasonf("NaN: %s", other.String())
 }
 
 func (s String) String() string {
@@ -341,10 +369,10 @@ func (n Number) IntPart() Value {
 func (n Number) LShift(other Value) Value {
 	if v, ok := other.(Numberer); ok {
 		if v.Number().value.IsNegative() {
-			return NewUndefinedWithReasonf("invalid negative bitwise shift")
+			return NewUndefinedWithReasonf("invalid negative left shift")
 		}
 		if !v.Number().value.IsInteger() {
-			return NewUndefinedWithReasonf("invalid non-integer bitwise shift")
+			return NewUndefinedWithReasonf("invalid non-integer left shift")
 		}
 
 		return Number{
@@ -358,10 +386,10 @@ func (n Number) LShift(other Value) Value {
 func (n Number) RShift(other Value) Value {
 	if v, ok := other.(Numberer); ok {
 		if v.Number().value.IsNegative() {
-			return NewUndefinedWithReasonf("invalid negative bitwise shift")
+			return NewUndefinedWithReasonf("invalid negative right shift")
 		}
 		if !v.Number().value.IsInteger() {
-			return NewUndefinedWithReasonf("invalid non-integer bitwise shift")
+			return NewUndefinedWithReasonf("invalid non-integer right shift")
 		}
 
 		return Number{

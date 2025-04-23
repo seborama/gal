@@ -13,14 +13,12 @@ import (
 func TestObjectGetProperty(t *testing.T) {
 	var nilCar *Car
 
-	val, ok := gal.ObjectGetProperty(nilCar, "Mileage")
-	require.False(t, ok)
+	val := gal.ObjectGetProperty(nilCar, "Mileage")
 	assert.Equal(t, "undefined: object interface is nil, not a Go value or invalid", val.String())
 
 	zeroCar := &Car{}
 
-	val, ok = gal.ObjectGetProperty(zeroCar, "Mileage")
-	require.True(t, ok)
+	val = gal.ObjectGetProperty(zeroCar, "Mileage")
 	assert.Equal(t, "0", val.String())
 
 	myCar := &Car{
@@ -30,29 +28,23 @@ func TestObjectGetProperty(t *testing.T) {
 		MaxSpeed: 250,
 	}
 
-	val, ok = gal.ObjectGetProperty(myCar, "Make")
-	require.True(t, ok)
+	val = gal.ObjectGetProperty(myCar, "Make")
 	assert.Equal(t, "Lotus", val.(gal.String).RawString())
 
-	val, ok = gal.ObjectGetProperty(myCar, "Mileage")
-	require.True(t, ok)
+	val = gal.ObjectGetProperty(myCar, "Mileage")
 	assert.Equal(t, gal.NewNumberFromInt(100), val)
 
 	// some bothersome floating point issues...
-	val, ok = gal.ObjectGetProperty(*myCar, "Speed")
-	require.True(t, ok)
+	val = gal.ObjectGetProperty(*myCar, "Speed")
 	assert.Equal(t, gal.NewNumberFromFloat(50.345).Trunc(1).String(), val.(gal.Number).Trunc(1).String())
 
-	val, ok = gal.ObjectGetProperty(complex(10, 3), "Blah")
-	require.False(t, ok)
+	val = gal.ObjectGetProperty(complex(10, 3), "Blah")
 	assert.Equal(t, "undefined: object is 'complex128' but only 'struct' and '*struct' are currently supported", val.String())
 
-	val, ok = gal.ObjectGetProperty(myCar, "ComplexProperty")
-	require.False(t, ok)
+	val = gal.ObjectGetProperty(myCar, "ComplexProperty")
 	assert.Equal(t, "undefined: object::*gal_test.Car:ComplexProperty - type 'complex128' cannot be mapped to gal.Value", val.String())
 
-	val, ok = gal.ObjectGetProperty(myCar, "MaxSpeed")
-	require.True(t, ok)
+	val = gal.ObjectGetProperty(myCar, "MaxSpeed")
 	assert.Equal(t, gal.NewNumberFromInt(250), val)
 }
 

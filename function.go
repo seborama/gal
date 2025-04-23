@@ -87,6 +87,7 @@ func BuiltInFunction(name string) FunctionalValue {
 }
 
 // Pi returns the Value of math.Pi.
+// TODO: this could likely be turned into a constant.
 func Pi(args ...Value) Value {
 	if len(args) != 0 {
 		return NewUndefinedWithReasonf("pi() requires no argument, got %d", len(args))
@@ -96,6 +97,7 @@ func Pi(args ...Value) Value {
 }
 
 // PiLong returns a value of Pi with many more digits than Pi.
+// TODO: this could likely be turned into a constant.
 func PiLong(args ...Value) Value {
 	if len(args) != 0 {
 		return NewUndefinedWithReasonf("pi() requires no argument, got %d", len(args))

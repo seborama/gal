@@ -41,7 +41,7 @@ func TestEval(t *testing.T) {
 
 func TestTreeBuilder_FromExpr_Variables(t *testing.T) {
 	vars := gal.Variables{
-		":var1:": gal.NewNumberFromInt(4), // TODO: remove the need to surround with `:`?
+		":var1:": gal.NewNumberFromInt(4),
 		":var2:": gal.NewNumberFromInt(3),
 	}
 
@@ -60,7 +60,7 @@ func TestTreeBuilder_FromExpr_UnknownVariable(t *testing.T) {
 	expr := `2 + :var1: * :var2: - 5`
 
 	got := gal.Parse(expr).Eval()
-	expected := gal.NewUndefinedWithReasonf("syntax error: unknown variable name: ':var1:'")
+	expected := gal.NewUndefinedWithReasonf("error: unknown user-defined variable ':var1:'")
 
 	if !cmp.Equal(expected, got) {
 		t.Error(cmp.Diff(expected, got))
@@ -149,7 +149,7 @@ func TestEval_Boolean(t *testing.T) {
 	// function, rather than the `Or` operator.
 	expr = `True Or(False)`
 	val = gal.Parse(expr).Eval()
-	assert.Equal(t, `undefined: unknown function 'Or'`, val.String())
+	assert.Equal(t, `undefined: error: unknown user-defined function 'Or'`, val.String())
 }
 
 func TestWithVariablesAndFunctions(t *testing.T) {
