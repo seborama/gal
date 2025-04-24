@@ -394,7 +394,7 @@ func TestObjects_Properties(t *testing.T) {
 }
 
 func TestObjects_ChainedProperties(t *testing.T) {
-	expr := `aCar.Stereo.Brand`
+	expr := `aCar.Stereo.Brand.Name + "::" + aCar.Stereo.Brand.Country`
 	parsedExpr := gal.Parse(expr)
 
 	expectedTree := gal.Tree{
@@ -402,6 +402,25 @@ func TestObjects_ChainedProperties(t *testing.T) {
 		gal.Dot[gal.Variable]{
 			Member: gal.NewVariable(
 				"Brand",
+			),
+		},
+		gal.Dot[gal.Variable]{
+			Member: gal.NewVariable(
+				"Name",
+			),
+		},
+		gal.Plus,
+		gal.NewString("::"),
+		gal.Plus,
+		gal.NewObjectProperty("aCar", "Stereo"),
+		gal.Dot[gal.Variable]{
+			Member: gal.NewVariable(
+				"Brand",
+			),
+		},
+		gal.Dot[gal.Variable]{
+			Member: gal.NewVariable(
+				"Country",
 			),
 		},
 	}
@@ -416,13 +435,16 @@ func TestObjects_ChainedProperties(t *testing.T) {
 				Speed:    100,
 				MaxSpeed: 250,
 				Stereo: CarStereo{
-					Brand:      "Mitsubishi",
+					Brand: StereoBrand{
+						Name:    "Mitsubishi",
+						Country: "Japan",
+					},
 					MaxWattage: 120,
 				},
 			},
 		}),
 	)
-	assert.Equal(t, "Mitsubishi", got.AsString().RawString())
+	assert.Equal(t, "Mitsubishi::Japan", got.AsString().RawString())
 }
 
 func TestObjects_Properties_TwoObjects(t *testing.T) {

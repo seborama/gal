@@ -210,8 +210,7 @@ func extractPart(expr string) (string, exprType, int, error) {
 			return "", unknownType, 0, err
 		default:
 			// NOTE: if name contains `.` it's an object function
-			// TODO: could create a new objectFunctionType to reduce the complexity of the
-			// ...   handling of variables by keeping functionType separate from objectFunctionType
+			// TODO: could create a new objectFunctionType as already done with objectPropertyType
 			fargs, la, err := readFunctionArguments(expr[pos+lf:])
 			if err != nil {
 				return "", unknownType, 0, err
@@ -232,7 +231,8 @@ func extractPart(expr string) (string, exprType, int, error) {
 	if expr[pos] == '.' {
 		// NOTE: we are keeping the leading dot in expr when submitting to readNamedExpressionType().
 		// This means that `fname`` will always be of the form ".name" (i.e. with leading dot).
-		// Remember that readNamedExpressionType is designed to read past 1 dot at most.
+		// Remember that readNamedExpressionType is designed to read past 1 dot at most. In other words,
+		// it will not read ".name.name2" but only ".name".
 		fname, lf, err := readNamedExpressionType(expr[pos:])
 		switch {
 		case errors.Is(err, errFunctionNameWithoutParens):

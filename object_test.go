@@ -223,8 +223,13 @@ type Road struct {
 }
 
 type CarStereo struct {
-	Brand      string
+	Brand      StereoBrand
 	MaxWattage int
+}
+
+type StereoBrand struct {
+	Name    string
+	Country string
 }
 
 func TestValueAsObject(t *testing.T) {
