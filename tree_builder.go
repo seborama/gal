@@ -202,9 +202,7 @@ func extractPart(expr string) (string, exprType, int, error) {
 		switch {
 		case errors.Is(err, errFunctionNameWithoutParens):
 			if strings.Contains(fname, ".") {
-				// object property found: act like a variable
-				// TODO: could create a new objectPropertyType to reduce the complexity of the
-				// ...   handling of variables by keeping variableType separate from objectPropertyType
+				// object property found
 				return fname, objectPropertyType, pos + lf, nil
 			}
 			// allow to continue so we can check alphanumerical operator names such as "And", "Or", etc
@@ -232,19 +230,20 @@ func extractPart(expr string) (string, exprType, int, error) {
 	// For example "Pi().Add(10).Sub(5)" is a valid expression because "Pi()" returns a gal.Value and
 	// hence a Go object (be it struct or interface).
 	if expr[pos] == '.' {
+		// NOTE: we are keeping the leading dot in expr when submitting to readNamedExpressionType().
+		// This means that `fname`` will always be of the form ".name" (i.e. with leading dot).
+		// Remember that readNamedExpressionType is designed to read past 1 dot at most.
 		fname, lf, err := readNamedExpressionType(expr[pos:])
 		switch {
 		case errors.Is(err, errFunctionNameWithoutParens):
-			if strings.Contains(fname, ".") {
-				// object property found: act like a variable
-				// TODO: could create a new objectPropertyType
-				return fname, objectAccessorByVariableType, pos + lf, nil
-			}
-			// allow to continue so we can check alphanumerical operator names such as "And", "Or", etc
+			// object property found
+			return fname, objectAccessorByVariableType, pos + lf, nil
+
 		case err != nil:
 			return "", unknownType, 0, err
+
 		default:
-			// TODO: if name contains `.` it's an object function - could create a new objectFunctionType
+			// object method found
 			fargs, la, err := readFunctionArguments(expr[pos+lf:])
 			if err != nil {
 				return "", unknownType, 0, err

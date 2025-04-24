@@ -5,6 +5,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/seborama/gal/v10"
 )
@@ -405,7 +406,7 @@ func TestObjects_ChainedProperties(t *testing.T) {
 		},
 	}
 
-	assert.Equal(t, expectedTree, parsedExpr)
+	require.Equal(t, expectedTree, parsedExpr)
 
 	got := parsedExpr.Eval(
 		gal.WithObjects(map[string]gal.Object{

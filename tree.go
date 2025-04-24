@@ -257,8 +257,6 @@ func (tree Tree) Split() []Tree {
 // For instance, a tree representing the expression '2 + 5 * 4 / 2' with an operator precedence
 // of 'multiplicativeOperators' would read the Tree left to right and return a new Tree that
 // represents: '2 + 10' where 10 was calculated (and reduced) from 5 * 4 = 20 / 2 = 10.
-//
-//nolint:maintidx
 func (tree Tree) Calc(isOperatorInPrecedenceGroup func(Operator) bool, cfg *treeConfig) Tree {
 	var (
 		outTree Tree
@@ -284,44 +282,14 @@ func (tree Tree) Calc(isOperatorInPrecedenceGroup func(Operator) bool, cfg *tree
 			}
 		}
 
+		// TODO: implement Calc() on all entry types (Value, Function, Variable, ObjectProperty, ObjectAccessor, etc.)
+		// ...   and move the logic of each case below to the entry type itself.
 		switch e.kind() {
 		case valueEntryKind:
-			slog.Debug("Tree.Calc: valueEntryKind", "i", i, "Value", e.(Value).String())
-			if val == nil && op == invalidOperator {
-				val = e
-				continue
-			}
-
-			if val == nil {
-				return Tree{
-					NewUndefinedWithReasonf("syntax error: missing left hand side value for operator '%s'", op.String()),
-				}
-			}
-
-			slog.Debug("Tree.Calc: valueEntryKind - calculate", "i", i, "val", val.(Value).String(), "op", op.String(), "e", e.(Value).String())
-			val = calculate(val.(Value), op, e.(Value))
-			slog.Debug("Tree.Calc: valueEntryKind - calculate", "i", i, "result", val.(Value).String())
+			val = valueEntryKindFn(val, op, e)
 
 		case treeEntryKind:
-			slog.Debug("Tree.Calc: treeEntryKind", "i", i)
-			if val == nil && op != invalidOperator {
-				return Tree{
-					NewUndefinedWithReasonf("syntax error: missing left hand side value for operator '%s'", op.String()),
-				}
-			}
-
-			rhsVal := e.(Tree).Eval(WithFunctions(cfg.functions), WithVariables(cfg.variables), WithObjects(cfg.objects))
-			if v, ok := rhsVal.(Undefined); ok {
-				slog.Debug("Tree.Calc: val is Undefined", "i", i, "val", v.String())
-				return Tree{v}
-			}
-			if val == nil {
-				val = rhsVal
-				continue
-			}
-
-			val = calculate(val.(Value), op, rhsVal)
-			slog.Debug("Tree.Calc: treeEntryKind - calculate", "i", i, "val", val.(Value).String(), "op", op.String(), "rhsVal", rhsVal.String(), "result", val.(Value).String())
+			val = treeEntryKindFn(val, op, e, cfg)
 
 		case operatorEntryKind:
 			slog.Debug("Tree.Calc: operatorEntryKind", "i", i, "Value", e.(Operator).String())
@@ -339,112 +307,16 @@ func (tree Tree) Calc(isOperatorInPrecedenceGroup func(Operator) bool, cfg *tree
 			op = invalidOperator
 
 		case functionEntryKind:
-			slog.Debug("Tree.Calc: functionEntryKind", "i", i, "name", e.(Function).Name)
-			f := e.(Function) //nolint:errcheck
-			if f.BodyFn == nil {
-				// attempt to get body of a user-defined variable or a user-provided object's method.
-				f.BodyFn = cfg.Function(f.Name)
-			}
-
-			rhsVal := f.Eval(WithFunctions(cfg.functions), WithVariables(cfg.variables), WithObjects(cfg.objects))
-			if v, ok := rhsVal.(Undefined); ok {
-				slog.Debug("Tree.Calc: val is Undefined", "i", i, "val", v.String())
-				return Tree{v}
-			}
-			if val == nil {
-				val = rhsVal
-				continue
-			}
-
-			lhsVal := val
-			val = calculate(val.(Value), op, rhsVal)
-			slog.Debug("Tree.Calc: functionEntryKind - calculate", "i", i, "lhsVal", lhsVal.(Value).String(), "op", op.String(), "rhsVal", rhsVal.String(), "result", val.(Value).String())
+			val = functionEntryKindFn(val, op, e, cfg)
 
 		case variableEntryKind:
-			val = variableEntryKindFn(i, val, op, e, cfg)
+			val = variableEntryKindFn(val, op, e, cfg)
 
 		case objectPropertyEntryKind:
-			slog.Debug("Tree.Calc: objectPropertyEntryKind", "i", i, "object_property", e.(ObjectProperty).String())
-			objProp := e.(ObjectProperty)
-			rhsVal := cfg.ObjectProperty(objProp)
-			slog.Debug("Tree.Calc: objectPropertyEntryKind", "i", i, "value", rhsVal.String())
-
-			if val == nil {
-				val = rhsVal
-				continue
-			}
-
-			val = calculate(val.(Value), op, rhsVal)
-			slog.Debug("Tree.Calc: objectPropertyEntryKind - calculate", "i", i, "val", val.(Value).String(), "op", op.String(), "rhsVal", rhsVal.String(), "result", val.(Value).String())
+			val = objectPropertyEntryKindFn(val, op, e, cfg)
 
 		case objectAccessorEntryKind:
-			switch a := e.(type) {
-			case Dot[Function]:
-				slog.Debug("Tree.Calc: objectAccessorEntryKind Dot[Function]", "i", i, "member_name", a.Member.Name)
-				f := a.Member
-				if f.BodyFn != nil {
-					return Tree{
-						// NOTE: this could be supported but it would turn the object into a prototype model e.g. like JavaScript
-						NewUndefinedWithReasonf("internal error: objectAccessorEntryKind Dot[Function] for '%s': BodyFn is not empty: this indicates the object's method was confused for a build-in function", f.Name),
-					}
-				}
-				// as this is an object function accessor, we need to get the object first: it is the LHS currently held in val
-				vVal, ok := val.(Value)
-				if !ok {
-					return Tree{
-						NewUndefinedWithReasonf("syntax error: object accessor called on non-object: [object: '%s'] [member: '%s']", val.kind().String(), f.Name),
-					}
-				}
-				// now, we can get the method from the object
-				if vFv, ok := ObjectGetMethod(vVal, f.Name); ok {
-					f.BodyFn = vFv
-					rhsVal := f.Eval(WithFunctions(cfg.functions), WithVariables(cfg.variables), WithObjects(cfg.objects))
-					if v, ok := rhsVal.(Undefined); ok {
-						slog.Debug("Tree.Calc: object method's BodyFn is Undefined", "i", i, "val", v.String())
-						return Tree{v}
-					}
-					val = rhsVal
-					continue
-				} else {
-					return Tree{
-						NewUndefinedWithReasonf("syntax error: object accessor function called on unknown or non-function member: [object: '%s'] [member: '%s']", val.kind().String(), f.Name),
-					}
-				}
-
-			case Dot[Variable]:
-				slog.Debug("Tree.Calc: objectAccessorEntryKind Dot[Variable]", "i", i, "member_name", a.Member.Name)
-				v := a.Member
-				// as this is an object property accessor, we need to get the object first: it is the LHS currently held in val
-				var vVal any
-				vVal, ok := val.(Value)
-				if !ok {
-					return Tree{
-						NewUndefinedWithReasonf("syntax error: object accessor called on non-object: [object: '%s'] [member: '%s']", val.kind().String(), v.Name),
-					}
-				}
-				// if the object is a ObjectValue, we need to get the underlying object
-				// ObjectValue is a wrapper for "general" objects (i.e. non-gal.Value objects)
-				// By Object, we mean a Go struct, a pointer to a struct or a Go interface.
-				objVal, ok := vVal.(ObjectValue)
-				if ok {
-					vVal = objVal.Object
-				}
-				// now, we can get the property from the object
-				vFv := ObjectGetProperty(vVal, v.Name)
-				rhsVal := vFv
-				if v, ok := rhsVal.(Undefined); ok {
-					slog.Debug("Tree.Calc: object property's value is Undefined", "i", i, "val", v.String())
-					return Tree{v}
-				}
-				val = rhsVal
-				continue
-
-			default:
-				slog.Debug("Tree.Calc: objectAccessorEntryKind Dot[unknown]", "i", i, "entry_string", a.kind().String())
-				return Tree{
-					NewUndefinedWithReasonf("internal error: unknown objectAccessorEntryKind Dot kind: '%s'", e.kind().String()),
-				}
-			}
+			val = objectAccessorEntryKindFn(val, e, cfg)
 
 		case unknownEntryKind:
 			slog.Debug("Tree.Calc: unknownEntryKind", "i", i, "val", val, "op", op.String(), "e", e)
@@ -452,9 +324,12 @@ func (tree Tree) Calc(isOperatorInPrecedenceGroup func(Operator) bool, cfg *tree
 
 		default:
 			slog.Debug("Tree.Calc: default case", "i", i, "val", val, "op", op.String(), "e", e)
-			return Tree{
-				NewUndefinedWithReasonf("internal error: unknown entry kind: '%s'", e.kind().String()),
-			}
+			val = NewUndefinedWithReasonf("internal error: unknown entry kind: '%s'", e.kind().String())
+		}
+
+		if val != nil && val.kind() == unknownEntryKind {
+			slog.Debug("Tree.Calc: val is unknownEntryKind", "i", i, "val", "op", op.String(), val.(Value).String())
+			return Tree{val}
 		}
 	}
 
@@ -466,28 +341,192 @@ func (tree Tree) Calc(isOperatorInPrecedenceGroup func(Operator) bool, cfg *tree
 }
 
 //nolint:errcheck // life's too short to check for type assertion success here
-func variableEntryKindFn(i int, val entry, op Operator, e entry, cfg *treeConfig) entry {
-	varName := e.(Variable).Name
-	slog.Debug("Tree.Calc: variableEntryKind", "i", i, "name", varName)
-
-	rhsVal := cfg.Variable(varName)
-	slog.Debug("Tree.Calc: variableEntryKind", "i", i, "value", rhsVal.String())
-
-	if val == nil {
-		val = rhsVal
-		return val
+func valueEntryKindFn(val entry, op Operator, e entry) entry {
+	slog.Debug("Tree.Calc: valueEntryKind", "Value", e.(Value).String())
+	if val == nil && op == invalidOperator {
+		return e
 	}
 
-	val = calculate(val.(Value), op, rhsVal)
-	slog.Debug("Tree.Calc: variableEntryKind - calculate", "i", i, "val", val.(Value).String(), "op", op.String(), "rhsVal", rhsVal.String(), "result", val.(Value).String())
+	if val == nil {
+		return NewUndefinedWithReasonf("syntax error: missing left hand side value for operator '%s'", op.String())
+	}
+
+	slog.Debug("Tree.Calc: valueEntryKind - calculate", "val", val.(Value).String(), "op", op.String(), "e", e.(Value).String())
+	val = calculate(val.(Value), op, e.(Value))
+	slog.Debug("Tree.Calc: valueEntryKind - calculate", "result", val.(Value).String())
 
 	return val
 }
 
+//nolint:errcheck // life's too short to check for type assertion success here
+func treeEntryKindFn(val entry, op Operator, e entry, cfg *treeConfig) entry {
+	tree := e.(Tree)
+	slog.Debug("Tree.Calc: treeEntryKind", "tree", tree.String())
+
+	if val == nil && op != invalidOperator {
+		return NewUndefinedWithReasonf("syntax error: missing left hand side value for operator '%s'", op.String())
+	}
+
+	rhsVal := tree.Eval(WithFunctions(cfg.functions), WithVariables(cfg.variables), WithObjects(cfg.objects))
+	if v, ok := rhsVal.(Undefined); ok {
+		slog.Debug("Tree.Calc: val is Undefined", "val", v.String())
+		return v
+	}
+
+	if val == nil {
+		return rhsVal
+	}
+
+	val = calculate(val.(Value), op, rhsVal)
+	slog.Debug("Tree.Calc: treeEntryKind - calculate", "val", val.(Value).String(), "op", op.String(), "rhsVal", rhsVal.String(), "result", val.(Value).String())
+
+	return val
+}
+
+//nolint:errcheck // life's too short to check for type assertion success here
+func functionEntryKindFn(val entry, op Operator, e entry, cfg *treeConfig) entry {
+	fn := e.(Function)
+
+	slog.Debug("Tree.Calc: functionEntryKind", "name", fn.Name)
+
+	if fn.BodyFn == nil {
+		// attempt to get body of a user-defined variable or a user-provided object's method.
+		fn.BodyFn = cfg.Function(fn.Name)
+	}
+
+	rhsVal := fn.Eval(WithFunctions(cfg.functions), WithVariables(cfg.variables), WithObjects(cfg.objects))
+	if v, ok := rhsVal.(Undefined); ok {
+		slog.Debug("Tree.Calc: val is Undefined", "val", v.String())
+		return v
+	}
+
+	if val == nil {
+		return rhsVal
+	}
+
+	lhsVal := val
+	val = calculate(val.(Value), op, rhsVal)
+	slog.Debug("Tree.Calc: functionEntryKind - calculate", "lhsVal", lhsVal.(Value).String(), "op", op.String(), "rhsVal", rhsVal.String(), "result", val.(Value).String())
+
+	return val
+}
+
+//nolint:errcheck // life's too short to check for type assertion success here
+func variableEntryKindFn(val entry, op Operator, e entry, cfg *treeConfig) entry {
+	varName := e.(Variable).Name
+
+	slog.Debug("Tree.Calc: variableEntryKind", "name", varName)
+
+	rhsVal := cfg.Variable(varName)
+	slog.Debug("Tree.Calc: variableEntryKind", "value", rhsVal.String())
+	if v, ok := rhsVal.(Undefined); ok {
+		return v
+	}
+
+	if val == nil {
+		return rhsVal
+	}
+
+	val = calculate(val.(Value), op, rhsVal)
+	slog.Debug("Tree.Calc: variableEntryKind - calculate", "val", val.(Value).String(), "op", op.String(), "rhsVal", rhsVal.String(), "result", val.(Value).String())
+
+	return val
+}
+
+//nolint:errcheck // life's too short to check for type assertion success here
+func objectPropertyEntryKindFn(val entry, op Operator, e entry, cfg *treeConfig) entry {
+	objProp := e.(ObjectProperty)
+	slog.Debug("Tree.Calc: objectPropertyEntryKind", "object_property", objProp.String())
+
+	rhsVal := cfg.ObjectProperty(objProp)
+	slog.Debug("Tree.Calc: objectPropertyEntryKind", "value", rhsVal.String())
+	if v, ok := rhsVal.(Undefined); ok {
+		return v
+	}
+
+	if val == nil {
+		return rhsVal
+	}
+
+	val = calculate(val.(Value), op, rhsVal)
+	slog.Debug("Tree.Calc: objectPropertyEntryKind - calculate", "val", val.(Value).String(), "op", op.String(), "rhsVal", rhsVal.String(), "result", val.(Value).String())
+
+	return val
+}
+
+func objectAccessorEntryKindFn(val, e entry, cfg *treeConfig) entry {
+	switch oa := e.(type) {
+	case Dot[Function]:
+		return objectAccessorDotFunctionFn(val, oa, cfg)
+
+	case Dot[Variable]:
+		return objectAccessorDotVariableFn(val, oa)
+
+	default:
+		slog.Debug("Tree.Calc: objectAccessorEntryKind Dot[unknown]", "entry_string", oa.kind().String())
+		return NewUndefinedWithReasonf("internal error: unknown objectAccessorEntryKind Dot kind: '%s'", e.kind().String())
+	}
+}
+
+func objectAccessorDotFunctionFn(val entry, oa Dot[Function], cfg *treeConfig) entry {
+	fn := oa.Member
+
+	slog.Debug("Tree.Calc: objectAccessorEntryKind Dot[Function]", "member_name", fn.Name)
+
+	if fn.BodyFn != nil {
+		// NOTE: this could be supported but it would turn the object into a prototype model e.g. like JavaScript
+		return NewUndefinedWithReasonf("internal error: objectAccessorEntryKind Dot[Function] for '%s': BodyFn is not empty: this indicates the object's method was confused for a build-in function", fn.Name)
+	}
+
+	// as this is an object function accessor, we need to get the object first: it is the LHS currently held in val
+	vVal, ok := val.(Value)
+	if !ok {
+		return NewUndefinedWithReasonf("syntax error: object accessor called on non-object: [object: '%s'] [member: '%s']", val.kind().String(), fn.Name)
+	}
+
+	// now, we can get the method from the object
+	if vFv, ok := ObjectGetMethod(vVal, fn.Name); ok {
+		fn.BodyFn = vFv
+		rhsVal := fn.Eval(WithFunctions(cfg.functions), WithVariables(cfg.variables), WithObjects(cfg.objects))
+		if v, ok := rhsVal.(Undefined); ok {
+			return v
+		}
+
+		return rhsVal
+	}
+
+	return NewUndefinedWithReasonf("syntax error: object accessor function called on unknown or non-function member: [object: '%s'] [member: '%s']", val.kind().String(), fn.Name)
+}
+
+func objectAccessorDotVariableFn(val entry, oa Dot[Variable]) entry {
+	v := oa.Member
+
+	slog.Debug("Tree.Calc: objectAccessorEntryKind Dot[Variable]", "member_name", v.Name)
+
+	// as this is an object property accessor, we need to get the object first: it is the LHS currently held in val
+	var vVal any
+	vVal, ok := val.(Value)
+	if !ok {
+		return NewUndefinedWithReasonf("syntax error: object accessor called on non-object: [object: '%s'] [member: '%s']", val.kind().String(), v.Name)
+	}
+
+	// if the object is a ObjectValue, we need to get the underlying object
+	// ObjectValue is a wrapper for "general" objects (i.e. non-gal.Value objects)
+	// By Object, we mean a Go struct, a pointer to a struct or a Go interface.
+	objVal, ok := vVal.(ObjectValue)
+	if ok {
+		vVal = objVal.Object
+	}
+
+	// now, we can get the property from the object
+	rhsVal := ObjectGetProperty(vVal, v.Name)
+
+	return rhsVal
+}
+
 // CleanUp performs simplification operations before calculating this tree.
 func (tree Tree) CleanUp() Tree {
-	return tree.
-		cleansePlusMinusTreeStart()
+	return tree.cleansePlusMinusTreeStart()
 }
 
 // cleansePlusMinusTreeStart consolidates the - and + that are at the first position in a Tree.

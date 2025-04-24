@@ -29,6 +29,14 @@ type ObjectValue struct {
 	Undefined
 }
 
+func (o ObjectValue) kind() entryKind {
+	return objectAccessorEntryKind
+}
+
+func (o ObjectValue) String() string {
+	return fmt.Sprintf("ObjectValue(%T)", o.Object)
+}
+
 func ObjectGetProperty(obj Object, name string) Value {
 	if obj == nil {
 		return NewUndefinedWithReasonf("object is nil for type '%T'", obj)
