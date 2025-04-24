@@ -104,6 +104,11 @@ func (tb TreeBuilder) FromExpr(expr string) (Tree, error) {
 			v := NewVariable(part)
 			tree = append(tree, v)
 
+		case objectPropertyType:
+			splits := strings.SplitN(part, ".", 2) // there should only ever be exactly 2 parts at this point
+			v := NewObjectProperty(splits[0], splits[1])
+			tree = append(tree, v)
+
 		case objectAccessorByVariableType:
 			tree = append(tree, Dot[Variable]{
 				Member: NewVariable(part[1:]), // skip the "."
@@ -200,7 +205,7 @@ func extractPart(expr string) (string, exprType, int, error) {
 				// object property found: act like a variable
 				// TODO: could create a new objectPropertyType to reduce the complexity of the
 				// ...   handling of variables by keeping variableType separate from objectPropertyType
-				return fname, variableType, pos + lf, nil
+				return fname, objectPropertyType, pos + lf, nil
 			}
 			// allow to continue so we can check alphanumerical operator names such as "And", "Or", etc
 		case err != nil:

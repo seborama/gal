@@ -154,9 +154,7 @@ func TestTreeBuilder_FromExpr_Objects(t *testing.T) {
 	got := gal.Parse(expr)
 
 	expectedTree := gal.Tree{
-		gal.NewVariable(
-			"aCar.MaxSpeed",
-		),
+		gal.NewObjectProperty("aCar", "MaxSpeed"),
 		gal.Minus,
 		gal.Function{
 			"aCar.CurrentSpeed",
@@ -208,9 +206,7 @@ func TestTreeBuilder_FromExpr_Dot_Accessor_Function(t *testing.T) {
 							Args:   []gal.Tree{},
 						},
 						gal.Plus,
-						gal.Variable{
-							Name: "aCar.MaxSpeed",
-						},
+						gal.NewObjectProperty("aCar", "MaxSpeed"),
 					},
 				},
 			),

@@ -372,9 +372,9 @@ func TestObjects_Properties(t *testing.T) {
 	parsedExpr := gal.Parse(expr)
 
 	expectedTree := gal.Tree{
-		gal.NewVariable("aCar.MaxSpeed"),
+		gal.NewObjectProperty("aCar", "MaxSpeed"),
 		gal.Minus,
-		gal.NewVariable("aCar.Speed"),
+		gal.NewObjectProperty("aCar", "Speed"),
 	}
 
 	assert.Equal(t, expectedTree, parsedExpr)
@@ -397,7 +397,7 @@ func TestObjects_ChainedProperties(t *testing.T) {
 	parsedExpr := gal.Parse(expr)
 
 	expectedTree := gal.Tree{
-		gal.NewVariable("aCar.Stereo"),
+		gal.NewObjectProperty("aCar", "Stereo"),
 		gal.Dot[gal.Variable]{
 			Member: gal.NewVariable(
 				"Brand",

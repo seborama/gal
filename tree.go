@@ -22,6 +22,8 @@ func (ek entryKind) String() string {
 		return "treeEntryKind"
 	case functionEntryKind:
 		return "functionEntryKind"
+	case objectPropertyEntryKind:
+		return "objectPropertyEntryKind"
 	case variableEntryKind:
 		return "variableEntryKind"
 	case objectAccessorEntryKind:
@@ -38,6 +40,7 @@ const (
 	treeEntryKind
 	functionEntryKind
 	variableEntryKind
+	objectPropertyEntryKind // "cousin" of a variableEntryKind, but for object properties
 	objectAccessorEntryKind
 )
 
@@ -151,26 +154,18 @@ type treeConfig struct {
 // ...................................................................
 // ...................................................................
 func (tc treeConfig) Variable(name string) Value {
-	splits := strings.Split(name, ".")
-	// look up the variable in the user-defined variables
-	if len(splits) == 2 {
-		// look up the property in the user provided objects
-		if obj, ok := tc.objects.Get(splits[0]); ok {
-			return ObjectGetProperty(obj, splits[1])
-		}
-		return NewUndefinedWithReasonf("error: object reference '%s' is not valid: unknown object or unknown property", name)
-	}
-
-	if len(splits) >= 2 {
-		return NewUndefinedWithReasonf("syntax error: object reference '%s' is not valid: too many dot accessors: max 1 permitted", name)
-	}
-
-	// look up the variable in the user-defined variables
 	if val, ok := tc.variables.Get(name); ok {
 		return val
 	}
 
 	return NewUndefinedWithReasonf("error: unknown user-defined variable '%s'", name)
+}
+
+func (tc treeConfig) ObjectProperty(objProp ObjectProperty) Value {
+	if obj, ok := tc.objects.Get(objProp.ObjectName); ok {
+		return ObjectGetProperty(obj, objProp.PropertyName)
+	}
+	return NewUndefinedWithReasonf("error: object property '%s': unknown object", objProp.String())
 }
 
 type treeOption func(*treeConfig)
@@ -366,10 +361,13 @@ func (tree Tree) Calc(isOperatorInPrecedenceGroup func(Operator) bool, cfg *tree
 			slog.Debug("Tree.Calc: functionEntryKind - calculate", "i", i, "lhsVal", lhsVal.(Value).String(), "op", op.String(), "rhsVal", rhsVal.String(), "result", val.(Value).String())
 
 		case variableEntryKind:
-			slog.Debug("Tree.Calc: variableEntryKind", "i", i, "name", e.(Variable).Name)
-			varName := e.(Variable).Name
-			rhsVal := cfg.Variable(varName)
-			slog.Debug("Tree.Calc: variableEntryKind", "i", i, "value", rhsVal.String())
+			val = variableEntryKindFn(i, val, op, e, cfg)
+
+		case objectPropertyEntryKind:
+			slog.Debug("Tree.Calc: objectPropertyEntryKind", "i", i, "object_property", e.(ObjectProperty).String())
+			objProp := e.(ObjectProperty)
+			rhsVal := cfg.ObjectProperty(objProp)
+			slog.Debug("Tree.Calc: objectPropertyEntryKind", "i", i, "value", rhsVal.String())
 
 			if val == nil {
 				val = rhsVal
@@ -377,7 +375,7 @@ func (tree Tree) Calc(isOperatorInPrecedenceGroup func(Operator) bool, cfg *tree
 			}
 
 			val = calculate(val.(Value), op, rhsVal)
-			slog.Debug("Tree.Calc: variableEntryKind - calculate", "i", i, "val", val.(Value).String(), "op", op.String(), "rhsVal", rhsVal.String(), "result", val.(Value).String())
+			slog.Debug("Tree.Calc: objectPropertyEntryKind - calculate", "i", i, "val", val.(Value).String(), "op", op.String(), "rhsVal", rhsVal.String(), "result", val.(Value).String())
 
 		case objectAccessorEntryKind:
 			switch a := e.(type) {
@@ -467,6 +465,25 @@ func (tree Tree) Calc(isOperatorInPrecedenceGroup func(Operator) bool, cfg *tree
 	return outTree
 }
 
+//nolint:errcheck // life's too short to check for type assertion success here
+func variableEntryKindFn(i int, val entry, op Operator, e entry, cfg *treeConfig) entry {
+	varName := e.(Variable).Name
+	slog.Debug("Tree.Calc: variableEntryKind", "i", i, "name", varName)
+
+	rhsVal := cfg.Variable(varName)
+	slog.Debug("Tree.Calc: variableEntryKind", "i", i, "value", rhsVal.String())
+
+	if val == nil {
+		val = rhsVal
+		return val
+	}
+
+	val = calculate(val.(Value), op, rhsVal)
+	slog.Debug("Tree.Calc: variableEntryKind - calculate", "i", i, "val", val.(Value).String(), "op", op.String(), "rhsVal", rhsVal.String(), "result", val.(Value).String())
+
+	return val
+}
+
 // CleanUp performs simplification operations before calculating this tree.
 func (tree Tree) CleanUp() Tree {
 	return tree.
@@ -519,6 +536,8 @@ func (tree Tree) String(indents ...string) string {
 			res += fmt.Sprintf(indent+"Function %s(%s)\n", e.(Function).Name, strings.Join(args, ", "))
 		case variableEntryKind:
 			res += fmt.Sprintf(indent+"Variable %s\n", e.(Variable).Name)
+		case objectPropertyEntryKind:
+			res += fmt.Sprintf(indent+"ObjectProperty %s.%s\n", e.(ObjectProperty).ObjectName, e.(ObjectProperty).PropertyName)
 		case objectAccessorEntryKind:
 			switch a := e.(type) {
 			case Dot[Function]:
