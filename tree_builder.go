@@ -94,12 +94,19 @@ func (tb TreeBuilder) FromExpr(expr string) (Tree, error) {
 				// conceptually, parenthesis grouping is a special case of anonymous identity function
 				tree = append(tree, v)
 			} else {
-				bodyFn := BuiltInFunction(fname)
+				bodyFn := BuiltInFunction(fname) // will be nil if it isn't a built-in function (i.e. user-defined or object method)
+				// TODO: if bodyFn == nil, we have either a user-defined function or an object method. It may be worth
+				// ...   creating a new type for this case. This could simplify the code by keeping each case separate and simpler.
 				tree = append(tree, NewFunction(fname, bodyFn, v.Split()...))
 			}
 
 		case variableType:
 			v := NewVariable(part)
+			tree = append(tree, v)
+
+		case objectPropertyType:
+			splits := strings.SplitN(part, ".", 2) // there should only ever be exactly 2 parts at this point
+			v := NewObjectProperty(splits[0], splits[1])
 			tree = append(tree, v)
 
 		case objectAccessorByVariableType:
@@ -172,9 +179,10 @@ func extractPart(expr string) (string, exprType, int, error) {
 		return s, stringType, pos + l, nil
 	}
 
-	// read part - "boolean"
-	if s, l, ok := readBool(expr[pos:]); ok {
-		return s, boolType, pos + l, nil
+	// read part - constants
+	// e.g. Phi (golden ratio), etc, user-defined or built-in (True, False for booleans)
+	if s, l, ctype, ok := readConstant(expr[pos:]); ok {
+		return s, ctype, pos + l, nil
 	}
 
 	// read part - :variable:
@@ -194,18 +202,16 @@ func extractPart(expr string) (string, exprType, int, error) {
 		switch {
 		case errors.Is(err, errFunctionNameWithoutParens):
 			if strings.Contains(fname, ".") {
-				// object property found: act like a variable
-				// TODO: could create a new objectPropertyType
-				return fname, variableType, pos + lf, nil
+				// object property found
+				return fname, objectPropertyType, pos + lf, nil
 			}
 			// allow to continue so we can check alphanumerical operator names such as "And", "Or", etc
-			// TODO: before we try for alphanum operators, we will need to check if we have a defined constant
-			// ...   e.g. Phi (golden ratio), etc user-defined or built-in (True, False)
-			// ...   This should probably be done where readBool currently is.
 		case err != nil:
 			return "", unknownType, 0, err
 		default:
-			// TODO: if name contains `.` it's an object function - could create a new objectFunctionType
+			// NOTE: if name contains `.` it's an object function
+			// TODO: could create a new objectFunctionType to reduce the complexity of the
+			// ...   handling of variables by keeping functionType separate from objectFunctionType
 			fargs, la, err := readFunctionArguments(expr[pos+lf:])
 			if err != nil {
 				return "", unknownType, 0, err
@@ -224,22 +230,20 @@ func extractPart(expr string) (string, exprType, int, error) {
 	// For example "Pi().Add(10).Sub(5)" is a valid expression because "Pi()" returns a gal.Value and
 	// hence a Go object (be it struct or interface).
 	if expr[pos] == '.' {
-		// TODO: we should probably only read up until the first '(' (as we do now) OR the first '.'
+		// NOTE: we are keeping the leading dot in expr when submitting to readNamedExpressionType().
+		// This means that `fname`` will always be of the form ".name" (i.e. with leading dot).
+		// Remember that readNamedExpressionType is designed to read past 1 dot at most.
 		fname, lf, err := readNamedExpressionType(expr[pos:])
 		switch {
 		case errors.Is(err, errFunctionNameWithoutParens):
-			if strings.Contains(fname, ".") {
-				// object property found: act like a variable
-				// TODO: could create a new objectPropertyType
-				return fname, objectAccessorByVariableType, pos + lf, nil
-			}
-			// allow to continue so we can check alphanumerical operator names such as "And", "Or", etc
-			// TODO: before we try for alphanum operators, we will need to check if we have a defined constant
-			// ... e.g. Phi (golden ratio), etc user-defined or built-in (True, False)
+			// object property found
+			return fname, objectAccessorByVariableType, pos + lf, nil
+
 		case err != nil:
 			return "", unknownType, 0, err
+
 		default:
-			// TODO: if name contains `.` it's an object function - could create a new objectFunctionType
+			// object method found
 			fargs, la, err := readFunctionArguments(expr[pos+lf:])
 			if err != nil {
 				return "", unknownType, 0, err
@@ -310,8 +314,9 @@ func readVariable(expr string) (string, int, error) {
 	return expr[:to], to, nil
 }
 
-// the bool is an `ok` type bool, it is set to true if we successfull read a Bool
-func readBool(expr string) (string, int, bool) {
+// The last "bool" return value of this function is an `ok` type bool.
+// It is set to true if we successfull read a constant (i.e. "True" or "False", etc)
+func readConstant(expr string) (string, int, exprType, bool) {
 	to := 0
 
 readString:
@@ -322,22 +327,21 @@ readString:
 			r >= 'A' && r <= 'Z':
 			continue
 		case isBlankSpace(r):
-			// we read a potential bool
+			// we read a potential constant name
 			to-- // eject the space character we just read
 			break readString
 		default:
-			// not a bool
-			return "", 0, false
+			// not a constant name
+			return "", 0, unknownType, false
 		}
 	}
 
 	switch expr[:to] {
 	case "True", "False":
 		// it's a Bool
-		return expr[:to], to, true
+		return expr[:to], to, boolType, true
 	default:
-		// it isn't a Bool
-		return "", 0, false
+		return "", 0, unknownType, false
 	}
 }
 

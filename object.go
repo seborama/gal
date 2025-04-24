@@ -29,16 +29,23 @@ type ObjectValue struct {
 	Undefined
 }
 
-// TODO: implement support for nested structs?
-func ObjectGetProperty(obj Object, name string) (Value, bool) {
+func (o ObjectValue) kind() entryKind {
+	return objectAccessorEntryKind
+}
+
+func (o ObjectValue) String() string {
+	return fmt.Sprintf("ObjectValue(%T)", o.Object)
+}
+
+func ObjectGetProperty(obj Object, name string) Value {
 	if obj == nil {
-		return NewUndefinedWithReasonf("object is nil for type '%T'", obj), false
+		return NewUndefinedWithReasonf("object is nil for type '%T'", obj)
 	}
 
 	// Use the reflect.ValueOf function to get the value of the struct
 	v := reflect.ValueOf(obj)
 	if !v.IsValid() {
-		return NewUndefinedWithReasonf("object is nil, not a Go value or invalid"), false
+		return NewUndefinedWithReasonf("object is nil, not a Go value or invalid")
 	}
 
 	// Use reflect.TypeOf to get the type of the struct
@@ -47,23 +54,23 @@ func ObjectGetProperty(obj Object, name string) (Value, bool) {
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
 		if !v.IsValid() {
-			return NewUndefinedWithReasonf("object interface is nil, not a Go value or invalid"), false
+			return NewUndefinedWithReasonf("object interface is nil, not a Go value or invalid")
 		}
 
 		t = t.Elem()
 		if !v.IsValid() {
-			return NewUndefinedWithReasonf("object interface is nil, not a Go value or invalid"), false
+			return NewUndefinedWithReasonf("object interface is nil, not a Go value or invalid")
 		}
 	}
 
-	// TODO: we only support `struct` for now. Perhaps simple types (int, float, etc) are a worthwhile enhancement?
+	// TODO: we only support `struct` for now. Perhaps simple types (int, float, etc) are worthwhile an enhancement?
 	if t.Kind() != reflect.Struct {
-		return NewUndefinedWithReasonf("object is '%s' but only 'struct' and '*struct' are currently supported", t.Kind()), false
+		return NewUndefinedWithReasonf("object is '%s' but only 'struct' and '*struct' are currently supported", t.Kind())
 	}
 
 	fieldReflectValue := v.FieldByName(name)
 	if !fieldReflectValue.IsValid() {
-		return NewUndefinedWithReasonf("property '%T:%s' does not exist on object", obj, name), false
+		return NewUndefinedWithReasonf("property '%T:%s' does not exist on object", obj, name)
 	}
 
 	slog.Debug("ObjectGetProperty", "vValue.Kind", fieldReflectValue.Kind().String(), "name", name, "vValue", fieldReflectValue)
@@ -77,17 +84,17 @@ func ObjectGetProperty(obj Object, name string) (Value, bool) {
 		case reflect.Interface:
 			if t.NumMethod() > 0 {
 				// allow support for (non-empty) interfaces
-				return ObjectValue{Object: fieldReflectValue.Interface()}, true
+				return ObjectValue{Object: fieldReflectValue.Interface()}
 			}
 		case reflect.Struct: // TODO: incomplete code: see ObjectGetProperty to handle `*struct` scenario.
 			// allow support for struct types
-			return ObjectValue{Object: fieldReflectValue.Interface()}, true
+			return ObjectValue{Object: fieldReflectValue.Interface()}
 		}
 
-		return NewUndefinedWithReasonf("object::%T:%s - %s", obj, name, err.Error()), false
+		return NewUndefinedWithReasonf("object::%T:%s - %s", obj, name, err.Error())
 	}
 
-	return galValue, true
+	return galValue
 }
 
 func ObjectGetMethod(obj Object, name string) (FunctionalValue, bool) {
@@ -125,7 +132,6 @@ func ObjectGetMethod(obj Object, name string) (FunctionalValue, bool) {
 
 			//nolint:errcheck // life's too short to check for type assertion success here
 			switch paramType.Kind() {
-			// TODO: continue with more "case"'s
 			case reflect.Int:
 				return reflect.ValueOf(int(item.(Numberer).Number().Int64()))
 			case reflect.Int32:

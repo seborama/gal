@@ -13,6 +13,7 @@ const (
 	boolType
 	variableType
 	functionType
+	objectPropertyType // "cousin" of a variableType, but for object properties
 	objectAccessorByVariableType
 	objectAccessorByFunctionType
 )

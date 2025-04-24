@@ -5,6 +5,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/seborama/gal/v10"
 )
@@ -41,7 +42,7 @@ func TestEval(t *testing.T) {
 
 func TestTreeBuilder_FromExpr_Variables(t *testing.T) {
 	vars := gal.Variables{
-		":var1:": gal.NewNumberFromInt(4), // TODO: remove the need to surround with `:`?
+		":var1:": gal.NewNumberFromInt(4),
 		":var2:": gal.NewNumberFromInt(3),
 	}
 
@@ -60,7 +61,7 @@ func TestTreeBuilder_FromExpr_UnknownVariable(t *testing.T) {
 	expr := `2 + :var1: * :var2: - 5`
 
 	got := gal.Parse(expr).Eval()
-	expected := gal.NewUndefinedWithReasonf("syntax error: unknown variable name: ':var1:'")
+	expected := gal.NewUndefinedWithReasonf("error: unknown user-defined variable ':var1:'")
 
 	if !cmp.Equal(expected, got) {
 		t.Error(cmp.Diff(expected, got))
@@ -149,7 +150,7 @@ func TestEval_Boolean(t *testing.T) {
 	// function, rather than the `Or` operator.
 	expr = `True Or(False)`
 	val = gal.Parse(expr).Eval()
-	assert.Equal(t, `undefined: unknown function 'Or'`, val.String())
+	assert.Equal(t, `undefined: error: unknown user-defined function 'Or'`, val.String())
 }
 
 func TestWithVariablesAndFunctions(t *testing.T) {
@@ -372,9 +373,9 @@ func TestObjects_Properties(t *testing.T) {
 	parsedExpr := gal.Parse(expr)
 
 	expectedTree := gal.Tree{
-		gal.NewVariable("aCar.MaxSpeed"),
+		gal.NewObjectProperty("aCar", "MaxSpeed"),
 		gal.Minus,
-		gal.NewVariable("aCar.Speed"),
+		gal.NewObjectProperty("aCar", "Speed"),
 	}
 
 	assert.Equal(t, expectedTree, parsedExpr)
@@ -397,7 +398,7 @@ func TestObjects_ChainedProperties(t *testing.T) {
 	parsedExpr := gal.Parse(expr)
 
 	expectedTree := gal.Tree{
-		gal.NewVariable("aCar.Stereo"),
+		gal.NewObjectProperty("aCar", "Stereo"),
 		gal.Dot[gal.Variable]{
 			Member: gal.NewVariable(
 				"Brand",
@@ -405,7 +406,7 @@ func TestObjects_ChainedProperties(t *testing.T) {
 		},
 	}
 
-	assert.Equal(t, expectedTree, parsedExpr)
+	require.Equal(t, expectedTree, parsedExpr)
 
 	got := parsedExpr.Eval(
 		gal.WithObjects(map[string]gal.Object{

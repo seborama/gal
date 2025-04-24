@@ -26,9 +26,9 @@ const (
 	NotEqualTo         Operator = "!="
 	GreaterThan        Operator = ">"
 	GreaterThanOrEqual Operator = ">="
-	And                Operator = "And" // TODO: case sentive for now
+	And                Operator = "And" // NOTE: case sentive for now
 	And2               Operator = "&&"
-	Or                 Operator = "Or" // TODO: case sentive for now
+	Or                 Operator = "Or" // NOTE: case sentive for now
 	Or2                Operator = "||"
 )
 
