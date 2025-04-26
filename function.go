@@ -83,6 +83,8 @@ func BuiltInFunction(name string) FunctionalValue {
 		return bodyFn
 	}
 
+	// TODO: if nil, we could return a FunctionalValue that returns Undefined
+	// ...   this would save us from having to check for nil in the evaluator
 	return nil
 }
 

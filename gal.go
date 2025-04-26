@@ -13,9 +13,9 @@ const (
 	boolType
 	variableType
 	functionType
-	objectPropertyType // "cousin" of a variableType, but for object properties
-	objectAccessorByVariableType
-	objectAccessorByFunctionType
+	objectPropertyType           // "cousin" of a variableType, but for a property of a user-defined object
+	objectAccessorByPropertyType // represents an expression object accessor by property
+	objectAccessorByMethodType   // represents an expression object accessor by method
 )
 
 type Value interface {

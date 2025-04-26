@@ -40,8 +40,8 @@ const (
 	treeEntryKind
 	functionEntryKind
 	variableEntryKind
-	objectPropertyEntryKind // "cousin" of a variableEntryKind, but for object properties
-	objectAccessorEntryKind
+	objectPropertyEntryKind // "cousin" of a variableEntryKind, but for object properties: obj.property
+	objectAccessorEntryKind // this is a dot accessor to a property or a method of an object retrieved from the last evaluated expression
 )
 
 type entry interface {
@@ -390,7 +390,7 @@ func functionEntryKindFn(val entry, op Operator, e entry, cfg *treeConfig) entry
 	slog.Debug("Tree.Calc: functionEntryKind", "name", fn.Name)
 
 	if fn.BodyFn == nil {
-		// attempt to get body of a user-defined variable or a user-provided object's method.
+		// attempt to get body of a user-defined function or a user-provided object's method.
 		fn.BodyFn = cfg.Function(fn.Name)
 	}
 
@@ -436,6 +436,7 @@ func variableEntryKindFn(val entry, op Operator, e entry, cfg *treeConfig) entry
 //nolint:errcheck // life's too short to check for type assertion success here
 func objectPropertyEntryKindFn(val entry, op Operator, e entry, cfg *treeConfig) entry {
 	objProp := e.(ObjectProperty)
+
 	slog.Debug("Tree.Calc: objectPropertyEntryKind", "object_property", objProp.String())
 
 	rhsVal := cfg.ObjectProperty(objProp)
@@ -569,6 +570,7 @@ func (tree Tree) String(indents ...string) string {
 		case treeEntryKind:
 			res += fmt.Sprintf(indent+"Tree {\n%s}\n", e.(Tree).String("   "))
 		case functionEntryKind:
+			// TODO: we should create a String() method in Function and move this logic there
 			args := lo.Map(e.(Function).Args, func(item Tree, index int) string {
 				return strings.TrimRight(item.String(), "\n")
 			})
@@ -576,7 +578,7 @@ func (tree Tree) String(indents ...string) string {
 		case variableEntryKind:
 			res += fmt.Sprintf(indent+"Variable %s\n", e.(Variable).Name)
 		case objectPropertyEntryKind:
-			res += fmt.Sprintf(indent+"ObjectProperty %s.%s\n", e.(ObjectProperty).ObjectName, e.(ObjectProperty).PropertyName)
+			res += fmt.Sprintf(indent+"ObjectProperty %s\n", e.(ObjectProperty).String())
 		case objectAccessorEntryKind:
 			switch a := e.(type) {
 			case Dot[Function]:
