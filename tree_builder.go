@@ -95,7 +95,7 @@ func (tb TreeBuilder) FromExpr(expr string) (Tree, error) {
 				tree = append(tree, v)
 			} else {
 				bodyFn := BuiltInFunction(fname) // will be nil if it isn't a built-in function (i.e. user-defined or object method)
-				// TODO: if bodyFn == nil, we have either a user-defined function or an object method. It may be worth
+				// TODO: if bodyFn == nil, we have either a user-defined function or an user-defined object method. It may be worth
 				// ...   creating a new type for this case. This could simplify the code by keeping each case separate and simpler.
 				tree = append(tree, NewFunction(fname, bodyFn, v.Split()...))
 			}
@@ -105,16 +105,19 @@ func (tb TreeBuilder) FromExpr(expr string) (Tree, error) {
 			tree = append(tree, v)
 
 		case objectPropertyType:
+			// an objectPropertyType represents a property access on a user-defined object
 			splits := strings.SplitN(part, ".", 2) // there should only ever be exactly 2 parts at this point
 			v := NewObjectProperty(splits[0], splits[1])
 			tree = append(tree, v)
 
-		case objectAccessorByVariableType:
+		case objectAccessorByPropertyType:
+			// an objectAccessorByPropertyType is an access to a property of an object retrieved from the last expression evaluated in the Tree.
 			tree = append(tree, Dot[Variable]{
 				Member: NewVariable(part[1:]), // skip the "."
 			})
 
-		case objectAccessorByFunctionType:
+		case objectAccessorByMethodType:
+			// an objectAccessorByMethodType is an access to a method of an object retrieved from the last expression evaluated in the Tree.
 			v, err := tb.FromExpr(part[1:]) // skip the "."
 			if err != nil {
 				return nil, err
@@ -203,6 +206,7 @@ func extractPart(expr string) (string, exprType, int, error) {
 		case errors.Is(err, errFunctionNameWithoutParens):
 			if strings.Contains(fname, ".") {
 				// object property found
+				// note: we have already dealt with variableType above
 				return fname, objectPropertyType, pos + lf, nil
 			}
 			// allow to continue so we can check alphanumerical operator names such as "And", "Or", etc
@@ -237,7 +241,7 @@ func extractPart(expr string) (string, exprType, int, error) {
 		switch {
 		case errors.Is(err, errFunctionNameWithoutParens):
 			// object property found
-			return fname, objectAccessorByVariableType, pos + lf, nil
+			return fname, objectAccessorByPropertyType, pos + lf, nil
 
 		case err != nil:
 			return "", unknownType, 0, err
@@ -248,7 +252,7 @@ func extractPart(expr string) (string, exprType, int, error) {
 			if err != nil {
 				return "", unknownType, 0, err
 			}
-			return fname + fargs, objectAccessorByFunctionType, pos + lf + la, nil
+			return fname + fargs, objectAccessorByMethodType, pos + lf + la, nil
 		}
 	}
 

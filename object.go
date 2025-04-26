@@ -24,6 +24,7 @@ func (Dot[T]) kind() entryKind {
 // referenced within a gal expression during evaluation.
 type Object any
 
+// TODO: could we merge ObjectValue into Object and drop ObjectValue?
 type ObjectValue struct {
 	Object any
 	Undefined
@@ -35,6 +36,26 @@ func (o ObjectValue) kind() entryKind {
 
 func (o ObjectValue) String() string {
 	return fmt.Sprintf("ObjectValue(%T)", o.Object)
+}
+
+type ObjectProperty struct {
+	ObjectName   string
+	PropertyName string
+}
+
+func NewObjectProperty(objectName, propertyName string) ObjectProperty {
+	return ObjectProperty{
+		ObjectName:   objectName,
+		PropertyName: propertyName,
+	}
+}
+
+func (o ObjectProperty) kind() entryKind {
+	return objectPropertyEntryKind
+}
+
+func (o ObjectProperty) String() string {
+	return fmt.Sprintf("%s.%s", o.ObjectName, o.PropertyName)
 }
 
 func ObjectGetProperty(obj Object, name string) Value {
