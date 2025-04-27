@@ -156,11 +156,7 @@ func TestTreeBuilder_FromExpr_Objects(t *testing.T) {
 	expectedTree := gal.Tree{
 		gal.NewObjectProperty("aCar", "MaxSpeed"),
 		gal.Minus,
-		gal.Function{
-			"aCar.CurrentSpeed",
-			nil,
-			[]gal.Tree{},
-		},
+		gal.NewObjectMethod("aCar", "CurrentSpeed", []gal.Tree{}...),
 	}
 
 	if !cmp.Equal(expectedTree, got) {
@@ -178,11 +174,7 @@ func TestTreeBuilder_FromExpr_Dot_Accessor_Function(t *testing.T) {
 	got := gal.Parse(expr)
 
 	expectedTree := gal.Tree{
-		gal.Function{
-			Name:   "aCar.CurrentSpeed",
-			BodyFn: nil,
-			Args:   []gal.Tree{},
-		}, // returns a "Number" which is a "Value" (see object_test.go)
+		gal.NewObjectMethod("aCar", "CurrentSpeed", []gal.Tree{}...), // returns a "Number" which is a "Value"
 		gal.Dot[gal.Function]{
 			Member: gal.NewFunction(
 				"Add",
@@ -200,11 +192,7 @@ func TestTreeBuilder_FromExpr_Dot_Accessor_Function(t *testing.T) {
 					gal.NewNumberFromInt(10),
 					gal.Plus,
 					gal.Tree{
-						gal.Function{
-							Name:   "aCar.GetMaxSpeed",
-							BodyFn: nil,
-							Args:   []gal.Tree{},
-						},
+						gal.NewObjectMethod("aCar", "GetMaxSpeed", []gal.Tree{}...),
 						gal.Plus,
 						gal.NewObjectProperty("aCar", "MaxSpeed"),
 					},
@@ -263,11 +251,7 @@ func TestTreeBuilder_FromExpr_Dot_Accessor_Property(t *testing.T) {
 	got := gal.Parse(expr)
 
 	expectedTree := gal.Tree{
-		gal.Function{
-			Name:   "aCar.CurrentSpeed3",
-			BodyFn: nil,
-			Args:   []gal.Tree{},
-		}, // returns a "fancyType" (see object_test.go)
+		gal.NewObjectMethod("aCar", "CurrentSpeed3", []gal.Tree{}...), // returns a "fancyType"
 		gal.Dot[gal.Variable]{
 			Member: gal.NewVariable(
 				"Speed",

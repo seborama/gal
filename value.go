@@ -1,5 +1,7 @@
 package gal
 
+// TODO: could this file be moved to a "value" package and be split into multiple files?
+
 import (
 	"fmt"
 	"math/big"
