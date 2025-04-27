@@ -95,8 +95,8 @@ func (tb TreeBuilder) FromExpr(expr string) (Tree, error) {
 				tree = append(tree, v)
 			} else {
 				bodyFn := BuiltInFunction(fname) // will be nil if it isn't a built-in function (i.e. user-defined or object method)
-				// TODO: if bodyFn == nil, we have either a user-defined function or an user-defined object method. It may be worth
-				// ...   creating a new type for this case. This could simplify the code by keeping each case separate and simpler.
+				// NOTE: if bodyFn == nil, we are likely dealing with user-defined function. These are dealt with at Evaluation time.
+				// NOTE: user-defined object methods are the remit of objectMethodType.
 				tree = append(tree, NewFunction(fname, bodyFn, v.Split()...))
 			}
 
@@ -237,11 +237,11 @@ func extractPart(expr string) (string, exprType, int, error) {
 		}
 	}
 
-	// read part - object accessor (Dot operator)
+	// read part - object Dot accessor
 	//
 	// NOTE: object accessors are second degree to variables and functions
 	// The allow to continue traversing an object by property or method.
-	// The dot operator is used after any gal.entry that returns a value that can be treated as an object.
+	// The dot accessor is used after any gal.entry that returns a value that can be treated as an object.
 	// For example "Pi().Add(10).Sub(5)" is a valid expression because "Pi()" returns a gal.Value and
 	// hence a Go object (be it struct or interface).
 	if expr[pos] == '.' {
@@ -271,13 +271,13 @@ func extractPart(expr string) (string, exprType, int, error) {
 	// read part - operator
 	if s, l := readOperator(expr[pos:]); l != 0 {
 		if s == "+" || s == "-" {
-			s, l = squashPlusMinusChain(expr[pos:]) // TODO: move this into readOperator()?
+			s, l = squashPlusMinusChain(expr[pos:]) // NOTE: shoud we move this into readOperator()?
 		}
 		return s, operatorType, pos + l, nil
 	}
 
 	// read part - number
-	// TODO: complex numbers are not supported - could be "native" or via function or perhaps even a specialised MultiValue?
+	// NOTE: complex numbers are not supported - could be "native" or via function or perhaps even a specialised MultiValue?
 	s, l, err := readNumber(expr[pos:])
 	if err != nil {
 		return "", unknownType, 0, err
@@ -298,7 +298,7 @@ func readString(expr string) (string, int, error) {
 		if r == '"' && (escapes == 0 || escapes&1 == 0) {
 			break
 		}
-		// TODO: perhaps we should collapse the `\`'s, here?
+		// NOTE: perhaps we should collapse the `\`'s, here?
 
 		escapes = 0
 	}
