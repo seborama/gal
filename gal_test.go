@@ -118,7 +118,7 @@ func TestEval_Boolean(t *testing.T) {
 	val = gal.Parse(expr).Eval()
 	assert.Equal(t, gal.False.String(), val.String())
 
-	// TODO: it should be easy to add support for "If" blocks.
+	// TODO: idea: it should be easy to add support for "If" blocks.
 	// ...   It could be in the form of am extension to the Bool type.
 	// ...   Or, we could introduce a new built-in function "If" that returns a type that has methods Then() and Else()
 	// ...   Or, it could be a built-in Object "If" that has methods Then() and Else()
@@ -454,6 +454,40 @@ func TestObjects_Properties_TwoObjects(t *testing.T) {
 	And Car.Speed <= Car.MaxSpeed`
 	parsedExpr := gal.Parse(expr)
 
+	expectedTree := gal.Tree{
+		gal.ObjectProperty{
+			ObjectName:   "Road",
+			PropertyName: "Type",
+		},
+		gal.EqualTo,
+		gal.NewString("Highway"),
+		gal.And,
+		gal.ObjectMethod{
+			ObjectName: "Car",
+			MethodName: "IsRunning",
+			Args:       []gal.Tree{},
+		},
+		gal.And,
+		gal.ObjectProperty{
+			ObjectName:   "Car",
+			PropertyName: "Speed",
+		},
+		gal.LessThan,
+		gal.NewNumber(100, 0),
+		gal.And,
+		gal.ObjectProperty{
+			ObjectName:   "Car",
+			PropertyName: "Speed",
+		},
+		gal.LessThanOrEqual,
+		gal.ObjectProperty{
+			ObjectName:   "Car",
+			PropertyName: "MaxSpeed",
+		},
+	}
+
+	require.Equal(t, expectedTree, parsedExpr)
+
 	got := parsedExpr.Eval(
 		gal.WithObjects(map[string]gal.Object{
 			"Car": &Car{
@@ -473,6 +507,21 @@ func TestObjects_Properties_TwoObjects(t *testing.T) {
 func TestObjects_Methods(t *testing.T) {
 	expr := `aCar.MaxSpeed - aCar.CurrentSpeed()`
 	parsedExpr := gal.Parse(expr)
+
+	expectedTree := gal.Tree{
+		gal.ObjectProperty{
+			ObjectName:   "aCar",
+			PropertyName: "MaxSpeed",
+		},
+		gal.Minus,
+		gal.ObjectMethod{
+			ObjectName: "aCar",
+			MethodName: "CurrentSpeed",
+			Args:       []gal.Tree{},
+		},
+	}
+
+	require.Equal(t, expectedTree, parsedExpr)
 
 	got := parsedExpr.Eval(
 		gal.WithObjects(map[string]gal.Object{
@@ -538,7 +587,7 @@ func TestObjects_MethodReceiver(t *testing.T) {
 	// Note: in this test, WithObjects is called with a `Car`, not a `*Car`.
 	// However, Car.CurrentSpeed has a *Car receiver, hence from a Go perspective, the method
 	// exists on *Car but it does NOT exist on Car!
-	assert.Equal(t, "undefined: type 'gal_test.Car' does not have a method 'CurrentSpeed' (check if it has a pointer receiver)", got.String())
+	assert.Equal(t, "undefined: error: object method 'aCar.CurrentSpeed': unknown or non-callable member (check if it has a pointer receiver)", got.String())
 }
 
 // TODO: this is an idea for a future feature.

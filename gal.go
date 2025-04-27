@@ -14,8 +14,9 @@ const (
 	variableType
 	functionType
 	objectPropertyType           // "cousin" of a variableType, but for a property of a user-defined object
-	objectAccessorByPropertyType // represents an expression object accessor by property
-	objectAccessorByMethodType   // represents an expression object accessor by method
+	objectMethodType             // "cousin" of a functionType, but for a method of a user-defined object
+	objectAccessorByPropertyType // represents an object accessor of a "left hand side" expression by property
+	objectAccessorByMethodType   // represents an object accessor of a "left hand side" expression by method
 )
 
 type Value interface {

@@ -65,7 +65,7 @@ func TestObjectGetMethod(t *testing.T) {
 
 	val, ok = gal.ObjectGetMethod(myCar, "DoesNotExist!")
 	require.False(t, ok)
-	assert.Equal(t, "undefined: type '*gal_test.Car' does not have a method 'DoesNotExist!' (check if it has a pointer receiver)", val().String())
+	assert.Equal(t, "undefined: error: object type '*gal_test.Car' does not have a method 'DoesNotExist!' (check if it has a pointer receiver)", val().String())
 
 	val, ok = gal.ObjectGetMethod(myCar, "Ignite")
 	require.True(t, ok)

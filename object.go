@@ -20,11 +20,17 @@ func (Dot[T]) kind() entryKind {
 	return objectAccessorEntryKind
 }
 
-// Object holds user-defined objects that can carry properties and functions that may be
-// referenced within a gal expression during evaluation.
+// Object holds objects that carry properties and methods:
+//   - user-defined objects that may be referenced within a gal expression during evaluation.
+//   - general purpose Go types that have properties and methods.
+//     These are provided by user-defined objects via their properties and methods return values.
 type Object any
 
-// TODO: could we merge ObjectValue into Object and drop ObjectValue?
+// ObjectValue is a "bridge" beween a non-Value object and Value.
+// This is useful for object accessors that return a non-value.
+// While we cannot perform any Value operations on such objects,
+// ObjectValue allows to keep "traversing" the objects with the Dot
+// operator until (hopefully) we end with a Value.
 type ObjectValue struct {
 	Object any
 	Undefined
@@ -38,6 +44,10 @@ func (o ObjectValue) String() string {
 	return fmt.Sprintf("ObjectValue(%T)", o.Object)
 }
 
+// TODO: could we use the same principle as Function.Receiver with Variable? Would it be elegant?
+// ObjectProperty is a Tree entry that holds a reference of a user-defined object by name and the property to access on it.
+// It is used to access a property on a user-defined object.
+// It is a "cousin" of Variable, but for a property of a user-defined object.
 type ObjectProperty struct {
 	ObjectName   string
 	PropertyName string
@@ -56,6 +66,31 @@ func (o ObjectProperty) kind() entryKind {
 
 func (o ObjectProperty) String() string {
 	return fmt.Sprintf("%s.%s", o.ObjectName, o.PropertyName)
+}
+
+// ObjectMethod is a Tree entry that holds a reference of a user-defined object by name and the method to call on it.
+// It is used to call a method on a user-defined object.
+// It is a "cousin" of Function, but for a method of a user-defined object.
+type ObjectMethod struct {
+	ObjectName string
+	MethodName string
+	Args       []Tree
+}
+
+func NewObjectMethod(objectName, propertyName string, args ...Tree) ObjectMethod {
+	return ObjectMethod{
+		ObjectName: objectName,
+		MethodName: propertyName,
+		Args:       args,
+	}
+}
+
+func (o ObjectMethod) kind() entryKind {
+	return objectMethodEntryKind
+}
+
+func (o ObjectMethod) String() string {
+	return fmt.Sprintf("%s.%s", o.ObjectName, o.MethodName)
 }
 
 func ObjectGetProperty(obj Object, name string) Value {
@@ -98,7 +133,7 @@ func ObjectGetProperty(obj Object, name string) Value {
 
 	galValue, err := goAnyToGalType(fieldReflectValue.Interface())
 	if err != nil {
-		// allow support for other types tobe accessed by Method or Property via
+		// allow support for other types to be accessed by Method or Property via
 		//  an objectAccessorEntryKind (i.e. Dot[Variable] or Dot[Function]).
 		t := fieldReflectValue.Type()
 		switch t.Kind() {
@@ -135,7 +170,7 @@ func ObjectGetMethod(obj Object, name string) (FunctionalValue, bool) {
 	methodReflectValue := value.MethodByName(name)
 	if !methodReflectValue.IsValid() {
 		return func(...Value) Value {
-			return NewUndefinedWithReasonf("type '%T' does not have a method '%s' (check if it has a pointer receiver)", obj, name)
+			return NewUndefinedWithReasonf("error: object type '%T' does not have a method '%s' (check if it has a pointer receiver)", obj, name)
 		}, false
 	}
 
@@ -148,6 +183,10 @@ func ObjectGetMethod(obj Object, name string) (FunctionalValue, bool) {
 		}
 
 		//nolint:gosec // ignoring mem overflow conversion
+		// for functions that requires non-gal.Value parameters, attempt to map such gal.Value params to
+		// what the function param dictates.
+		// E.g.: if an object method has a signature of func (int), we will attempt to map the gal.Value to
+		// a Numberer, then extract an Int64 from the Number() and finally map it to an "int".
 		callArgs := lo.Map(args, func(item Value, index int) reflect.Value {
 			paramType := methodType.In(index)
 
@@ -196,7 +235,7 @@ func ObjectGetMethod(obj Object, name string) (FunctionalValue, bool) {
 
 		retValue, err := goAnyToGalType(out[0].Interface())
 		if err != nil {
-			// allow support for other types tobe accessed by Method or Property via
+			// allow support for other types to be accessed by Method or Property via
 			//  an objectAccessorEntryKind (i.e. Dot[Variable] or Dot[Function]).
 			t := out[0].Type()
 			switch t.Kind() {

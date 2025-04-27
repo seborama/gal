@@ -15,9 +15,10 @@ func (fv FunctionalValue) String() string {
 }
 
 type Function struct {
-	Name   string
-	BodyFn FunctionalValue
-	Args   []Tree
+	Name     string
+	Receiver Value // experimental concept: not used yet
+	BodyFn   FunctionalValue
+	Args     []Tree
 }
 
 func NewFunction(name string, bodyFn FunctionalValue, args ...Tree) Function {
@@ -41,6 +42,17 @@ func (f Function) Equal(other Function) bool {
 
 func (f Function) Eval(opts ...treeOption) Value {
 	var args []Value
+
+	// TODO: how about adding a Receiver property to Function?
+	// ...   It would be populated with the user-defined object or runtime "LHS" accessor, when one is present.
+	// ...   This method would be responsible to populate BodyFn by calling ObjectGetMethod on the receiver.
+	if f.Receiver != nil {
+		bodyFn, ok := ObjectGetMethod(f.Receiver, f.Name)
+		if !ok {
+			return NewUndefinedWithReasonf("unknown method '%s' for receiver '%T'", f.Name, f.Receiver)
+		}
+		f.BodyFn = bodyFn
+	}
 
 	for _, a := range f.Args {
 		args = append(args, a.Eval(opts...))
@@ -83,8 +95,6 @@ func BuiltInFunction(name string) FunctionalValue {
 		return bodyFn
 	}
 
-	// TODO: if nil, we could return a FunctionalValue that returns Undefined
-	// ...   this would save us from having to check for nil in the evaluator
 	return nil
 }
 

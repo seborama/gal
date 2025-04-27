@@ -8,6 +8,8 @@ import (
 	"github.com/samber/lo"
 )
 
+// entryKind represents the type of an entry in the Tree.
+// It determines how the entry is processed during evaluation / calculation.
 type entryKind int
 
 func (ek entryKind) String() string {
@@ -40,7 +42,8 @@ const (
 	treeEntryKind
 	functionEntryKind
 	variableEntryKind
-	objectPropertyEntryKind // "cousin" of a variableEntryKind, but for object properties: obj.property
+	objectMethodEntryKind   // "cousin" of a functionEntryKind, but for user-defined object methods: obj.property
+	objectPropertyEntryKind // "cousin" of a variableEntryKind, but for user-defined object properties: obj.method
 	objectAccessorEntryKind // this is a dot accessor to a property or a method of an object retrieved from the last evaluated expression
 )
 
@@ -96,8 +99,9 @@ func (f Functions) Get(name string) (FunctionalValue, bool) {
 func (tc treeConfig) Function(name string) FunctionalValue {
 	splits := strings.Split(name, ".")
 	if len(splits) == 2 {
-		// look up the method in the user provided objects
+		// look up the method in the user-provided objects
 		if obj, ok := tc.objects.Get(splits[0]); ok {
+			// we ignore "ok" here because ObjectGetMethod will populate it with an Undefined.
 			fv, _ := ObjectGetMethod(obj, splits[1])
 			return fv
 		}
@@ -122,6 +126,22 @@ func (tc treeConfig) Function(name string) FunctionalValue {
 	}
 }
 
+// TODO: should this return a Function rather?
+func (tc treeConfig) ObjectMethod(objMethod ObjectMethod) FunctionalValue {
+	if obj, ok := tc.objects.Get(objMethod.ObjectName); ok {
+		if fv, ok := ObjectGetMethod(obj, objMethod.MethodName); ok {
+			return fv
+		}
+		return func(...Value) Value {
+			return NewUndefinedWithReasonf("error: object method '%s': unknown or non-callable member (check if it has a pointer receiver)", objMethod.String())
+		}
+	}
+
+	return func(...Value) Value {
+		return NewUndefinedWithReasonf("error: object method '%s': unknown object", objMethod.String())
+	}
+}
+
 // Objects is a collection of Object's in the form of a map which keys are the name of the
 // object and values are the actual Object's.
 type Objects map[string]Object
@@ -135,6 +155,7 @@ func (o Objects) Get(name string) (Object, bool) {
 	return obj, ok
 }
 
+// TODO: move treeConfig to a separate file?
 type treeConfig struct {
 	variables Variables
 	functions Functions
@@ -309,6 +330,9 @@ func (tree Tree) Calc(isOperatorInPrecedenceGroup func(Operator) bool, cfg *tree
 		case functionEntryKind:
 			val = functionEntryKindFn(val, op, e, cfg)
 
+		case objectMethodEntryKind:
+			val = objectMethodEntryKindFn(val, op, e, cfg)
+
 		case variableEntryKind:
 			val = variableEntryKindFn(val, op, e, cfg)
 
@@ -390,7 +414,8 @@ func functionEntryKindFn(val entry, op Operator, e entry, cfg *treeConfig) entry
 	slog.Debug("Tree.Calc: functionEntryKind", "name", fn.Name)
 
 	if fn.BodyFn == nil {
-		// attempt to get body of a user-defined function or a user-provided object's method.
+		// attempt to get body of a user-defined function
+		// note: user-provided objects' method are dealt with by objectMethodEntryKindFn
 		fn.BodyFn = cfg.Function(fn.Name)
 	}
 
@@ -434,6 +459,34 @@ func variableEntryKindFn(val entry, op Operator, e entry, cfg *treeConfig) entry
 }
 
 //nolint:errcheck // life's too short to check for type assertion success here
+func objectMethodEntryKindFn(val entry, op Operator, e entry, cfg *treeConfig) entry {
+	objMethod := e.(ObjectMethod)
+
+	slog.Debug("Tree.Calc: objectMethodEntryKind", "object_method", objMethod.String())
+
+	// attempt to get body of a user-provided object's method.
+	bodyFn := cfg.ObjectMethod(objMethod)
+
+	fn := NewFunction(objMethod.MethodName, bodyFn, objMethod.Args...)
+
+	rhsVal := fn.Eval(WithFunctions(cfg.functions), WithVariables(cfg.variables), WithObjects(cfg.objects))
+	if v, ok := rhsVal.(Undefined); ok {
+		slog.Debug("Tree.Calc: val is Undefined", "val", v.String())
+		return v
+	}
+
+	if val == nil {
+		return rhsVal
+	}
+
+	lhsVal := val
+	val = calculate(val.(Value), op, rhsVal)
+	slog.Debug("Tree.Calc: objectMethodEntryKind - calculate", "lhsVal", lhsVal.(Value).String(), "op", op.String(), "rhsVal", rhsVal.String(), "result", val.(Value).String())
+
+	return val
+}
+
+//nolint:errcheck // life's too short to check for type assertion success here
 func objectPropertyEntryKindFn(val entry, op Operator, e entry, cfg *treeConfig) entry {
 	objProp := e.(ObjectProperty)
 
@@ -455,6 +508,7 @@ func objectPropertyEntryKindFn(val entry, op Operator, e entry, cfg *treeConfig)
 	return val
 }
 
+// this is both for Dot[Function] and Dot[Variable].
 func objectAccessorEntryKindFn(val, e entry, cfg *treeConfig) entry {
 	switch oa := e.(type) {
 	case Dot[Function]:
