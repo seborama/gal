@@ -85,7 +85,7 @@ func (tb TreeBuilder) FromExpr(expr string) (Tree, error) {
 
 		case functionType:
 			fname, l, _ := readNamedExpressionType(part)   //nolint:errcheck // ignore err: we already parsed the function name when in extractPart()
-			v, err := tb.FromExpr(part[l+1 : len(part)-1]) // parse the function's argument: exclude leading '(' and trailing ')'
+			v, err := tb.FromExpr(part[l+1 : len(part)-1]) // parse the function's arguments: exclude leading '(' and trailing ')'
 			if err != nil {
 				return nil, err
 			}
@@ -99,6 +99,17 @@ func (tb TreeBuilder) FromExpr(expr string) (Tree, error) {
 				// ...   creating a new type for this case. This could simplify the code by keeping each case separate and simpler.
 				tree = append(tree, NewFunction(fname, bodyFn, v.Split()...))
 			}
+
+		case objectMethodType:
+			// an objectMethodType represents a method access on a user-defined object
+			fname, l, _ := readNamedExpressionType(part)   //nolint:errcheck // ignore err: we already parsed the function name when in extractPart()
+			v, err := tb.FromExpr(part[l+1 : len(part)-1]) // parse the function's arguments: exclude leading '(' and trailing ')'
+			if err != nil {
+				return nil, err
+			}
+			splits := strings.SplitN(fname, ".", 2) // there should only ever be exactly 2 parts at this point
+			om := NewObjectMethod(splits[0], splits[1], v.Split()...)
+			tree = append(tree, om)
 
 		case variableType:
 			v := NewVariable(part)
@@ -123,6 +134,7 @@ func (tb TreeBuilder) FromExpr(expr string) (Tree, error) {
 				return nil, err
 			}
 			if len(v) != 1 {
+				// NOTE: this should never happen because we have already extracted the object accessor into a single "part".
 				return nil, errors.Errorf("syntax error: invalid object accessor function: '%s'", part)
 			}
 			m := v[0].(Function)
@@ -137,7 +149,7 @@ func (tb TreeBuilder) FromExpr(expr string) (Tree, error) {
 			return tree, nil
 
 		default:
-			return nil, errors.Errorf("internal error: unknown expression part type '%v'", ptype)
+			return nil, errors.Errorf("internal error: unknown expression part type '%T'='%v'", ptype, ptype)
 		}
 
 		idx += length
@@ -205,7 +217,7 @@ func extractPart(expr string) (string, exprType, int, error) {
 		switch {
 		case errors.Is(err, errFunctionNameWithoutParens):
 			if strings.Contains(fname, ".") {
-				// object property found
+				// user-define object property found.
 				// note: we have already dealt with variableType above
 				return fname, objectPropertyType, pos + lf, nil
 			}
@@ -213,11 +225,13 @@ func extractPart(expr string) (string, exprType, int, error) {
 		case err != nil:
 			return "", unknownType, 0, err
 		default:
-			// NOTE: if name contains `.` it's an object function
-			// TODO: could create a new objectFunctionType as already done with objectPropertyType
 			fargs, la, err := readFunctionArguments(expr[pos+lf:])
 			if err != nil {
 				return "", unknownType, 0, err
+			}
+			if strings.Contains(fname, ".") {
+				// user-defined object method found.
+				return fname + fargs, objectMethodType, pos + lf + la, nil
 			}
 			return fname + fargs, functionType, pos + lf + la, nil
 		}
@@ -226,10 +240,8 @@ func extractPart(expr string) (string, exprType, int, error) {
 	// read part - object accessor (Dot operator)
 	//
 	// NOTE: object accessors are second degree to variables and functions
-	// First, the obj.someFunction() or obj.someProperty is evaluated and returned
-	// respectively as functionType or variableType.
-	// Once this extraction has taken part, the dot accessor comes into place.
-	// The dot operator can also be used after any gal.entry that returns a function or variable.
+	// The allow to continue traversing an object by property or method.
+	// The dot operator is used after any gal.entry that returns a value that can be treated as an object.
 	// For example "Pi().Add(10).Sub(5)" is a valid expression because "Pi()" returns a gal.Value and
 	// hence a Go object (be it struct or interface).
 	if expr[pos] == '.' {
@@ -240,14 +252,14 @@ func extractPart(expr string) (string, exprType, int, error) {
 		fname, lf, err := readNamedExpressionType(expr[pos:])
 		switch {
 		case errors.Is(err, errFunctionNameWithoutParens):
-			// object property found
+			// property found on general purpose object
 			return fname, objectAccessorByPropertyType, pos + lf, nil
 
 		case err != nil:
 			return "", unknownType, 0, err
 
 		default:
-			// object method found
+			// method found on general purpose object
 			fargs, la, err := readFunctionArguments(expr[pos+lf:])
 			if err != nil {
 				return "", unknownType, 0, err
