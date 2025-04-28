@@ -60,36 +60,36 @@ func (u Undefined) LessThanOrEqual(other Value) Bool {
 	return False
 }
 
-func (Undefined) Add(Value) Value {
-	return Undefined{}
+func (u Undefined) Add(Value) Value {
+	return u
 }
 
-func (Undefined) Sub(Value) Value {
-	return Undefined{}
+func (u Undefined) Sub(Value) Value {
+	return u
 }
 
-func (Undefined) Multiply(Value) Value {
-	return Undefined{}
+func (u Undefined) Multiply(Value) Value {
+	return u
 }
 
-func (Undefined) Divide(Value) Value {
-	return Undefined{}
+func (u Undefined) Divide(Value) Value {
+	return u
 }
 
-func (Undefined) PowerOf(Value) Value {
-	return Undefined{}
+func (u Undefined) PowerOf(Value) Value {
+	return u
 }
 
-func (Undefined) Mod(Value) Value {
-	return Undefined{}
+func (u Undefined) Mod(Value) Value {
+	return u
 }
 
-func (Undefined) LShift(Value) Value {
-	return Undefined{}
+func (u Undefined) LShift(Value) Value {
+	return u
 }
 
-func (Undefined) RShift(Value) Value {
-	return Undefined{}
+func (u Undefined) RShift(Value) Value {
+	return u
 }
 
 func (Undefined) And(other Value) Bool {
@@ -111,6 +111,9 @@ func (u Undefined) AsString() String {
 	return NewString(u.String())
 }
 
+// The purpose of this method is to allow the user to check if a Value is undefined.
+// For instance, if a Value is Number but the Undefined property's reason is not empty,
+// it means that the Value is not a valid Number.
 func (u Undefined) IsUndefined() bool {
 	return u.reason == "" // NOTE: this is not quite accurate: an Undefined may not hold a reason
 }

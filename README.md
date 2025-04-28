@@ -203,19 +203,19 @@ Example:
 `type Car struct` has several properties and methods - one of which is `func (c *Car) CurrentSpeed() gal.Value`.
 
 ```go
-	expr := `aCar.MaxSpeed - aCar.CurrentSpeed()`
-	parsedExpr := gal.Parse(expr)
+    expr := `aCar.MaxSpeed - aCar.CurrentSpeed()`
+    parsedExpr := gal.Parse(expr)
 
-	got := parsedExpr.Eval(
-		gal.WithObjects(map[string]gal.Object{
-			"aCar": Car{
-				Make:     "Lotus Esprit",
-				Mileage:  gal.NewNumberFromInt(2000),
-				Speed:    100,
-				MaxSpeed: 250,
-			},
-		}),
-	)
+    got := parsedExpr.Eval(
+        gal.WithObjects(map[string]gal.Object{
+            "aCar": Car{
+                Make:     "Lotus Esprit",
+                Mileage:  gal.NewNumberFromInt(2000),
+                Speed:    100,
+                MaxSpeed: 250,
+            },
+        }),
+    )
     // result: 150 == 250 - 100
 
 ```
@@ -231,7 +231,7 @@ Example:
 `gal` will convert basic Go types such as `int` or `bool` to their `gal.Value` equivalent. This helps, at the end of the chain, to continue with the evaluation of the expression.
 
 ```go
-	expr := `aCar.Stereo.Brand.Name`
+    expr := `aCar.Stereo.Brand.Name`
 ```
 
 Dot is an accessor. It can be thought of as a symbol. It is not an operator!

@@ -74,9 +74,15 @@ func (s String) Add(other Value) Value {
 
 func (s String) Multiply(other Value) Value {
 	if v, ok := other.(Numberer); ok {
-		return String{
-			value: strings.Repeat(s.value, int(v.Number().value.IntPart())),
+		count := v.Number().value
+		if !count.IsInteger() || count.IsNegative() {
+			return NewUndefinedWithReasonf("String.Multiply: invalid repeat count: %s", count.String())
 		}
+		n := count.IntPart()
+		if int64(int(n)) != n { // overflow check
+			return NewUndefinedWithReasonf("String.Multiply: repeat count overflows on this architecture")
+		}
+		return String{value: strings.Repeat(s.value, int(n))}
 	}
 
 	return NewUndefinedWithReasonf("NaN: %s", other.String())
@@ -84,51 +90,53 @@ func (s String) Multiply(other Value) Value {
 
 // TODO: add test to confirm this is correct!
 func (s String) LShift(other Value) Value {
-	if v, ok := other.(Numberer); ok {
-		if v.Number().value.IsNegative() {
-			return NewUndefinedWithReasonf("invalid negative left shift")
-		}
-		if !v.Number().value.IsInteger() {
-			return NewUndefinedWithReasonf("invalid non-integer left shift")
-		}
-
-		idx64 := v.Number().value.IntPart()
-		if idx64 < 0 {
-			return NewUndefinedWithReasonf("left shift [%s]: out of range", other.String())
-		}
-		if idx64 > int64(len(s.value)) {
-			return String{}
-		}
-		return String{value: s.value[int(idx64):]}
+	v, ok := other.(Numberer)
+	if !ok {
+		return NewUndefinedWithReasonf("NaN: %s", other.String())
 	}
 
-	return NewUndefinedWithReasonf("NaN: %s", other.String())
+	if v.Number().value.IsNegative() {
+		return NewUndefinedWithReasonf("invalid negative left shift")
+	}
+	if !v.Number().value.IsInteger() {
+		return NewUndefinedWithReasonf("invalid non-integer left shift")
+	}
+
+	idx64 := v.Number().value.IntPart()
+	if idx64 < 0 {
+		return NewUndefinedWithReasonf("left shift [%s]: out of range", other.String())
+	}
+	if idx64 > int64(len(s.value)) {
+		return String{}
+	}
+
+	return String{value: s.value[int(idx64):]}
 }
 
 // TODO: add test to confirm this is correct!
 func (s String) RShift(other Value) Value {
-	if v, ok := other.(Numberer); ok {
-		if v.Number().value.IsNegative() {
-			return NewUndefinedWithReasonf("invalid negative left shift")
-		}
-		if !v.Number().value.IsInteger() {
-			return NewUndefinedWithReasonf("invalid non-integer left shift")
-		}
-
-		idx64 := v.Number().value.IntPart()
-		if idx64 < 0 {
-			return NewUndefinedWithReasonf("right shift [%s]: out of range", other.String())
-		}
-		if idx64 > int64(len(s.value)) {
-			return String{}
-		}
-
-		return String{
-			value: s.value[:int64(len(s.value))-v.Number().value.IntPart()],
-		}
+	v, ok := other.(Numberer)
+	if !ok {
+		return NewUndefinedWithReasonf("NaN: %s", other.String())
 	}
 
-	return NewUndefinedWithReasonf("NaN: %s", other.String())
+	if v.Number().value.IsNegative() {
+		return NewUndefinedWithReasonf("invalid negative right shift")
+	}
+	if !v.Number().value.IsInteger() {
+		return NewUndefinedWithReasonf("invalid non-integer right shift")
+	}
+
+	shift := v.Number().value.IntPart()
+	if shift < 0 {
+		return NewUndefinedWithReasonf("right shift [%s]: out of range", other.String())
+	}
+	limit := int64(len(s.value))
+	if shift > limit {
+		return String{}
+	}
+
+	return String{value: s.value[:int64(len(s.value))-v.Number().value.IntPart()]}
 }
 
 func (s String) String() string {

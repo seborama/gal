@@ -4,8 +4,10 @@ import "fmt"
 
 type Value interface {
 	valueCalculation
+	valueComparison
 	valueLogic
 	valueHelper
+	undefinedChecker
 }
 
 type valueCalculation interface {
@@ -19,13 +21,16 @@ type valueCalculation interface {
 	RShift(Value) Value
 }
 
-type valueLogic interface {
+type valueComparison interface {
 	LessThan(Value) Bool
 	LessThanOrEqual(Value) Bool
 	EqualTo(Value) Bool
 	NotEqualTo(Value) Bool
 	GreaterThan(Value) Bool
 	GreaterThanOrEqual(Value) Bool
+}
+
+type valueLogic interface {
 	And(Value) Bool
 	Or(Value) Bool
 }
@@ -34,6 +39,9 @@ type valueHelper interface {
 	Stringer
 	fmt.Stringer
 	entry
+}
+
+type undefinedChecker interface {
 	// TODO: IsUndefined somewhat mimics a "Maybe" monad in functional programming:
 	// ...   e.g. if a Bool has its Undefined value set, IsUndefined will return true.
 	// ...   Instead of using the Bool, we should unwrap the Undefined and use it: this is not

@@ -78,9 +78,10 @@ func (n Number) Multiply(other Value) Value {
 
 func (n Number) Divide(other Value) Value {
 	if v, ok := other.(Numberer); ok {
-		return Number{
-			value: n.value.Div(v.Number().value),
+		if v.Number().value.IsZero() {
+			return NewUndefinedWithReasonf("division by zero")
 		}
+		return Number{value: n.value.Div(v.Number().value)}
 	}
 
 	return NewUndefinedWithReasonf("NaN: %s", other.String())
@@ -97,7 +98,7 @@ func (n Number) PowerOf(other Value) Value {
 }
 
 func (n Number) Mod(other Value) Value {
-	if v, ok := other.(Numberer); ok {
+	if v, ok := other.(Numberer); ok && !v.Number().value.IsZero() {
 		return Number{
 			value: n.value.Mod(v.Number().value),
 		}
@@ -165,8 +166,11 @@ func (n Number) Cos() Number {
 }
 
 func (n Number) Sqrt() Value {
+	if n.value.IsNegative() {
+		return NewUndefinedWithReasonf("square root of negative number: %s", n.String())
+	}
 	n, err := NewNumberFromString(
-		new(big.Float).Sqrt(n.value.BigFloat()).String(),
+		new(big.Float).Sqrt(n.value.BigFloat()).String(), // NOTE: how about this? d.PowWithPrecision(decimal.New(5, -1), ppp)
 	)
 	if err != nil {
 		return NewUndefinedWithReasonf("Sqrt:%s", err.Error())
