@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/samber/lo"
 )
 
 type FunctionalValue func(...Value) Value
@@ -31,6 +32,13 @@ func NewFunction(name string, bodyFn FunctionalValue, args ...Tree) Function {
 
 func (Function) kind() entryKind {
 	return functionEntryKind
+}
+
+func (f Function) String() string {
+	args := lo.Map(f.Args, func(item Tree, index int) string {
+		return strings.TrimRight(item.String(), "\n")
+	})
+	return fmt.Sprintf("%s(%s)", f.Name, strings.Join(args, ", "))
 }
 
 // Equal satisfies the external Equaler interface such as in testify assertions and the cmp package
