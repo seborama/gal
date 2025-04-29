@@ -587,7 +587,7 @@ func TestObjects_MethodReceiver(t *testing.T) {
 	// Note: in this test, WithObjects is called with a `Car`, not a `*Car`.
 	// However, Car.CurrentSpeed has a *Car receiver, hence from a Go perspective, the method
 	// exists on *Car but it does NOT exist on Car!
-	assert.Equal(t, "undefined: error: object method 'aCar.CurrentSpeed': unknown or non-callable member (check if it has a pointer receiver)", got.String())
+	assert.Equal(t, "undefined: error: object 'aCar' method 'CurrentSpeed': unknown or non-callable member (check if it has a pointer receiver)", got.String())
 }
 
 // TODO: this is an idea for a future feature.

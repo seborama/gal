@@ -93,6 +93,7 @@ func (o ObjectMethod) String() string {
 	return fmt.Sprintf("%s.%s", o.ObjectName, o.MethodName)
 }
 
+// ObjectGetProperty returns the value of the property with the given name from the object.
 func ObjectGetProperty(obj Object, name string) Value {
 	if obj == nil {
 		return NewUndefinedWithReasonf("object is nil for type '%T'", obj)
@@ -153,6 +154,7 @@ func ObjectGetProperty(obj Object, name string) Value {
 	return galValue
 }
 
+// ObjectGetMethod returns a closure that can be called with the method's arguments.
 func ObjectGetMethod(obj Object, name string) (FunctionalValue, bool) {
 	if obj == nil {
 		return func(...Value) Value {

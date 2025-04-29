@@ -90,7 +90,7 @@ func main() {
 
 `gal` comes with  pre-defined type interfaces: Numberer, Booler, Stringer (and maybe more in the future).
 
-They allow the general use of types. For instance, the String `"123"` can be converted to the Number `123`.
+They allow the use of general types. For instance, the String `"123"` can be converted to the Number `123`.
 With `Numberer`, a user-defined function can transparently use String and Number when both hold a number representation.
 
 A user-defined function can do this:
@@ -184,7 +184,7 @@ This allows parsing the expression once with `Parse` and run `Tree`.`Eval` multi
 
 ## Objects
 
-Objects are Go `struct`'s which **properties** act as **gal variables** and **methods** as **gal functions**.
+Objects are Go `struct`'s which **properties** behave similarly to **gal variables** and **methods** to **gal functions**.
 
 Object definitions are passed as a `map[string]Object` using `WithObjects` when calling `Eval` from `Tree`.
 
@@ -203,21 +203,45 @@ Example:
 `type Car struct` has several properties and methods - one of which is `func (c *Car) CurrentSpeed() gal.Value`.
 
 ```go
-	expr := `aCar.MaxSpeed - aCar.CurrentSpeed()`
-	parsedExpr := gal.Parse(expr)
+    expr := `aCar.MaxSpeed - aCar.CurrentSpeed()`
+    parsedExpr := gal.Parse(expr)
 
-	got := parsedExpr.Eval(
-		gal.WithObjects(map[string]gal.Object{
-			"aCar": Car{
-				Make:     "Lotus Esprit",
-				Mileage:  gal.NewNumberFromInt(2000),
-				Speed:    100,
-				MaxSpeed: 250,
-			},
-		}),
-	)
+    got := parsedExpr.Eval(
+        gal.WithObjects(map[string]gal.Object{
+            "aCar": Car{
+                Make:     "Lotus Esprit",
+                Mileage:  gal.NewNumberFromInt(2000),
+                Speed:    100,
+                MaxSpeed: 250,
+            },
+        }),
+    )
     // result: 150 == 250 - 100
 
+```
+
+## Objects Dot accessors
+
+While user-defined Objects are generally Value-centric, `gal` supports accessing porperties and methods on Go objects too, using the `.` accessor.
+
+Example:
+
+`aCar.Stereo` returns a `CarStereo` struct. Its property `Brand` returns a `StereoBrand` that contains 2 properties `Name` and `Country`. None of these use `gal.Value` but the Dot accessor permits traversing them transparently.
+
+`gal` will convert basic Go types such as `int` or `bool` to their `gal.Value` equivalent. This helps, at the end of the chain, to continue with the evaluation of the expression.
+
+```go
+    expr := `aCar.Stereo.Brand.Name`
+```
+
+Dot is an accessor. It can be thought of as a symbol. It is not an operator!
+
+```go
+// This is NOT a valid expression. While it may parse, it won't evaluate!
+((aCar.Stereo).Brand).Country
+
+// And of course, gal will refuse to evaluate this expression:
+((aCar.Stereo).Brand + 10).Country
 ```
 
 ## High level design
