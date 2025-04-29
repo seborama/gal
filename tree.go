@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
-
-	"github.com/samber/lo"
 )
 
 // entryKind represents the type of an entry in the Tree.
@@ -26,6 +24,8 @@ func (ek entryKind) String() string {
 		return "functionEntryKind"
 	case objectPropertyEntryKind:
 		return "objectPropertyEntryKind"
+	case objectMethodEntryKind:
+		return "objectMethodEntryKind"
 	case variableEntryKind:
 		return "variableEntryKind"
 	case objectAccessorEntryKind:
@@ -477,26 +477,21 @@ func (tree Tree) String(indents ...string) string {
 		case treeEntryKind:
 			res += fmt.Sprintf(indent+"Tree {\n%s}\n", e.(Tree).String("   "))
 		case functionEntryKind:
-			// TODO: we should create a String() method in Function and move this logic there
-			args := lo.Map(e.(Function).Args, func(item Tree, index int) string {
-				return strings.TrimRight(item.String(), "\n")
-			})
-			res += fmt.Sprintf(indent+"Function %s(%s)\n", e.(Function).Name, strings.Join(args, ", "))
+			res += fmt.Sprintf(indent+"Function %s(%s)\n", e.(Function).String())
 		case variableEntryKind:
 			res += fmt.Sprintf(indent+"Variable %s\n", e.(Variable).Name)
 		case objectPropertyEntryKind:
 			res += fmt.Sprintf(indent+"ObjectProperty %s\n", e.(ObjectProperty).String())
+		case objectMethodEntryKind:
+			res += fmt.Sprintf(indent+"ObjectMethod %s\n", e.(ObjectMethod).String())
 		case objectAccessorEntryKind:
 			switch a := e.(type) {
 			case Dot[Function]:
 				fn := a.Member
-				args := lo.Map(fn.Args, func(item Tree, index int) string {
-					return strings.TrimRight(item.String(), "\n")
-				})
-				res += fmt.Sprintf(indent+"ObjectAccessor %s(%s)\n", fn.Name, strings.Join(args, ", "))
+				res += fmt.Sprintf(indent+"ObjectAccessor[Function] %s\n", fn.String())
 			case Dot[Variable]:
 				v := a.Member
-				res += fmt.Sprintf(indent+"ObjectAccessor %s\n", v.Name)
+				res += fmt.Sprintf(indent+"ObjectAccessor[Variable] %s\n", v.String())
 			default:
 				res += fmt.Sprintf(indent+"TODO: unsupported - %s %T %s\n", e, a, a.kind().String())
 			}
