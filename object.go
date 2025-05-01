@@ -120,7 +120,7 @@ func ObjectGetProperty(obj Object, name string) Value {
 		}
 	}
 
-	// TODO: we only support `struct` for now. Perhaps simple types (int, float, etc) are worthwhile an enhancement?
+	// TODO: we only support `struct` receivers for now. Perhaps simple types (int, float, etc) are worthwhile an enhancement?
 	if t.Kind() != reflect.Struct {
 		return NewUndefinedWithReasonf("object is '%s' but only 'struct' and '*struct' are currently supported", t.Kind())
 	}
@@ -143,7 +143,7 @@ func ObjectGetProperty(obj Object, name string) Value {
 				// allow support for (non-empty) interfaces
 				return ObjectValue{Object: fieldReflectValue.Interface()}
 			}
-		case reflect.Struct: // TODO: incomplete code: see ObjectGetProperty to handle `*struct` scenario.
+		case reflect.Struct: // TODO: (!!) incomplete code: see ObjectGetProperty to handle `*struct` scenario.
 			// allow support for struct types
 			return ObjectValue{Object: fieldReflectValue.Interface()}
 		}
@@ -246,7 +246,7 @@ func ObjectGetMethod(obj Object, name string) (FunctionalValue, bool) {
 					// allow support for (non-empty) interfaces
 					return ObjectValue{Object: out[0].Interface()}
 				}
-			case reflect.Struct: // TODO: incomplete code: see ObjectGetProperty to handle `*struct` scenario.
+			case reflect.Struct: // TODO: (!!) incomplete code: see ObjectGetProperty to handle `*struct` scenario.
 				// allow support for struct types
 				return ObjectValue{Object: out[0].Interface()}
 			}

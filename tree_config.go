@@ -44,7 +44,7 @@ type treeConfig struct {
 }
 
 // Variable returns the value of the variable specified by name.
-// TODO: add support for arrays and maps via `[...]`
+// TODO: (!) add support for arrays and maps via `[...]`
 // ...   NOTE: it may be more adequate to create a new `[]` operator.
 // ...   This would also permit its use on any Value, including those returned from function calls.
 // ...   We would likely need to create new types (unless MultiValue can work for this).

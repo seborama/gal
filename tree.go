@@ -156,7 +156,7 @@ func (tree Tree) Calc(isOperatorInPrecedenceGroup func(Operator) bool, cfg *tree
 			}
 		}
 
-		// TODO: implement Calc() on all entry types (Value, Function, Variable, ObjectProperty, ObjectAccessor, etc.)
+		// TODO: (!!) implement Calc() on all entry types (Value, Function, Variable, ObjectProperty, ObjectAccessor, etc.)
 		// ...   and move the logic of each case below to the entry type itself.
 		switch e.kind() {
 		case valueEntryKind:
