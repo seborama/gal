@@ -274,9 +274,10 @@ func TestTreeBuilder_FromExpr_Dot_Accessor_Property(t *testing.T) {
 	assert.Equal(t, gal.NewNumberFromFloat(100), gotVal)
 }
 
-// TODO: this is an idea for a future feature
+// TODO: (!) this is an idea for a future feature
 // func TestTreeBuilder_FromExpr_Arrays(t *testing.T) {
-//	expr := `f(1 2 3)[1]`
+//	expr := `f(1 2 3)[1]` // simple example
+//	expr := `f(1 2 3)[1 + sum(1 2 3)]` // complex example
 
 //	funcs := gal.Functions{
 //		"f": func(args ...gal.Value) gal.Value { return gal.NewMultiValue(args...) },
@@ -296,6 +297,11 @@ func TestTreeBuilder_FromExpr_Dot_Accessor_Property(t *testing.T) {
 //			},
 //			gal.Tree{
 //				gal.NewNumberFromInt(3),
+//			},
+//			gal.Collection{ // this would work similarly to gal.Dot but with the lhs as the collection and the rhs as the index
+//				gal.Tree{
+//					gal.NewNumberFromInt(1),
+//				},
 //			},
 //		),
 //	}
