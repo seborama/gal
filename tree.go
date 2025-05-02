@@ -5,9 +5,7 @@ import (
 	"strings"
 )
 
-type entry interface {
-	// TODO: remove this interface and perhaps use Value instead? Or else, use 'any'
-}
+type entry interface{} // NOTE: this could be dropped in favour of using `any` directly.
 
 type Tree []entry
 
@@ -98,9 +96,8 @@ func (tree Tree) Calc(isOperatorInPrecedenceGroup func(Operator) bool, cfg *tree
 
 	//nolint:errcheck // life's too short to check for type assertion success here
 	for i := 0; i < tree.TrunkLen(); i++ {
-		if v, ok := val.(Undefined); ok {
-			// TODO: is this odd? we also perform this check below, after the switch case
-			return Tree{v}
+		if u, ok := val.(Undefined); ok {
+			return Tree{u}
 		}
 
 		e := tree[i]
@@ -112,8 +109,6 @@ func (tree Tree) Calc(isOperatorInPrecedenceGroup func(Operator) bool, cfg *tree
 
 		switch typedE := e.(type) {
 		case Bool, MultiValue, Number, String:
-			// TODO: (!!) implement Calc() on all these types (should be possible to encapsulate the behaviour to avoid repeat code)
-			fmt.Printf("DEBUG - Tree.Calc: entry in Tree %T\n", typedE)
 			vVal, _ := val.(Value) // avoid panic if val is nil
 			val = valueEntryKindFn(vVal, op, e.(Value))
 
@@ -157,12 +152,6 @@ func (tree Tree) Calc(isOperatorInPrecedenceGroup func(Operator) bool, cfg *tree
 
 		default:
 			val = NewUndefinedWithReasonf("internal error: unknown entry type: '%T'", e)
-		}
-
-		_, isUndef := val.(Undefined)
-		if val != nil && isUndef {
-			// TODO: (!!) is this odd? we also perform this check above, at the start of te for loop
-			return Tree{val}
 		}
 	}
 
@@ -215,14 +204,25 @@ func objectAccessorDotFunctionFn(val entry, oa Dot[Function], cfg *treeConfig) e
 		return NewUndefinedWithReasonf("internal error: objectAccessorEntryKind Dot[Function] for '%s': BodyFn is not empty: this indicates the object's method was confused for a build-in function", fn.Name)
 	}
 
+	var receiver any
+
 	// as this is an object function accessor, we need to get the object first: it is the LHS currently held in val
-	vVal, ok := val.(Value)
+	receiver, ok := val.(Value)
 	if !ok {
-		return NewUndefinedWithReasonf("syntax error: object accessor called on non-object: [object: '%T'] [member: '%s']", val, fn.Name)
+		return NewUndefinedWithReasonf("syntax error: object accessor [Function] called on non-object: [object: '%T'] [member: '%s'] (check if the receiver is nil)", val, fn.Name)
+	}
+
+	// if the object is a ObjectValue, we need to get the underlying object
+	// ObjectValue is a wrapper for "general" objects (i.e. non-gal.Value objects)
+	// By Object, we mean a Go struct, a pointer to a struct or a Go interface.
+	objVal, ok := receiver.(ObjectValue)
+	if ok {
+		receiver = objVal.Object
 	}
 
 	// now, we can get the method from the object
-	if vFv, ok := ObjectGetMethod(vVal, fn.Name); ok {
+	vFv, ok := ObjectGetMethod(receiver, fn.Name)
+	if ok {
 		fn.BodyFn = vFv
 		rhsVal := fn.Eval(WithFunctions(cfg.functions), WithVariables(cfg.variables), WithObjects(cfg.objects))
 		if u, ok := rhsVal.(Undefined); ok {
@@ -232,29 +232,30 @@ func objectAccessorDotFunctionFn(val entry, oa Dot[Function], cfg *treeConfig) e
 		return rhsVal
 	}
 
-	return NewUndefinedWithReasonf("syntax error: object accessor function called on unknown or non-function member: [object: '%T'] [member: '%s']", fmt.Sprintf("%T", val), fn.Name)
+	return vFv // this will be an Undefined type.
 }
 
 func objectAccessorDotVariableFn(val entry, oa Dot[Variable]) entry {
 	v := oa.Member
 
+	var receiver any
+
 	// as this is an object property accessor, we need to get the object first: it is the LHS currently held in val
-	var vVal any
-	vVal, ok := val.(Value)
+	receiver, ok := val.(Value)
 	if !ok {
-		return NewUndefinedWithReasonf("syntax error: object accessor called on non-object: [object: '%T'] [member: '%s']", fmt.Sprintf("%T", val), v.Name)
+		return NewUndefinedWithReasonf("syntax error: object accessor [Variable] called on non-object: [object: '%T'] [member: '%s'] (check if the receiver is nil)", fmt.Sprintf("%T", val), v.Name)
 	}
 
 	// if the object is a ObjectValue, we need to get the underlying object
 	// ObjectValue is a wrapper for "general" objects (i.e. non-gal.Value objects)
 	// By Object, we mean a Go struct, a pointer to a struct or a Go interface.
-	objVal, ok := vVal.(ObjectValue)
+	objVal, ok := receiver.(ObjectValue)
 	if ok {
-		vVal = objVal.Object
+		receiver = objVal.Object
 	}
 
 	// now, we can get the property from the object
-	rhsVal := ObjectGetProperty(vVal, v.Name)
+	rhsVal := ObjectGetProperty(receiver, v.Name)
 
 	return rhsVal
 }

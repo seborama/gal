@@ -2,13 +2,19 @@ package gal
 
 import (
 	"fmt"
-	"log/slog"
 	"reflect"
 	"strconv"
 
 	"github.com/pkg/errors"
 	"github.com/samber/lo"
 )
+
+type DotFunction struct {
+	Name     string
+	Receiver Value // experimental concept: not used yet
+	BodyFn   FunctionalValue
+	Args     []Tree
+}
 
 type Member interface{ Function | Variable }
 
@@ -310,8 +316,6 @@ func goAnyToGalType(value any) (Value, error) {
 	case bool:
 		return NewBool(typedValue), nil
 	default:
-		t := reflect.TypeOf(value)
-		slog.Debug("goAnyToGalType", "t.Kind", t.Kind().String())
 		return nil, errors.Errorf("type '%T' cannot be mapped to gal.Value", typedValue)
 	}
 }

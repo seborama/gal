@@ -393,7 +393,7 @@ func TestObjects_Properties(t *testing.T) {
 	assert.Equal(t, "150", got.String())
 }
 
-func TestObjects_ChainedProperties(t *testing.T) {
+func TestObjects_Chained_Properties(t *testing.T) {
 	expr := `aCar.Stereo.Brand.Name + "::" + aCar.Stereo.Brand.Country`
 	parsedExpr := gal.Parse(expr)
 
@@ -534,6 +534,61 @@ func TestObjects_Methods(t *testing.T) {
 		}),
 	)
 	assert.Equal(t, "150", got.String())
+}
+
+// TODO: could we try and explore this >> expr := `((aCar.Stereo).Brand).Country` ??
+
+func TestObjects_Chained_Methods(t *testing.T) {
+	expr := `aCar.GetThinger().Thing().Add("::with a suffix")`
+	parsedExpr := gal.Parse(expr)
+
+	expectedTree := gal.Tree{
+		gal.ObjectMethod{
+			ObjectName: "aCar",
+			MethodName: "GetThinger",
+			Args:       []gal.Tree{},
+		},
+		gal.Dot[gal.Function]{
+			Member: gal.Function{
+				Name:   "Thing",
+				BodyFn: (gal.FunctionalValue)(nil),
+				Args:   []gal.Tree{},
+			},
+		},
+		gal.Dot[gal.Function]{
+			Member: gal.Function{
+				Name:   "Add",
+				BodyFn: (gal.FunctionalValue)(nil),
+				Args: []gal.Tree{
+					{
+						gal.NewString("::with a suffix"),
+					},
+				},
+			},
+		},
+	}
+
+	assert.Equal(t, expectedTree, parsedExpr)
+
+	got := parsedExpr.Eval(
+		gal.WithObjects(map[string]gal.Object{
+			"aCar": &Car{
+				Make:     "Lotus Esprit",
+				Mileage:  gal.NewNumberFromInt(2000),
+				Speed:    100,
+				MaxSpeed: 250,
+				Stereo: CarStereo{
+					Brand: StereoBrand{
+						Name:    "Mitsubishi",
+						Country: "Japan",
+					},
+					MaxWattage: 120,
+				},
+				Thinger: Thing{},
+			},
+		}),
+	)
+	assert.Equal(t, "it's a thing!::with a suffix", got.AsString().RawString())
 }
 
 func TestObjects_Methods_WithSubTree(t *testing.T) {

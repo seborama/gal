@@ -222,17 +222,9 @@ Example:
 
 ## Objects Dot accessors
 
-While user-defined Objects are generally Value-centric, `gal` supports accessing porperties and methods on Go objects too, using the `.` accessor.
-
-Example:
-
-`aCar.Stereo` returns a `CarStereo` struct. Its property `Brand` returns a `StereoBrand` that contains 2 properties `Name` and `Country`. None of these use `gal.Value` but the Dot accessor permits traversing them transparently.
+While user-defined Objects are generally `Value`-centric, `gal` supports accessing properties and methods on Go objects too, using the `.` accessor.
 
 `gal` will convert basic Go types such as `int` or `bool` to their `gal.Value` equivalent. This helps, at the end of the chain, to continue with the evaluation of the expression.
-
-```go
-    expr := `aCar.Stereo.Brand.Name`
-```
 
 Dot is an accessor. It can be thought of as a symbol. It is not an operator!
 
@@ -243,6 +235,24 @@ Dot is an accessor. It can be thought of as a symbol. It is not an operator!
 // And of course, gal will refuse to evaluate this expression:
 ((aCar.Stereo).Brand + 10).Country
 ```
+
+---
+
+Example 1:
+
+```go
+    expr := `aCar.Stereo.Brand.Name`
+```
+
+`aCar.Stereo` returns a `CarStereo` struct. Its property `Brand` returns a `StereoBrand` that contains 2 properties `Name` and `Country`. None of these use `gal.Value` but the Dot accessor permits traversing them transparently.
+
+Example 2:
+
+```go
+    expr := `aCar.GetThinger().Thing().Add("::with a suffix")`
+```
+
+In this instance, `GetThinger()` returns an interface. `Thing()` returns a `gal.String`.
 
 ## High level design
 
