@@ -30,8 +30,26 @@ func NewFunction(name string, bodyFn FunctionalValue, args ...Tree) Function {
 	}
 }
 
-func (Function) kind() entryKind {
-	return functionEntryKind
+func (f Function) Calculate(val entry, op Operator, cfg *treeConfig) entry {
+	if f.BodyFn == nil {
+		// attempt to get body of a user-defined function
+		// note: user-provided objects' methods are dealt with by ObjectMethod.Calculate
+		f.BodyFn = cfg.Function(f.Name)
+	}
+
+	rhsVal := f.Eval(WithFunctions(cfg.functions), WithVariables(cfg.variables), WithObjects(cfg.objects))
+	if u, ok := rhsVal.(Undefined); ok {
+		return u
+	}
+
+	if val == nil {
+		return rhsVal
+	}
+
+	//nolint:errcheck // life's too short to check for type assertion success here
+	val = calculate(val.(Value), op, rhsVal)
+
+	return val
 }
 
 func (f Function) String() string {

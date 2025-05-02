@@ -39,10 +39,6 @@ func NewNumberFromString(s string) (Number, error) {
 	return Number{value: d}, nil
 }
 
-func (Number) kind() entryKind {
-	return valueEntryKind
-}
-
 // Equal satisfies the external Equaler interface such as in testify assertions and the cmp package
 func (n Number) Equal(other Number) bool {
 	return n.value.Equal(other.value)

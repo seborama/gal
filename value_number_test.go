@@ -60,10 +60,6 @@ func TestNewNumberFromString(t *testing.T) {
 	}
 }
 
-func TestNumber_kind(t *testing.T) {
-	assert.Equal(t, valueEntryKind, Number{}.kind())
-}
-
 func TestNumber_Equal(t *testing.T) {
 	type fields struct {
 		Undefined Undefined

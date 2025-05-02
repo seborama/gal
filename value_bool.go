@@ -24,10 +24,6 @@ func NewBoolFromString(s string) (Bool, error) {
 	}
 }
 
-func (Bool) kind() entryKind {
-	return valueEntryKind
-}
-
 // Equal satisfies the external Equaler interface such as in testify assertions and the cmp package
 func (b Bool) Equal(other Bool) bool {
 	return b.value == other.value
