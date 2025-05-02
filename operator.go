@@ -2,10 +2,6 @@ package gal
 
 type Operator string
 
-func (Operator) kind() entryKind {
-	return operatorEntryKind
-}
-
 func (o Operator) String() string {
 	return string(o)
 }

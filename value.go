@@ -1,6 +1,8 @@
 package gal
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type Value interface {
 	valueCalculation

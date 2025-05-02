@@ -16,8 +16,28 @@ type Dot[T Member] struct {
 	Member T // must be a Method (i.e. Function) or a Property name (i.e. Variable)
 }
 
-func (Dot[T]) kind() entryKind {
-	return objectAccessorEntryKind
+func (d Dot[T]) Calculate(val entry, oa Dot[Variable]) entry {
+	v := oa.Member
+
+	// as this is an object property accessor, we need to get the object first: it is the LHS currently held in val
+	var vVal any
+	vVal, ok := val.(Value)
+	if !ok {
+		return NewUndefinedWithReasonf("syntax error: object accessor called on non-object: [object: '%T'] [member: '%s']", fmt.Sprintf("%T", val), v.Name)
+	}
+
+	// if the object is a ObjectValue, we need to get the underlying object
+	// ObjectValue is a wrapper for "general" objects (i.e. non-gal.Value objects)
+	// By Object, we mean a Go struct, a pointer to a struct or a Go interface.
+	objVal, ok := vVal.(ObjectValue)
+	if ok {
+		vVal = objVal.Object
+	}
+
+	// now, we can get the property from the object
+	rhsVal := ObjectGetProperty(vVal, v.Name)
+
+	return rhsVal
 }
 
 // Object holds objects that carry properties and methods:
@@ -34,10 +54,6 @@ type Object any
 type ObjectValue struct {
 	Object any
 	Undefined
-}
-
-func (o ObjectValue) kind() entryKind {
-	return objectAccessorEntryKind
 }
 
 func (o ObjectValue) String() string {
@@ -60,8 +76,20 @@ func NewObjectProperty(objectName, propertyName string) ObjectProperty {
 	}
 }
 
-func (o ObjectProperty) kind() entryKind {
-	return objectPropertyEntryKind
+//nolint:errcheck // life's too short to check for type assertion success here
+func (o ObjectProperty) Calculate(val entry, op Operator, cfg *treeConfig) entry {
+	rhsVal := cfg.ObjectProperty(o)
+	if u, ok := rhsVal.(Undefined); ok {
+		return u
+	}
+
+	if val == nil {
+		return rhsVal
+	}
+
+	val = calculate(val.(Value), op, rhsVal)
+
+	return val
 }
 
 func (o ObjectProperty) String() string {
@@ -85,12 +113,29 @@ func NewObjectMethod(objectName, propertyName string, args ...Tree) ObjectMethod
 	}
 }
 
-func (o ObjectMethod) kind() entryKind {
-	return objectMethodEntryKind
+//nolint:errcheck // life's too short to check for type assertion success here
+func (om ObjectMethod) Calculate(val entry, op Operator, cfg *treeConfig) entry {
+	// attempt to get body of a user-provided object's method.
+	bodyFn := cfg.ObjectMethod(om)
+
+	fn := NewFunction(om.MethodName, bodyFn, om.Args...)
+
+	rhsVal := fn.Eval(WithFunctions(cfg.functions), WithVariables(cfg.variables), WithObjects(cfg.objects))
+	if v, ok := rhsVal.(Undefined); ok {
+		return v
+	}
+
+	if val == nil {
+		return rhsVal
+	}
+
+	val = calculate(val.(Value), op, rhsVal)
+
+	return val
 }
 
-func (o ObjectMethod) String() string {
-	return fmt.Sprintf("%s.%s", o.ObjectName, o.MethodName)
+func (om ObjectMethod) String() string {
+	return fmt.Sprintf("%s.%s", om.ObjectName, om.MethodName)
 }
 
 // ObjectGetProperty returns the value of the property with the given name from the object.
@@ -130,12 +175,10 @@ func ObjectGetProperty(obj Object, name string) Value {
 		return NewUndefinedWithReasonf("property '%T:%s' does not exist on object", obj, name)
 	}
 
-	slog.Debug("ObjectGetProperty", "vValue.Kind", fieldReflectValue.Kind().String(), "name", name, "vValue", fieldReflectValue)
-
 	galValue, err := goAnyToGalType(fieldReflectValue.Interface())
 	if err != nil {
 		// allow support for other types to be accessed by Method or Property via
-		//  an objectAccessorEntryKind (i.e. Dot[Variable] or Dot[Function]).
+		//  an object accessor (i.e. Dot[Variable] or Dot[Function]).
 		t := fieldReflectValue.Type()
 		switch t.Kind() {
 		case reflect.Interface:

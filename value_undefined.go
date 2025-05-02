@@ -27,10 +27,6 @@ func NewUndefinedWithReasonf(format string, a ...any) Undefined {
 	}
 }
 
-func (Undefined) kind() entryKind {
-	return unknownEntryKind
-}
-
 // Equal satisfies the external Equaler interface such as in testify assertions and the cmp package
 func (u Undefined) Equal(other Undefined) bool {
 	return u.reason == other.reason
@@ -93,11 +89,11 @@ func (u Undefined) RShift(Value) Value {
 }
 
 func (Undefined) And(other Value) Bool {
-	return Bool{Undefined: NewUndefinedWithReasonf("error: '%T/%s':'%s' cannot use And with Undefined", other, other.kind().String(), other.String())}
+	return Bool{Undefined: NewUndefinedWithReasonf("error: '%T':'%s' cannot use And with Undefined", other, other.String())}
 }
 
 func (Undefined) Or(other Value) Bool {
-	return Bool{Undefined: NewUndefinedWithReasonf("error: '%T/%s':'%s' cannot use Or with Undefined", other, other.kind().String(), other.String())}
+	return Bool{Undefined: NewUndefinedWithReasonf("error: '%T':'%s' cannot use Or with Undefined", other, other.String())}
 }
 
 func (u Undefined) String() string {

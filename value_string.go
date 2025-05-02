@@ -11,10 +11,6 @@ func NewString(s string) String {
 	return String{value: s}
 }
 
-func (String) kind() entryKind {
-	return valueEntryKind
-}
-
 // Equal satisfies the external Equaler interface such as in testify assertions and the cmp package
 func (s String) Equal(other String) bool {
 	return s.value == other.value

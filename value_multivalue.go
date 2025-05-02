@@ -20,10 +20,6 @@ func NewMultiValue(values ...Value) MultiValue {
 	return MultiValue{values: values}
 }
 
-func (MultiValue) kind() entryKind {
-	return valueEntryKind
-}
-
 // Equal satisfies the external Equaler interface such as in `testify` assertions and the `cmp` package
 // Note that the current implementation defines equality as values matching and in order they appear.
 func (m MultiValue) Equal(other MultiValue) bool {
