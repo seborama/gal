@@ -179,20 +179,20 @@ func (tree Tree) Calculate(val entry, op Operator, cfg *treeConfig) entry {
 	}
 
 	rhsVal := tree.Eval(WithFunctions(cfg.functions), WithVariables(cfg.variables), WithObjects(cfg.objects))
-	if v, ok := rhsVal.(Undefined); ok {
-		return v
+	if u, ok := rhsVal.(Undefined); ok {
+		return u
 	}
 
 	if val == nil {
 		return rhsVal
 	}
 
+	//nolint:errcheck // life's too short to check for type assertion success here
 	val = calculate(val.(Value), op, rhsVal)
 
 	return val
 }
 
-//nolint:errcheck // life's too short to check for type assertion success here
 func valueEntryKindFn(val Value, op Operator, e Value) entry {
 	if val == nil && op == invalidOperator {
 		return e
@@ -225,8 +225,8 @@ func objectAccessorDotFunctionFn(val entry, oa Dot[Function], cfg *treeConfig) e
 	if vFv, ok := ObjectGetMethod(vVal, fn.Name); ok {
 		fn.BodyFn = vFv
 		rhsVal := fn.Eval(WithFunctions(cfg.functions), WithVariables(cfg.variables), WithObjects(cfg.objects))
-		if v, ok := rhsVal.(Undefined); ok {
-			return v
+		if u, ok := rhsVal.(Undefined); ok {
+			return u
 		}
 
 		return rhsVal
@@ -289,37 +289,29 @@ func (tree Tree) String(indents ...string) string {
 
 	res := ""
 	for _, e := range tree {
-		//nolint:errcheck // life's too short to check for type assertion success here
 		switch typedE := e.(type) {
 		case Undefined:
-			res += fmt.Sprintf(indent+"unknownEntryKind %T\n", e)
+			res += fmt.Sprintf("%sunknownEntryKind %T\n", indent, e)
 		case Value:
-			res += fmt.Sprintf(indent+"Value %T %s\n", e, typedE.String())
+			res += fmt.Sprintf("%sValue %T %s\n", indent, e, typedE.String())
 		case Operator:
-			res += fmt.Sprintf(indent+"Operator %s\n", typedE.String())
+			res += fmt.Sprintf("%sOperator %s\n", indent, typedE.String())
 		case Tree:
-			res += fmt.Sprintf(indent+"Tree {\n%s}\n", typedE.String("   "))
+			res += fmt.Sprintf("%sTree {\n%s}\n", indent, typedE.String("   "))
 		case Function:
-			res += fmt.Sprintf(indent+"Function %s(%s)\n", typedE.String())
+			res += fmt.Sprintf("%sFunction %s\n", indent, typedE.String())
 		case Variable:
-			res += fmt.Sprintf(indent+"Variable %s\n", typedE.Name)
+			res += fmt.Sprintf("%sVariable %s\n", indent, typedE.Name)
 		case ObjectProperty:
-			res += fmt.Sprintf(indent+"ObjectProperty %s\n", typedE.String())
+			res += fmt.Sprintf("%sObjectProperty %s\n", indent, typedE.String())
 		case ObjectMethod:
-			res += fmt.Sprintf(indent+"ObjectMethod %s\n", typedE.String())
-		case Dot[Function], Dot[Variable]: // TODO: split this into two cases
-			switch a := e.(type) {
-			case Dot[Function]:
-				fn := a.Member
-				res += fmt.Sprintf(indent+"ObjectAccessor[Function] %s\n", fn.String())
-			case Dot[Variable]:
-				v := a.Member
-				res += fmt.Sprintf(indent+"ObjectAccessor[Variable] %s\n", v.String())
-			default:
-				res += fmt.Sprintf(indent+"TODO: unsupported - %s %T\n", e, a) // TODO: does %s on e work here????
-			}
+			res += fmt.Sprintf("%sObjectMethod %s\n", indent, typedE.String())
+		case Dot[Function]:
+			res += fmt.Sprintf("%sObjectAccessor[Function] %s\n", indent, typedE.Member.String())
+		case Dot[Variable]:
+			res += fmt.Sprintf("%sObjectAccessor[Variable] %s\n", indent, typedE.Member.String())
 		default:
-			res += fmt.Sprintf(indent+"TODO: unsupported - %T\n", e)
+			res += fmt.Sprintf("%sTODO: unsupported - %T\n", indent, e)
 		}
 	}
 

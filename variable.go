@@ -22,6 +22,7 @@ func (v Variable) Calculate(val entry, op Operator, cfg *treeConfig) entry {
 		return rhsVal
 	}
 
+	//nolint:errcheck // life's too short to check for type assertion success here
 	val = calculate(val.(Value), op, rhsVal)
 
 	return val

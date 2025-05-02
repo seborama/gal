@@ -16,30 +16,6 @@ type Dot[T Member] struct {
 	Member T // must be a Method (i.e. Function) or a Property name (i.e. Variable)
 }
 
-func (d Dot[T]) Calculate(val entry, oa Dot[Variable]) entry {
-	v := oa.Member
-
-	// as this is an object property accessor, we need to get the object first: it is the LHS currently held in val
-	var vVal any
-	vVal, ok := val.(Value)
-	if !ok {
-		return NewUndefinedWithReasonf("syntax error: object accessor called on non-object: [object: '%T'] [member: '%s']", fmt.Sprintf("%T", val), v.Name)
-	}
-
-	// if the object is a ObjectValue, we need to get the underlying object
-	// ObjectValue is a wrapper for "general" objects (i.e. non-gal.Value objects)
-	// By Object, we mean a Go struct, a pointer to a struct or a Go interface.
-	objVal, ok := vVal.(ObjectValue)
-	if ok {
-		vVal = objVal.Object
-	}
-
-	// now, we can get the property from the object
-	rhsVal := ObjectGetProperty(vVal, v.Name)
-
-	return rhsVal
-}
-
 // Object holds objects that carry properties and methods:
 //   - user-defined objects that may be referenced within a gal expression during evaluation.
 //   - general purpose Go types that have properties and methods.
@@ -121,8 +97,8 @@ func (om ObjectMethod) Calculate(val entry, op Operator, cfg *treeConfig) entry 
 	fn := NewFunction(om.MethodName, bodyFn, om.Args...)
 
 	rhsVal := fn.Eval(WithFunctions(cfg.functions), WithVariables(cfg.variables), WithObjects(cfg.objects))
-	if v, ok := rhsVal.(Undefined); ok {
-		return v
+	if u, ok := rhsVal.(Undefined); ok {
+		return u
 	}
 
 	if val == nil {
