@@ -14,7 +14,7 @@ type DotFunction struct{ Function }
 func (df DotFunction) Calculate(val entry, cfg *treeConfig) entry {
 	if df.BodyFn != nil {
 		// NOTE: this could be supported but it would turn the object into a prototype model e.g. like JavaScript
-		return NewUndefinedWithReasonf("internal error: objectAccessorEntryKind DotFunction for '%s': BodyFn is not empty: this indicates the object's method was confused for a build-in function", df.Name)
+		return NewUndefinedWithReasonf("internal error: DotFunction for '%s': BodyFn is not empty: this indicates the object's method was confused for a build-in function", df.Name)
 	}
 
 	var receiver any
@@ -22,7 +22,7 @@ func (df DotFunction) Calculate(val entry, cfg *treeConfig) entry {
 	// as this is an object function accessor, we need to get the object first: it is the LHS currently held in val
 	receiver, ok := val.(Value)
 	if !ok {
-		return NewUndefinedWithReasonf("syntax error: object accessor [Function] called on non-object: [object: '%T'] [member: '%s'] (check if the receiver is nil)", val, df.Name)
+		return NewUndefinedWithReasonf("syntax error: DotFunction called on non-object: [object: '%T'] [member: '%s'] (check if the receiver is nil)", val, df.Name)
 	}
 
 	// if the object is a ObjectValue, we need to get the underlying object
