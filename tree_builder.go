@@ -123,8 +123,8 @@ func (tb TreeBuilder) FromExpr(expr string) (Tree, error) {
 
 		case objectAccessorByPropertyType:
 			// an objectAccessorByPropertyType is an access to a property of an object retrieved from the last expression evaluated in the Tree.
-			tree = append(tree, Dot[Variable]{
-				Member: NewVariable(part[1:]), // skip the "."
+			tree = append(tree, DotVariable{
+				NewVariable(part[1:]), // skip the "."
 			})
 
 		case objectAccessorByMethodType:

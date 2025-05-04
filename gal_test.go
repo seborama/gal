@@ -399,13 +399,13 @@ func TestObjects_Chained_Properties(t *testing.T) {
 
 	expectedTree := gal.Tree{
 		gal.NewObjectProperty("aCar", "Stereo"),
-		gal.Dot[gal.Variable]{
-			Member: gal.NewVariable(
+		gal.DotVariable{
+			gal.NewVariable(
 				"Brand",
 			),
 		},
-		gal.Dot[gal.Variable]{
-			Member: gal.NewVariable(
+		gal.DotVariable{
+			gal.NewVariable(
 				"Name",
 			),
 		},
@@ -413,13 +413,13 @@ func TestObjects_Chained_Properties(t *testing.T) {
 		gal.NewString("::"),
 		gal.Plus,
 		gal.NewObjectProperty("aCar", "Stereo"),
-		gal.Dot[gal.Variable]{
-			Member: gal.NewVariable(
+		gal.DotVariable{
+			gal.NewVariable(
 				"Brand",
 			),
 		},
-		gal.Dot[gal.Variable]{
-			Member: gal.NewVariable(
+		gal.DotVariable{
+			gal.NewVariable(
 				"Country",
 			),
 		},
