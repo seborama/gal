@@ -548,15 +548,15 @@ func TestObjects_Chained_Methods(t *testing.T) {
 			MethodName: "GetThinger",
 			Args:       []gal.Tree{},
 		},
-		gal.Dot[gal.Function]{
-			Member: gal.Function{
+		gal.DotFunction{
+			gal.Function{
 				Name:   "Thing",
 				BodyFn: (gal.FunctionalValue)(nil),
 				Args:   []gal.Tree{},
 			},
 		},
-		gal.Dot[gal.Function]{
-			Member: gal.Function{
+		gal.DotFunction{
+			gal.Function{
 				Name:   "Add",
 				BodyFn: (gal.FunctionalValue)(nil),
 				Args: []gal.Tree{

@@ -175,8 +175,8 @@ func TestTreeBuilder_FromExpr_Dot_Accessor_Function(t *testing.T) {
 
 	expectedTree := gal.Tree{
 		gal.NewObjectMethod("aCar", "CurrentSpeed", []gal.Tree{}...), // returns a "Number" which is a "Value"
-		gal.Dot[gal.Function]{
-			Member: gal.NewFunction(
+		gal.DotFunction{
+			gal.NewFunction(
 				"Add",
 				nil,
 				gal.Tree{
@@ -184,8 +184,8 @@ func TestTreeBuilder_FromExpr_Dot_Accessor_Function(t *testing.T) {
 				},
 			),
 		},
-		gal.Dot[gal.Function]{
-			Member: gal.NewFunction(
+		gal.DotFunction{
+			gal.NewFunction(
 				"Add",
 				nil,
 				gal.Tree{
@@ -199,8 +199,8 @@ func TestTreeBuilder_FromExpr_Dot_Accessor_Function(t *testing.T) {
 				},
 			),
 		},
-		gal.Dot[gal.Function]{
-			Member: gal.NewFunction(
+		gal.DotFunction{
+			gal.NewFunction(
 				"Sub",
 				nil,
 				gal.Tree{
@@ -218,8 +218,8 @@ func TestTreeBuilder_FromExpr_Dot_Accessor_Function(t *testing.T) {
 				{gal.NewNumberFromInt(5)},
 			},
 		},
-		gal.Dot[gal.Function]{
-			Member: gal.NewFunction(
+		gal.DotFunction{
+			gal.NewFunction(
 				"Multiply",
 				nil,
 				gal.Tree{
