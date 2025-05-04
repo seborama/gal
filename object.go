@@ -48,10 +48,29 @@ func (df DotFunction) Calculate(val entry, cfg *treeConfig) entry {
 	return vFv // this will already be an Undefined type.
 }
 
-type Member interface{ Variable }
+type DotVariable struct{ Variable }
 
-type Dot[T Member] struct {
-	Member T // must be a Method (i.e. Function) or a Property name (i.e. Variable)
+func (dv DotVariable) Calculate(val entry) entry {
+	var receiver any
+
+	// as this is an object property accessor, we need to get the object first: it is the LHS currently held in val
+	receiver, ok := val.(Value)
+	if !ok {
+		return NewUndefinedWithReasonf("syntax error: object accessor [Variable] called on non-object: [object: '%T'] [member: '%s'] (check if the receiver is nil)", fmt.Sprintf("%T", val), dv.Name)
+	}
+
+	// if the object is a ObjectValue, we need to get the underlying object
+	// ObjectValue is a wrapper for "general" objects (i.e. non-gal.Value objects)
+	// By Object, we mean a Go struct, a pointer to a struct or a Go interface.
+	objVal, ok := receiver.(ObjectValue)
+	if ok {
+		receiver = objVal.Object
+	}
+
+	// now, we can get the property from the object
+	rhsVal := ObjectGetProperty(receiver, dv.Name)
+
+	return rhsVal
 }
 
 // Object holds objects that carry properties and methods:
@@ -114,7 +133,7 @@ func ObjectGetProperty(obj Object, name string) Value {
 	galValue, err := goAnyToGalType(fieldReflectValue.Interface())
 	if err != nil {
 		// allow support for other types to be accessed by Method or Property via
-		//  an object accessor (i.e. Dot[Variable] or DotFunction).
+		//  an object accessor (i.e. DotVariable or DotFunction).
 		t := fieldReflectValue.Type()
 		switch t.Kind() {
 		case reflect.Interface:
@@ -217,7 +236,7 @@ func ObjectGetMethod(obj Object, name string) (FunctionalValue, bool) {
 		retValue, err := goAnyToGalType(out[0].Interface())
 		if err != nil {
 			// allow support for other types to be accessed by Method or Property via
-			//  an objectAccessorEntryKind (i.e. Dot[Variable] or DotFunction).
+			//  an objectAccessorEntryKind (i.e. DotVariable or DotFunction).
 			t := out[0].Type()
 			switch t.Kind() {
 			case reflect.Interface:

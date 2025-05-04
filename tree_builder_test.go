@@ -252,8 +252,8 @@ func TestTreeBuilder_FromExpr_Dot_Accessor_Property(t *testing.T) {
 
 	expectedTree := gal.Tree{
 		gal.NewObjectMethod("aCar", "CurrentSpeed3", []gal.Tree{}...), // returns a "fancyType"
-		gal.Dot[gal.Variable]{
-			Member: gal.NewVariable(
+		gal.DotVariable{
+			gal.NewVariable(
 				"Speed",
 			),
 		},

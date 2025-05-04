@@ -141,11 +141,11 @@ func (tree Tree) Calc(isOperatorInPrecedenceGroup func(Operator) bool, cfg *tree
 		case ObjectProperty:
 			val = typedE.Calculate(val, op, cfg)
 
-		case DotFunction: // TODO: (!!) it doesn't seem to make sense to have Dot[Member] anymore since the implementations of Calculate diverge.
+		case DotFunction:
 			val = typedE.Calculate(val, cfg)
 
-		case Dot[Variable]:
-			val = objectAccessorDotVariableFn(val, typedE)
+		case DotVariable:
+			val = typedE.Calculate(val)
 
 		case Undefined:
 			return Tree{e}
@@ -196,31 +196,6 @@ func valueEntryKindFn(val Value, op Operator, e Value) entry {
 	return val
 }
 
-func objectAccessorDotVariableFn(val entry, oa Dot[Variable]) entry {
-	v := oa.Member
-
-	var receiver any
-
-	// as this is an object property accessor, we need to get the object first: it is the LHS currently held in val
-	receiver, ok := val.(Value)
-	if !ok {
-		return NewUndefinedWithReasonf("syntax error: object accessor [Variable] called on non-object: [object: '%T'] [member: '%s'] (check if the receiver is nil)", fmt.Sprintf("%T", val), v.Name)
-	}
-
-	// if the object is a ObjectValue, we need to get the underlying object
-	// ObjectValue is a wrapper for "general" objects (i.e. non-gal.Value objects)
-	// By Object, we mean a Go struct, a pointer to a struct or a Go interface.
-	objVal, ok := receiver.(ObjectValue)
-	if ok {
-		receiver = objVal.Object
-	}
-
-	// now, we can get the property from the object
-	rhsVal := ObjectGetProperty(receiver, v.Name)
-
-	return rhsVal
-}
-
 // CleanUp performs simplification operations before calculating this tree.
 func (tree Tree) CleanUp() Tree {
 	return tree.cleansePlusMinusTreeStart()
@@ -269,9 +244,9 @@ func (tree Tree) String(indents ...string) string {
 		case ObjectMethod:
 			res += fmt.Sprintf("%sObjectMethod %s\n", indent, typedE.String())
 		case DotFunction:
-			res += fmt.Sprintf("%sObjectAccessor[Function] %s\n", indent, typedE.String())
-		case Dot[Variable]:
-			res += fmt.Sprintf("%sObjectAccessor[Variable] %s\n", indent, typedE.Member.String())
+			res += fmt.Sprintf("%sDotFunction %s\n", indent, typedE.String())
+		case DotVariable:
+			res += fmt.Sprintf("%sDotVariable %s\n", indent, typedE.String())
 		default:
 			res += fmt.Sprintf("%sTODO: unsupported - %T\n", indent, e)
 		}
