@@ -42,46 +42,11 @@ func (tb TreeBuilder) FromExpr(expr string) (Tree, error) {
 			tree = append(tree, v)
 
 		case operatorType:
-			switch part {
-			case Plus.String():
-				tree = append(tree, Plus)
-			case Minus.String():
-				tree = append(tree, Minus)
-			case Multiply.String():
-				tree = append(tree, Multiply)
-			case Divide.String():
-				tree = append(tree, Divide)
-			case Modulus.String():
-				tree = append(tree, Modulus)
-			case Power.String():
-				tree = append(tree, Power)
-			case LessThan.String():
-				tree = append(tree, LessThan)
-			case LessThanOrEqual.String():
-				tree = append(tree, LessThanOrEqual)
-			case EqualTo.String():
-				tree = append(tree, EqualTo)
-			case NotEqualTo.String():
-				tree = append(tree, NotEqualTo)
-			case GreaterThan.String():
-				tree = append(tree, GreaterThan)
-			case GreaterThanOrEqual.String():
-				tree = append(tree, GreaterThanOrEqual)
-			case LShift.String():
-				tree = append(tree, LShift)
-			case RShift.String():
-				tree = append(tree, RShift)
-			case And.String():
-				tree = append(tree, And)
-			case And2.String():
-				tree = append(tree, And2) // NOTE: re-route to And?
-			case Or.String():
-				tree = append(tree, Or)
-			case Or2.String():
-				tree = append(tree, Or2) // NOTE: re-route to Or?
-			default:
+			opEntry, ok := stringToOperator(part)
+			if !ok {
 				return nil, errors.Errorf("unknown operator: '%s'", part)
 			}
+			tree = append(tree, opEntry)
 
 		case functionType:
 			fname, l, _ := readNamedExpressionType(part)   //nolint:errcheck // ignore err: we already parsed the function name when in extractPart()
@@ -166,6 +131,49 @@ func (tb TreeBuilder) FromExpr(expr string) (Tree, error) {
 	}
 
 	return tree, nil
+}
+
+func stringToOperator(op string) (Operator, bool) {
+	switch op {
+	case Plus.String():
+		return Plus, true
+	case Minus.String():
+		return Minus, true
+	case Multiply.String():
+		return Multiply, true
+	case Divide.String():
+		return Divide, true
+	case Modulus.String():
+		return Modulus, true
+	case Power.String():
+		return Power, true
+	case LShift.String():
+		return LShift, true
+	case RShift.String():
+		return RShift, true
+	case LessThan.String():
+		return LessThan, true
+	case LessThanOrEqual.String():
+		return LessThanOrEqual, true
+	case EqualTo.String():
+		return EqualTo, true
+	case NotEqualTo.String():
+		return NotEqualTo, true
+	case GreaterThan.String():
+		return GreaterThan, true
+	case GreaterThanOrEqual.String():
+		return GreaterThanOrEqual, true
+	case And.String():
+		return And, true
+	case And2.String():
+		return And2, true // NOTE: re-route to And?
+	case Or.String():
+		return Or, true
+	case Or2.String():
+		return Or2, true // NOTE: re-route to Or?
+	default:
+		return "", false
+	}
 }
 
 // returns the part extracted as string, the type extracted, the cursor position

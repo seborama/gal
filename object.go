@@ -56,7 +56,7 @@ func (dv DotVariable) Calculate(val entry) entry {
 	// as this is an object property accessor, we need to get the object first: it is the LHS currently held in val
 	receiver, ok := val.(Value)
 	if !ok {
-		return NewUndefinedWithReasonf("syntax error: object accessor [Variable] called on non-object: [object: '%T'] [member: '%s'] (check if the receiver is nil)", fmt.Sprintf("%T", val), dv.Name)
+		return NewUndefinedWithReasonf("syntax error: DotVariable called on non-object: [object: '%T'] [member: '%s'] (check if the receiver is nil)", fmt.Sprintf("%T", val), dv.Name)
 	}
 
 	// if the object is a ObjectValue, we need to get the underlying object
