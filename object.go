@@ -9,14 +9,46 @@ import (
 	"github.com/samber/lo"
 )
 
-type DotFunction struct {
-	Name     string
-	Receiver Value // experimental concept: not used yet
-	BodyFn   FunctionalValue
-	Args     []Tree
+type DotFunction struct{ Function }
+
+func (df DotFunction) Calculate(val entry, cfg *treeConfig) entry {
+	if df.BodyFn != nil {
+		// NOTE: this could be supported but it would turn the object into a prototype model e.g. like JavaScript
+		return NewUndefinedWithReasonf("internal error: objectAccessorEntryKind DotFunction for '%s': BodyFn is not empty: this indicates the object's method was confused for a build-in function", df.Name)
+	}
+
+	var receiver any
+
+	// as this is an object function accessor, we need to get the object first: it is the LHS currently held in val
+	receiver, ok := val.(Value)
+	if !ok {
+		return NewUndefinedWithReasonf("syntax error: object accessor [Function] called on non-object: [object: '%T'] [member: '%s'] (check if the receiver is nil)", val, df.Name)
+	}
+
+	// if the object is a ObjectValue, we need to get the underlying object
+	// ObjectValue is a wrapper for "general" objects (i.e. non-gal.Value objects)
+	// By Object, we mean a Go struct, a pointer to a struct or a Go interface.
+	objVal, ok := receiver.(ObjectValue)
+	if ok {
+		receiver = objVal.Object
+	}
+
+	// now, we can get the method from the object
+	vFv, ok := ObjectGetMethod(receiver, df.Name)
+	if ok {
+		df.BodyFn = vFv
+		rhsVal := df.Eval(WithFunctions(cfg.functions), WithVariables(cfg.variables), WithObjects(cfg.objects))
+		if u, ok := rhsVal.(Undefined); ok {
+			return u
+		}
+
+		return rhsVal
+	}
+
+	return vFv // this will be an Undefined type.
 }
 
-type Member interface{ Function | Variable }
+type Member interface{ Variable }
 
 type Dot[T Member] struct {
 	Member T // must be a Method (i.e. Function) or a Property name (i.e. Variable)
@@ -160,7 +192,7 @@ func ObjectGetProperty(obj Object, name string) Value {
 	galValue, err := goAnyToGalType(fieldReflectValue.Interface())
 	if err != nil {
 		// allow support for other types to be accessed by Method or Property via
-		//  an object accessor (i.e. Dot[Variable] or Dot[Function]).
+		//  an object accessor (i.e. Dot[Variable] or DotFunction).
 		t := fieldReflectValue.Type()
 		switch t.Kind() {
 		case reflect.Interface:
@@ -263,7 +295,7 @@ func ObjectGetMethod(obj Object, name string) (FunctionalValue, bool) {
 		retValue, err := goAnyToGalType(out[0].Interface())
 		if err != nil {
 			// allow support for other types to be accessed by Method or Property via
-			//  an objectAccessorEntryKind (i.e. Dot[Variable] or Dot[Function]).
+			//  an objectAccessorEntryKind (i.e. Dot[Variable] or DotFunction).
 			t := out[0].Type()
 			switch t.Kind() {
 			case reflect.Interface:

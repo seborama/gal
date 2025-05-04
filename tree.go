@@ -141,8 +141,8 @@ func (tree Tree) Calc(isOperatorInPrecedenceGroup func(Operator) bool, cfg *tree
 		case ObjectProperty:
 			val = typedE.Calculate(val, op, cfg)
 
-		case Dot[Function]: // TODO: (!!) it doesn't seem to make sense to have Dot[Member] anymore since the implementations of Calculate diverge.
-			val = objectAccessorDotFunctionFn(val, typedE, cfg)
+		case DotFunction: // TODO: (!!) it doesn't seem to make sense to have Dot[Member] anymore since the implementations of Calculate diverge.
+			val = typedE.Calculate(val, cfg)
 
 		case Dot[Variable]:
 			val = objectAccessorDotVariableFn(val, typedE)
@@ -194,45 +194,6 @@ func valueEntryKindFn(val Value, op Operator, e Value) entry {
 	val = calculate(val, op, e)
 
 	return val
-}
-
-func objectAccessorDotFunctionFn(val entry, oa Dot[Function], cfg *treeConfig) entry {
-	fn := oa.Member
-
-	if fn.BodyFn != nil {
-		// NOTE: this could be supported but it would turn the object into a prototype model e.g. like JavaScript
-		return NewUndefinedWithReasonf("internal error: objectAccessorEntryKind Dot[Function] for '%s': BodyFn is not empty: this indicates the object's method was confused for a build-in function", fn.Name)
-	}
-
-	var receiver any
-
-	// as this is an object function accessor, we need to get the object first: it is the LHS currently held in val
-	receiver, ok := val.(Value)
-	if !ok {
-		return NewUndefinedWithReasonf("syntax error: object accessor [Function] called on non-object: [object: '%T'] [member: '%s'] (check if the receiver is nil)", val, fn.Name)
-	}
-
-	// if the object is a ObjectValue, we need to get the underlying object
-	// ObjectValue is a wrapper for "general" objects (i.e. non-gal.Value objects)
-	// By Object, we mean a Go struct, a pointer to a struct or a Go interface.
-	objVal, ok := receiver.(ObjectValue)
-	if ok {
-		receiver = objVal.Object
-	}
-
-	// now, we can get the method from the object
-	vFv, ok := ObjectGetMethod(receiver, fn.Name)
-	if ok {
-		fn.BodyFn = vFv
-		rhsVal := fn.Eval(WithFunctions(cfg.functions), WithVariables(cfg.variables), WithObjects(cfg.objects))
-		if u, ok := rhsVal.(Undefined); ok {
-			return u
-		}
-
-		return rhsVal
-	}
-
-	return vFv // this will be an Undefined type.
 }
 
 func objectAccessorDotVariableFn(val entry, oa Dot[Variable]) entry {
@@ -307,8 +268,8 @@ func (tree Tree) String(indents ...string) string {
 			res += fmt.Sprintf("%sObjectProperty %s\n", indent, typedE.String())
 		case ObjectMethod:
 			res += fmt.Sprintf("%sObjectMethod %s\n", indent, typedE.String())
-		case Dot[Function]:
-			res += fmt.Sprintf("%sObjectAccessor[Function] %s\n", indent, typedE.Member.String())
+		case DotFunction:
+			res += fmt.Sprintf("%sObjectAccessor[Function] %s\n", indent, typedE.String())
 		case Dot[Variable]:
 			res += fmt.Sprintf("%sObjectAccessor[Variable] %s\n", indent, typedE.Member.String())
 		default:

@@ -91,7 +91,7 @@ func (tc treeConfig) Function(name string) FunctionalValue {
 
 	if len(splits) >= 2 {
 		// for expressions like `obj.a.b`, the tree should use a Variable or a Function to access `a` and
-		//  then a Dot[Variable] / Dot[Function] to access `b`.
+		//  then a Dot[Variable] / DotFunction to access `b`.
 		return func(...Value) Value {
 			return NewUndefinedWithReasonf("syntax error: object reference '%s' is not valid: too many dot accessors: max 1 permitted", name)
 		}

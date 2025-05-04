@@ -137,12 +137,12 @@ func (tb TreeBuilder) FromExpr(expr string) (Tree, error) {
 				// NOTE: this should never happen because we have already extracted the object accessor into a single "part".
 				return nil, errors.Errorf("syntax error: invalid object accessor function: '%s'", part)
 			}
-			m := v[0].(Function)
-			if m.BodyFn != nil {
+			oaF := v[0].(Function)
+			if oaF.BodyFn != nil {
 				// NOTE: this could be supported but it would turn the object into a prototype model e.g. like JavaScript
 				return nil, errors.Errorf("internal error: invalid object accessor function: '%s' - BodyFn is not empty: this indicates the object's method was confused for a build-in function", part)
 			}
-			tree = append(tree, Dot[Function]{Member: m})
+			tree = append(tree, DotFunction{oaF})
 
 		case blankType:
 			// only returned when the entire expression is empty or only contains blanks.
