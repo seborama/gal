@@ -422,7 +422,21 @@ func TestNumber_IntPart(t *testing.T) {
 		fields fields
 		want   Value
 	}{
-		// TODO: Add test cases.
+		{
+			name:   "integer part of a positive number",
+			fields: fields{value: decimal.New(5678, -3)}, // 5.678
+			want:   Number{value: decimal.New(5, 0)},
+		},
+		{
+			name:   "integer part of a negative number",
+			fields: fields{value: decimal.New(-5678, -3)}, // -5.678
+			want:   Number{value: decimal.New(-5, 0)},
+		},
+		{
+			name:   "integer part of zero",
+			fields: fields{value: decimal.New(0, 0)},
+			want:   Number{value: decimal.New(0, 0)},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -451,7 +465,24 @@ func TestNumber_LShift(t *testing.T) {
 		args   args
 		want   Value
 	}{
-		// TODO: Add test cases.
+		{
+			name:   "left shift two positive numbers",
+			fields: fields{value: decimal.New(5, 0)},
+			args:   args{other: Number{value: decimal.New(3, 0)}},
+			want:   Number{value: decimal.New(40, 0)},
+		},
+		{
+			name:   "left shift a negative and a positive number",
+			fields: fields{value: decimal.New(-5, 0)},
+			args:   args{other: Number{value: decimal.New(3, 0)}},
+			want:   Number{value: decimal.New(-40, 0)},
+		},
+		{
+			name:   "left shift a positive and a negative number",
+			fields: fields{value: decimal.New(5, 0)},
+			args:   args{other: Number{value: decimal.New(-3, 0)}},
+			want:   Undefined{"invalid negative left shift"},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -480,7 +511,24 @@ func TestNumber_RShift(t *testing.T) {
 		args   args
 		want   Value
 	}{
-		// TODO: Add test cases.
+		{
+			name:   "right shift two positive numbers",
+			fields: fields{value: decimal.New(500, 0)},
+			args:   args{other: Number{value: decimal.New(3, 0)}},
+			want:   Number{value: decimal.New(62, 0)},
+		},
+		{
+			name:   "right shift a negative and a positive number",
+			fields: fields{value: decimal.New(-500, 0)},
+			args:   args{other: Number{value: decimal.New(3, 0)}},
+			want:   Number{value: decimal.New(-63, 0)},
+		},
+		{
+			name:   "left shift a positive and a negative number",
+			fields: fields{value: decimal.New(5, 0)},
+			args:   args{other: Number{value: decimal.New(-3, 0)}},
+			want:   Undefined{"invalid negative right shift"},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -505,7 +553,21 @@ func TestNumber_Neg(t *testing.T) {
 		fields fields
 		want   Number
 	}{
-		// TODO: Add test cases.
+		{
+			name:   "negate a positive number",
+			fields: fields{value: decimal.New(5, 0)},
+			want:   Number{value: decimal.New(-5, 0)},
+		},
+		{
+			name:   "negate a negative number",
+			fields: fields{value: decimal.New(-5, 0)},
+			want:   Number{value: decimal.New(5, 0)},
+		},
+		{
+			name:   "negate zero",
+			fields: fields{value: decimal.New(0, 0)},
+			want:   Number{value: decimal.New(0, 0)},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -580,7 +642,21 @@ func TestNumber_Sqrt(t *testing.T) {
 		fields fields
 		want   Value
 	}{
-		// TODO: Add test cases.
+		{
+			name:   "sqrt of a positive number",
+			fields: fields{value: decimal.New(927344, 0)},
+			want:   Number{value: decimal.NewFromFloat(962.9870196)},
+		},
+		{
+			name:   "sqrt of zero",
+			fields: fields{value: decimal.New(0, 0)},
+			want:   Number{value: decimal.New(0, 0)},
+		},
+		{
+			name:   "sqrt of a negative number",
+			fields: fields{value: decimal.New(-4, 0)},
+			want:   Undefined{"square root of negative number: -4"},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -742,7 +818,21 @@ func TestNumber_Factorial(t *testing.T) {
 		fields fields
 		want   Value
 	}{
-		// TODO: Add test cases.
+		{
+			name:   "factorial of a positive number",
+			fields: fields{value: decimal.New(5, 0)},
+			want:   Number{value: decimal.New(120, 0)},
+		},
+		{
+			name:   "factorial of zero",
+			fields: fields{value: decimal.New(0, 0)},
+			want:   Number{value: decimal.New(1, 0)},
+		},
+		{
+			name:   "factorial of a negative number",
+			fields: fields{value: decimal.New(-5, 0)},
+			want:   Undefined{"Factorial: requires a positive integer, cannot accept -5"},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -771,7 +861,24 @@ func TestNumber_LessThan(t *testing.T) {
 		args   args
 		want   Bool
 	}{
-		// TODO: Add test cases.
+		{
+			name:   "less than",
+			fields: fields{value: decimal.New(5, 0)},
+			args:   args{other: Number{value: decimal.New(6, 0)}},
+			want:   Bool{value: true},
+		},
+		{
+			name:   "not less than",
+			fields: fields{value: decimal.New(5, 0)},
+			args:   args{other: Number{value: decimal.New(4, 0)}},
+			want:   Bool{value: false},
+		},
+		{
+			name:   "equal",
+			fields: fields{value: decimal.New(5, 0)},
+			args:   args{other: Number{value: decimal.New(5, 0)}},
+			want:   Bool{value: false},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -800,7 +907,24 @@ func TestNumber_LessThanOrEqual(t *testing.T) {
 		args   args
 		want   Bool
 	}{
-		// TODO: Add test cases.
+		{
+			name:   "less than or equal",
+			fields: fields{value: decimal.New(5, 0)},
+			args:   args{other: Number{value: decimal.New(6, 0)}},
+			want:   Bool{value: true},
+		},
+		{
+			name:   "not less than or equal",
+			fields: fields{value: decimal.New(5, 0)},
+			args:   args{other: Number{value: decimal.New(4, 0)}},
+			want:   Bool{value: false},
+		},
+		{
+			name:   "equal",
+			fields: fields{value: decimal.New(5, 0)},
+			args:   args{other: Number{value: decimal.New(5, 0)}},
+			want:   Bool{value: true},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -829,7 +953,18 @@ func TestNumber_EqualTo(t *testing.T) {
 		args   args
 		want   Bool
 	}{
-		// TODO: Add test cases.
+		{
+			name:   "equal to",
+			fields: fields{value: decimal.New(5, 0)},
+			args:   args{other: Number{value: decimal.New(5, 0)}},
+			want:   Bool{value: true},
+		},
+		{
+			name:   "not equal to",
+			fields: fields{value: decimal.New(5, 0)},
+			args:   args{other: Number{value: decimal.New(4, 0)}},
+			want:   Bool{value: false},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -858,7 +993,18 @@ func TestNumber_NotEqualTo(t *testing.T) {
 		args   args
 		want   Bool
 	}{
-		// TODO: Add test cases.
+		{
+			name:   "not equal to",
+			fields: fields{value: decimal.New(5, 0)},
+			args:   args{other: Number{value: decimal.New(4, 0)}},
+			want:   Bool{value: true},
+		},
+		{
+			name:   "equal to",
+			fields: fields{value: decimal.New(5, 0)},
+			args:   args{other: Number{value: decimal.New(5, 0)}},
+			want:   Bool{value: false},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -887,7 +1033,24 @@ func TestNumber_GreaterThan(t *testing.T) {
 		args   args
 		want   Bool
 	}{
-		// TODO: Add test cases.
+		{
+			name:   "greater than",
+			fields: fields{value: decimal.New(5, 0)},
+			args:   args{other: Number{value: decimal.New(4, 0)}},
+			want:   Bool{value: true},
+		},
+		{
+			name:   "not greater than",
+			fields: fields{value: decimal.New(5, 0)},
+			args:   args{other: Number{value: decimal.New(6, 0)}},
+			want:   Bool{value: false},
+		},
+		{
+			name:   "equal",
+			fields: fields{value: decimal.New(5, 0)},
+			args:   args{other: Number{value: decimal.New(5, 0)}},
+			want:   Bool{value: false},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -916,7 +1079,24 @@ func TestNumber_GreaterThanOrEqual(t *testing.T) {
 		args   args
 		want   Bool
 	}{
-		// TODO: Add test cases.
+		{
+			name:   "greater than or equal",
+			fields: fields{value: decimal.New(5, 0)},
+			args:   args{other: Number{value: decimal.New(4, 0)}},
+			want:   Bool{value: true},
+		},
+		{
+			name:   "not greater than or equal",
+			fields: fields{value: decimal.New(5, 0)},
+			args:   args{other: Number{value: decimal.New(6, 0)}},
+			want:   Bool{value: false},
+		},
+		{
+			name:   "equal",
+			fields: fields{value: decimal.New(5, 0)},
+			args:   args{other: Number{value: decimal.New(5, 0)}},
+			want:   Bool{value: true},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -941,7 +1121,36 @@ func TestNumber_String(t *testing.T) {
 		fields fields
 		want   string
 	}{
-		// TODO: Add test cases.
+		{
+			name:   "string representation of a positive number",
+			fields: fields{value: decimal.New(5, 0)},
+			want:   "5",
+		},
+		{
+			name:   "string representation of a negative number",
+			fields: fields{value: decimal.New(-5, 0)},
+			want:   "-5",
+		},
+		{
+			name:   "string representation of zero",
+			fields: fields{value: decimal.New(0, 0)},
+			want:   "0",
+		},
+		{
+			name:   "string representation of a decimal number",
+			fields: fields{value: decimal.New(5, -2)},
+			want:   "0.05",
+		},
+		{
+			name:   "string representation of a large number",
+			fields: fields{value: decimal.New(1234567890123456789, 0)},
+			want:   "1234567890123456789",
+		},
+		{
+			name:   "string representation of a small number",
+			fields: fields{value: decimal.New(1234567890123456789, -20)},
+			want:   "0.01234567890123456789",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -966,7 +1175,31 @@ func TestNumber_Bool(t *testing.T) {
 		fields fields
 		want   Bool
 	}{
-		// TODO: Add test cases.
+		{
+			name:   "true for non-zero number",
+			fields: fields{value: decimal.New(5, 0)},
+			want:   Bool{value: true},
+		},
+		{
+			name:   "false for zero",
+			fields: fields{value: decimal.New(0, 0)},
+			want:   Bool{value: false},
+		},
+		{
+			name:   "true for negative number",
+			fields: fields{value: decimal.New(-5, 0)},
+			want:   Bool{value: true},
+		},
+		{
+			name:   "true for positive decimal number",
+			fields: fields{value: decimal.New(5, -2)},
+			want:   Bool{value: true},
+		},
+		{
+			name:   "false for zero decimal number",
+			fields: fields{value: decimal.New(0, -2)},
+			want:   Bool{value: false},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -991,7 +1224,36 @@ func TestNumber_AsString(t *testing.T) {
 		fields fields
 		want   String
 	}{
-		// TODO: Add test cases.
+		{
+			name:   "string representation of a positive number",
+			fields: fields{value: decimal.New(5, 0)},
+			want:   String{value: "5"},
+		},
+		{
+			name:   "string representation of a negative number",
+			fields: fields{value: decimal.New(-5, 0)},
+			want:   String{value: "-5"},
+		},
+		{
+			name:   "string representation of zero",
+			fields: fields{value: decimal.New(0, 0)},
+			want:   String{value: "0"},
+		},
+		{
+			name:   "string representation of a decimal number",
+			fields: fields{value: decimal.New(5, -2)},
+			want:   String{value: "0.05"},
+		},
+		{
+			name:   "string representation of a large number",
+			fields: fields{value: decimal.New(1234567890123456789, 0)},
+			want:   String{value: "1234567890123456789"},
+		},
+		{
+			name:   "string representation of a small number",
+			fields: fields{value: decimal.New(1234567890123456789, -20)},
+			want:   String{value: "0.01234567890123456789"},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -1016,7 +1278,56 @@ func TestNumber_Number(t *testing.T) {
 		fields fields
 		want   Number
 	}{
-		// TODO: Add test cases.
+		{
+			name:   "number representation of a positive number",
+			fields: fields{value: decimal.New(5, 0)},
+			want:   Number{value: decimal.New(5, 0)},
+		},
+		{
+			name:   "number representation of a negative number",
+			fields: fields{value: decimal.New(-5, 0)},
+			want:   Number{value: decimal.New(-5, 0)},
+		},
+		{
+			name:   "number representation of zero",
+			fields: fields{value: decimal.New(0, 0)},
+			want:   Number{value: decimal.New(0, 0)},
+		},
+		{
+			name:   "number representation of a decimal number",
+			fields: fields{value: decimal.New(5, -2)},
+			want:   Number{value: decimal.New(5, -2)},
+		},
+		{
+			name:   "number representation of a large number",
+			fields: fields{value: decimal.New(1234567890123456789, 0)},
+			want:   Number{value: decimal.New(1234567890123456789, 0)},
+		},
+		{
+			name:   "number representation of a small number",
+			fields: fields{value: decimal.New(1234567890123456789, -20)},
+			want:   Number{value: decimal.New(1234567890123456789, -20)},
+		},
+		{
+			name:   "number representation of a large decimal number",
+			fields: fields{value: decimal.New(1234567890123456789, -10)},
+			want:   Number{value: decimal.New(1234567890123456789, -10)},
+		},
+		{
+			name:   "number representation of a small decimal number",
+			fields: fields{value: decimal.New(1234567890123456789, -30)},
+			want:   Number{value: decimal.New(1234567890123456789, -30)},
+		},
+		{
+			name:   "number representation of a large negative number",
+			fields: fields{value: decimal.New(-1234567890123456789, 0)},
+			want:   Number{value: decimal.New(-1234567890123456789, 0)},
+		},
+		{
+			name:   "number representation of a small negative number",
+			fields: fields{value: decimal.New(-1234567890123456789, -20)},
+			want:   Number{value: decimal.New(-1234567890123456789, -20)},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -1041,7 +1352,66 @@ func TestNumber_Float64(t *testing.T) {
 		fields fields
 		want   float64
 	}{
-		// TODO: Add test cases.
+		{
+			name:   "float64 representation of a positive number",
+			fields: fields{value: decimal.New(5, 0)},
+			want:   5.0,
+		},
+		{
+			name:   "float64 representation of a negative number",
+			fields: fields{value: decimal.New(-5, 0)},
+			want:   -5.0,
+		},
+		{
+			name:   "float64 representation of zero",
+			fields: fields{value: decimal.New(0, 0)},
+			want:   0.0,
+		},
+		{
+			name:   "float64 representation of a decimal number",
+			fields: fields{value: decimal.New(5, -2)},
+			want:   0.05,
+		},
+		{
+			name:   "float64 representation of a large number",
+			fields: fields{value: decimal.New(1234567890123456789, 0)},
+			want:   1234567890123456789.0,
+		},
+		{
+			name:   "float64 representation of a small number",
+			fields: fields{value: decimal.New(1234567890123456789, -20)},
+			want:   0.01234567890123456789,
+		},
+		{
+			name:   "float64 representation of a large decimal number",
+			fields: fields{value: decimal.New(1234567890123456789, -10)},
+			want:   1.2345678901234567e+08, // rounded, may be architecture dependent
+		},
+		{
+			name:   "float64 representation of a small decimal number",
+			fields: fields{value: decimal.New(1234567890123456789, -30)},
+			want:   1.2345678901234569e-12, // rounded, may be architecture dependent
+		},
+		{
+			name:   "float64 representation of a large negative number",
+			fields: fields{value: decimal.New(-1234567890123456789, 0)},
+			want:   -1234567890123456789.0,
+		},
+		{
+			name:   "float64 representation of a small negative number",
+			fields: fields{value: decimal.New(-1234567890123456789, -20)},
+			want:   -0.01234567890123456789,
+		},
+		{
+			name:   "float64 representation of a large negative decimal number",
+			fields: fields{value: decimal.New(-1234567890123456789, -10)},
+			want:   -1.2345678901234567e+08, // rounded, may be architecture dependent
+		},
+		{
+			name:   "float64 representation of a small negative decimal number",
+			fields: fields{value: decimal.New(-1234567890123456789, -30)},
+			want:   -1.2345678901234569e-12, // rounded, may be architecture dependent
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -1066,7 +1436,41 @@ func TestNumber_Int64(t *testing.T) {
 		fields fields
 		want   int64
 	}{
-		// TODO: Add test cases.
+		{
+			name:   "int64 representation of a positive number",
+			fields: fields{value: decimal.New(5, 0)},
+			want:   5,
+		},
+		{
+			name:   "int64 representation of a negative number",
+			fields: fields{value: decimal.New(-5, 0)},
+			want:   -5,
+		},
+		{
+			name:   "int64 representation of zero",
+			fields: fields{value: decimal.New(0, 0)},
+			want:   0,
+		},
+		{
+			name:   "int64 representation of a decimal number",
+			fields: fields{value: decimal.New(5, -2)},
+			want:   0,
+		},
+		{
+			name:   "int64 representation of a large number",
+			fields: fields{value: decimal.New(1234567890123456789, 0)},
+			want:   1234567890123456789,
+		},
+		{
+			name:   "int64 representation of a small number",
+			fields: fields{value: decimal.New(1234567890123456789, -20)},
+			want:   0,
+		},
+		{
+			name:   "int64 representation of a large decimal number",
+			fields: fields{value: decimal.New(1234567890123456789, -10)},
+			want:   123456789,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

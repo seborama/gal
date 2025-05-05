@@ -77,7 +77,20 @@ func TestTreeBuilder_FromExpr_PlusMinus_String(t *testing.T) {
 }
 
 func TestTreeBuilder_FromExpr_Functions(t *testing.T) {
-	expr := `trunc(tan(10 + sin(cos(3 + f(1+2 3 ")4((")))) 6)`
+	expr := `trunc(
+				tan(
+					10 + sin(
+							cos(
+								3 + f(
+										1+2
+										3
+										")4(("
+									)
+							)
+						)
+					)
+				6
+			)`
 
 	funcs := gal.Functions{
 		"f": func(...gal.Value) gal.Value { return gal.NewNumberFromInt(123) },
@@ -277,7 +290,7 @@ func TestTreeBuilder_FromExpr_Dot_Accessor_Property(t *testing.T) {
 // TODO: (!) this is an idea for a future feature
 // func TestTreeBuilder_FromExpr_Arrays(t *testing.T) {
 //	expr := `f(1 2 3)[1]` // simple example
-//	expr := `f(1 2 3)[1 + sum(1 2 3)]` // complex example
+//	expr := `f(1 2 3)[1+sum(1 2 3)  2+4]` // complex example: formulae and 2 dimensional array
 
 //	funcs := gal.Functions{
 //		"f": func(args ...gal.Value) gal.Value { return gal.NewMultiValue(args...) },
